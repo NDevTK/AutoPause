@@ -1,5 +1,5 @@
 chrome.runtime.onMessage.addListener(async(ActiveAudio) => {
-	(ActiveAudio) ? pauseALL() : resumeALL();
+	(ActiveAudio) ? pauseALL() : resumeALL(); // React based on state of active tab
 });
 
 async function pauseALL() {

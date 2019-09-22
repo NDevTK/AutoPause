@@ -7,13 +7,13 @@ chrome.tabs.onActivated.addListener(activeInfo => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-  delete sounds.splice(sounds.indexOf(tabId),1);
+  sounds.splice(sounds.indexOf(tabId),1);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo)  => {
   if(!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
-  if(changeInfo.audible) {
-    if(!sounds.includes(changeInfo)) sounds.push(tabId); // Tab has sound
+  if(changeInfo.audible && !sounds.includes(changeInfo)) {
+    sounds.push(tabId);
   }
   if(tabId === activeTab) Broardcast(changeInfo.audible, activeTab); // Tell the other tabs the state of the active tab
 });

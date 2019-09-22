@@ -6,6 +6,10 @@ chrome.tabs.onActivated.addListener(activeInfo => {
   chrome.tabs.sendMessage(activeTab, false); // Resume when active
 });
 
+chrome.tabs.onRemoved.addListener(tabId => {
+  delete sounds[tabId];
+});
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo)  => {
   if(!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
   if(changeInfo.audible) {

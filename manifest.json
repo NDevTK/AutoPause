@@ -1,7 +1,7 @@
 {
   "name": "AutoPause",
   "version": "1.0",
-  "description": "Pause other audio sources if audio playing on active tab with automatic resume",
+  "description": "Pause other audio sources if audio is playing on active tab with automatic resume",
   "content_scripts": [
     {
       "matches": [

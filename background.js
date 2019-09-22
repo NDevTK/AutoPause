@@ -7,7 +7,7 @@ chrome.tabs.onActivated.addListener(activeInfo => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-  delete sounds[tabId];
+  delete sounds.splice(sounds.indexOf(tabId),1);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo)  => {

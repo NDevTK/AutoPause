@@ -1,0 +1,3 @@
+Contact: 31563761+NDevTK@users.noreply.github.com
+Encryption: https://ndev.tk/NDevTK.txt
+Preferred-Languages: en

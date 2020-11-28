@@ -1,13 +1,26 @@
-activeTab = false;
+activeTab = null;
 sounds = []; // List of tab ids that have had audio
 
-chrome.tabs.onActivated.addListener(activeInfo => {
-  activeTab = activeInfo.tabId; // Current tab
-  chrome.tabs.sendMessage(activeTab, false); // Resume when active
+chrome.windows.onFocusChanged.addListener(id => {
+	if(id === -1) return
+	checkOrigin();
 });
 
+function checkOrigin() {
+    chrome.tabs.query({
+        active: true,
+        currentWindow: true
+    }, tab => {
+        if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
+        activeTab = tab[0].id;
+        chrome.tabs.sendMessage(activeTab, false); // Resume when active
+    });
+}
+
+chrome.tabs.onActivated.addListener(checkOrigin);
+
 chrome.tabs.onRemoved.addListener(tabId => {
-  sounds.splice(sounds.indexOf(tabId),1);
+  sounds.splice(sounds.indexOf(tabId), 1);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo)  => {

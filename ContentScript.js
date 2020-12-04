@@ -1,4 +1,5 @@
-ActiveAudio = false;
+"use strict";
+var ActiveAudio = false;
 
 chrome.runtime.onMessage.addListener(async (state) => {
     ActiveAudio = state; // React based on state of active tab

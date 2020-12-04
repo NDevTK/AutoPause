@@ -1,31 +1,32 @@
-chrome.runtime.onMessage.addListener(async(ActiveAudio) => {
-	(ActiveAudio) ? pauseALL() : resumeALL(); // React based on state of active tab
+ActiveAudio = false;
+
+chrome.runtime.onMessage.addListener(async (state) => {
+    ActiveAudio = state; // React based on state of active tab
+    main();
 });
 
-async function pauseALL() {
-	pause("video");
-	pause("audio");
+document.onplay = main;
+
+async function main() {
+    (ActiveAudio) ? pause(): resume();
 }
 
-async function resumeALL() {
-	resume("video");
-	resume("audio");
+
+
+async function pause() {
+    let Elements = [...document.getElementsByTagName("*")];
+    Elements.forEach(e => {
+        if (e instanceof HTMLMediaElement === false || e.paused) return;
+        e.pause();
+        e.wasPlaying = true;
+    });
 }
 
-async function pause(tag) {
-	let Elements = document.getElementsByTagName(tag);
-	for (let Element of Elements) {
-		if(Element.paused) return
-		Element.pause();
-		Element.wasPlaying = true;
-	}
-}
-
-async function resume(tag) {
-	let Elements = document.getElementsByTagName(tag);
-	for (let Element of Elements) {
-		if(!Element.wasPlaying) return
-		Element.play();
-		Element.wasPlaying = false;
-	}
+async function resume() {
+    let Elements = [...document.getElementsByTagName("*")];
+    Elements.forEach(e => {
+        if (e instanceof HTMLMediaElement === false || !e.wasPlaying) return
+        e.play();
+        e.wasPlaying = false;
+    });
 }

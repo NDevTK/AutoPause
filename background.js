@@ -6,6 +6,23 @@ chrome.windows.onFocusChanged.addListener(id => {
 	checkOrigin();
 });
 
+chrome.commands.onCommand.addListener(command => {
+    switch (command) {
+        case "gotoaudible":
+            chrome.tabs.query({
+                audible: true,
+                active: false,
+                currentWindow: true
+            }, tab => {
+                if (tab.length < 1) return
+                chrome.tabs.update(tab[0].id, {
+                    active: true
+                });
+            });
+            return
+    }
+});
+
 function checkOrigin() {
     chrome.tabs.query({
         active: true,

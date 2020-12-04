@@ -1,5 +1,6 @@
-activeTab = null;
-sounds = []; // List of tab ids that have had audio
+"use strict";
+var activeTab = null;
+var sounds = []; // List of tab ids that have had audio
 
 chrome.windows.onFocusChanged.addListener(id => {
 	if(id === -1) return

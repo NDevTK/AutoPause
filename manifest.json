@@ -15,8 +15,8 @@
   "commands": {
     "gotoaudible": {
         "suggested_key": {
-            "default": "Ctrl+Shift+K",
-            "mac": "Command+Shift+K"
+            "default": "Shift+K",
+            "mac": "Shift+K"
         },
         "description": "Go to tab with audio"
 	}

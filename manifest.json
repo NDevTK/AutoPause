@@ -4,6 +4,7 @@
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_scripts": [
     {
+      "all_frames": true,
       "matches": [
         "<all_urls>"
       ],

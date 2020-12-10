@@ -38,5 +38,10 @@
     "scripts":["background.js"]
   },
   "web_accessible_resources": ["WindowScript.js"],
+  "browser_specific_settings":{
+      "gecko":{
+         "id":"automute@ndevtk"
+      }
+   },
   "manifest_version": 2
 }

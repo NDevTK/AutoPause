@@ -10,7 +10,8 @@
       ],
       "js": [
         "ContentScript.js"
-      ]
+      ],
+      "run_at": "document_end"
     }
   ],
   "commands": {

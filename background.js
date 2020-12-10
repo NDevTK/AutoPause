@@ -32,6 +32,7 @@ function checkOrigin() {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
         activeTab = tab[0].id;
         chrome.tabs.sendMessage(activeTab, false); // Resume when active
+        Broardcast(tab[0].audible, activeTab);
     });
 }
 

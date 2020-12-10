@@ -22,7 +22,7 @@
         },
         "description": "Go to tab with audio"
     },
-    "toggleautoresume": {
+    "disableresume": {
         "suggested_key": {
             "default": "Alt+R",
             "mac": "Alt+R"

@@ -4,9 +4,8 @@ var sounds = []; // List of tab ids that have had audio
 var options = {};
 
 chrome.storage.sync.get(options, function(result) {
-    options = result[options];
+	if(result[options] !== undefined) options = result[options];
 });
-
 
 chrome.windows.onFocusChanged.addListener(id => {
     if (id === -1) return
@@ -40,10 +39,10 @@ function checkOrigin() {
     }, tab => {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
         activeTab = tab[0].id;
-        if (options.disableresume !== true) {
-            chrome.tabs.sendMessage(activeTab, false); // Resume when active
-        } else {
+        if (options.hasOwnProperty("disableresume")) {
             chrome.tabs.sendMessage(activeTab, null); // Only allow playback
+        } else {
+            chrome.tabs.sendMessage(activeTab, false); // Resume when active
         }
         Broardcast(tab[0].audible, activeTab);
     });
@@ -71,7 +70,11 @@ async function Broardcast(message, exclude = false) {
 };
 
 function toggleOption(o) {
-    let value = (options[o]) ? false : true;
+    if(options.hasOwnProperty(o)) {
+		delete options[o];
+	} else {
+		options[o] = true;
+	}
     options[o] = value;
     return new Promise(resolve => {
         chrome.storage.sync.set({

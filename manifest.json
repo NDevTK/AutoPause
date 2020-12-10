@@ -21,11 +21,17 @@
             "mac": "Alt+K"
         },
         "description": "Go to tab with audio"
+	},
+	"toggleautoresume": {
+        "suggested_key": {
+            "default": "Alt+R",
+            "mac": "Alt+R"
+        },
+        "description": "Toggle auto resume"
 	}
   },
   "permissions": [
     "tabs",
-    "contextMenus",
     "storage"
   ],
   "background": {

@@ -7,8 +7,10 @@ chrome.runtime.onMessage.addListener(async (state) => {
     (ActiveAudio) ? pause(): resume();
 });
 
-// Fires event on HTMLMediaElement play needed when content not in DOM.
-injectScript("WindowScript.js");
+window.addEventListener('DOMContentLoaded', function(event) {
+	// Adds content to DOM
+	injectScript("WindowScript.js");
+});
 
 function injectScript(file_path) {
     var script = document.createElement('script');

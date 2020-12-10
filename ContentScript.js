@@ -5,6 +5,7 @@ var Elements = [];
 chrome.runtime.onMessage.addListener(async (state) => {
     ActiveAudio = state; // React based on state of active tab
     Elements = Elements.filter(e => document.contains(e));
+    if(ActiveAudio === null) return
     (ActiveAudio) ? pause(): resume();
 });
 

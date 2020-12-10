@@ -3,7 +3,7 @@ var activeTab = null;
 var sounds = []; // List of tab ids that have had audio
 var options = {};
 
-chrome.storage.sync.get(options, function(result) {
+chrome.storage.sync.get("options", function(result) {
 	if(result[options] !== undefined) options = result[options];
 });
 
@@ -39,12 +39,14 @@ function checkOrigin() {
     }, tab => {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
         activeTab = tab[0].id;
+		var message = tab[0].audible;
         if (options.hasOwnProperty("disableresume")) {
             chrome.tabs.sendMessage(activeTab, null); // Only allow playback
+			if(message === false) message = null;
         } else {
             chrome.tabs.sendMessage(activeTab, false); // Resume when active
         }
-        Broardcast(tab[0].audible, activeTab);
+        Broardcast(message, activeTab);
     });
 }
 
@@ -59,6 +61,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.audible && !sounds.includes(tabId)) {
         sounds.push(tabId);
     }
+	if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
     if (tabId === activeTab) Broardcast(changeInfo.audible, activeTab); // Tell the other tabs the state of the active tab
 });
 
@@ -77,7 +80,7 @@ function toggleOption(o) {
 	}
     return new Promise(resolve => {
         chrome.storage.sync.set({
-            [options]: options
+            ["options"]: options
         }, function(result) {
             resolve(result);
         });

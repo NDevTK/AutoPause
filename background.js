@@ -75,7 +75,6 @@ function toggleOption(o) {
 	} else {
 		options[o] = true;
 	}
-    options[o] = value;
     return new Promise(resolve => {
         chrome.storage.sync.set({
             [options]: options

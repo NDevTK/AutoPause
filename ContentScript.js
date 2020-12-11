@@ -23,34 +23,48 @@ function injectScript(file_path) {
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
-        if (src.wasPlaying === true) event.stopPropagation();
-        if (ActiveAudio) src.pause();
+        if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) Elements.push(src);
     }
 }, true);
 
 // Dont tell the media please
-window.addEventListener('pause', function(event) {
+window.addEventListener('ratechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
-        if (src.wasPlaying) {
+        if (ActiveAudio && src.playbackRate === 0) {
             event.stopPropagation();
+        } else if (ActiveAudio) {
+            src.pause();
         }
     }
 }, true);
 
+function pauseElement(e) {
+    if (ActiveAudio === null) {
+        e.pause();
+    } else {
+        e.wasVolume = e.volume;
+        e.wasPlaybackRate = e.playbackRate;
+        e.volume = 0;
+        e.playbackRate = 0;
+        e.wasPlaying = true;
+    }
+}
+
 async function pause() {
     Elements.forEach(e => {
-        if (e.paused) return;
-        if (ActiveAudio !== null) e.wasPlaying = true;
-        e.pause();
+        if (e.paused || e.playbackRate === 0) return;
+        pauseElement(e);
     });
 }
 
 async function resume() {
     Elements.forEach(e => {
         if (!e.wasPlaying) return
-        e.play();
+        if (e.paused) e.play();
+        e.volume = e.wasVolume;
+        e.playbackRate = e.wasPlaybackRate;
         e.wasPlaying = false;
     });
 }

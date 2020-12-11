@@ -50,7 +50,7 @@ function checkOrigin() {
     });
 }
 
-function Sendhandler() {
+function sendHandler() {
 	var lastError = chrome.runtime.lastError;
 }
 

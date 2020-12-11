@@ -37,7 +37,7 @@ function checkOrigin() {
         active: true,
         currentWindow: true
     }, tab => {
-        if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
+        if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined || tab[0].url === undefined) return
         activeTab = tab[0].id;
         var message = tab[0].audible;
         if (options.hasOwnProperty("disableresume")) {

@@ -40,7 +40,7 @@ function checkOrigin() {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
         activeTab = tab[0].id;
         var message = tab[0].audible;
-		if(message === false && !sounds.includes(activeTab)) return
+	if(message === false && !sounds.includes(activeTab)) return
         if (options.hasOwnProperty("disableresume")) {
             chrome.tabs.sendMessage(activeTab, null); // Only allow playback
             if (message === false) message = null;

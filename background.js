@@ -4,7 +4,7 @@ var sounds = []; // List of tab ids that have had audio
 var options = {};
 
 chrome.storage.sync.get("options", function(result) {
-    if (result[options] !== undefined) options = result[options];
+    if (result[options] instanceof Object === true) options = result[options];
 });
 
 chrome.windows.onFocusChanged.addListener(id => {

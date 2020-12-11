@@ -41,13 +41,17 @@ function checkOrigin() {
         activeTab = tab[0].id;
         var message = tab[0].audible;
         if (options.hasOwnProperty("disableresume")) {
-            if (sounds.includes(activeTab)) chrome.tabs.sendMessage(activeTab, null); // Only allow playback
+            chrome.tabs.sendMessage(activeTab, null, sendHandler); // Only allow playback
             if (message === false) message = null;
         } else {
-            if (sounds.includes(activeTab)) chrome.tabs.sendMessage(activeTab, false); // Resume when active
+            chrome.tabs.sendMessage(activeTab, false, sendHandler); // Resume when active
         }
         Broardcast(message, activeTab);
     });
+}
+
+function Sendhandler() {
+	var lastError = chrome.runtime.lastError;
 }
 
 chrome.tabs.onActivated.addListener(checkOrigin);
@@ -68,7 +72,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 async function Broardcast(message, exclude = false) {
     sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
-        chrome.tabs.sendMessage(id, message);
+        chrome.tabs.sendMessage(id, message, sendHandler);
     });
 };
 

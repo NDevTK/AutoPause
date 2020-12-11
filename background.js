@@ -4,7 +4,7 @@ var sounds = []; // List of tab ids that have had audio
 var options = {};
 
 chrome.storage.sync.get("options", function(result) {
-    if (typeof result["options"] === 'object' && result["options"] !== null) options = result[options];
+    if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
 });
 
 chrome.windows.onFocusChanged.addListener(id => {
@@ -40,18 +40,15 @@ function checkOrigin() {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined) return
         activeTab = tab[0].id;
         var message = tab[0].audible;
+		if(message === false && !sounds.includes(activeTab)) return
         if (options.hasOwnProperty("disableresume")) {
-            chrome.tabs.sendMessage(activeTab, null, Sendhandler); // Only allow playback
+            chrome.tabs.sendMessage(activeTab, null); // Only allow playback
             if (message === false) message = null;
         } else {
-            chrome.tabs.sendMessage(activeTab, false, Sendhandler); // Resume when active
+            chrome.tabs.sendMessage(activeTab, false); // Resume when active
         }
         Broardcast(message, activeTab);
     });
-}
-
-function Sendhandler() {
-	var lastError = chrome.runtime.lastError;
 }
 
 chrome.tabs.onActivated.addListener(checkOrigin);

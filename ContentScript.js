@@ -9,8 +9,8 @@ chrome.runtime.onMessage.addListener(async (state) => {
 });
 
 window.addEventListener('DOMContentLoaded', function(event) {
-	// Adds content to DOM
-	injectScript("WindowScript.js");
+    // Adds content to DOM
+    injectScript("WindowScript.js");
 });
 
 function injectScript(file_path) {
@@ -31,17 +31,21 @@ window.addEventListener('play', function(event) {
 
 async function pause() {
     Elements.forEach(e => {
-        if (e.paused) return;
-        e.pause();
+        if (e.paused || e.playbackRate === 0) return;
+        e.wasVolume = e.volume;
+        e.wasPlaybackRate = e.playbackRate;
+        e.volume = 0
+        e.playbackRate = 0
         e.wasPlaying = true;
     });
 }
 
 async function resume() {
-    if(ActiveAudio === null) return
+    if (ActiveAudio === null) return
     Elements.forEach(e => {
         if (!e.wasPlaying) return
-        e.play();
+        e.volume = e.wasVolume;
+        e.playbackRate = e.wasPlaybackRate;
         e.wasPlaying = false;
     });
 }

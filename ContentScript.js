@@ -42,13 +42,12 @@ window.addEventListener('pause', function(event) {
 async function pause() {
     Elements.forEach(e => {
         if (e.paused) return;
-        e.wasPlaying = true;
+        if (ActiveAudio !== null) e.wasPlaying = true;
         e.pause();
     });
 }
 
 async function resume() {
-    if(ActiveAudio === null) return
     Elements.forEach(e => {
         if (!e.wasPlaying) return
         e.play();

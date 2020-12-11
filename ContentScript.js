@@ -41,10 +41,12 @@ async function pause() {
 }
 
 async function resume() {
-    if (ActiveAudio === null) return
     Elements.forEach(e => {
         if (!e.wasPlaying) return
         e.volume = e.wasVolume;
+        if (ActiveAudio === null) {
+            e.pause();
+        }
         e.playbackRate = e.wasPlaybackRate;
         e.wasPlaying = false;
     });

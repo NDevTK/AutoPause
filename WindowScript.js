@@ -16,8 +16,6 @@
                     let src = event.srcElement;
                     if (src instanceof HTMLMediaElement === true) {
                         div.removeChild(src);
-                        // Website should not get events from this div
-                        event.stopPropagation();
                     }
                 }, true);
             }

@@ -11,6 +11,15 @@
                 div = document.createElement('div');
                 div.hidden = true;
                 document.head.appendChild(div);
+                // If media gets paused remove it from the div
+                div.addEventListener("pause", event => {
+                    let src = event.srcElement;
+                    if (src instanceof HTMLMediaElement === true) {
+                        div.removeChild(src);
+                        // Website should not get events from this div
+                        event.stopPropagation();
+                    }
+                }, true);
             }
             div.appendChild(this);
         }

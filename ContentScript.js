@@ -21,50 +21,45 @@ function injectScript(file_path) {
 }
 
 window.addEventListener('play', function(event) {
-    let src = event.srcElement;
-    if (src instanceof HTMLMediaElement === true) {
-        if (ActiveAudio) pauseElement(src);
-        if (!Elements.includes(src)) Elements.push(src);
+    let e = event.srcElement;
+    if (e instanceof HTMLMediaElement === true) {
+        if (e.wasPlaying) event.stopPropagation();
+        if (ActiveAudio || e.wasPlaying && e.isTrusted) pauseElement(e);
+        if (!Elements.includes(e)) Elements.push(e);
     }
 }, true);
 
-// Dont tell the media please
-window.addEventListener('ratechange', function(event) {
-    let src = event.srcElement;
-    if (src instanceof HTMLMediaElement === true) {
-        if (ActiveAudio && src.playbackRate === 0) {
+window.addEventListener('pause', function(event) {
+    let e = event.srcElement;
+    if (e instanceof HTMLMediaElement === true) {
+        if (e.wasPlaying) {
             event.stopPropagation();
-        } else if (ActiveAudio) {
-            src.pause();
         }
     }
 }, true);
 
-function pauseElement(e) {
-    if (ActiveAudio === null) {
-        e.pause();
-    } else {
-        e.wasVolume = e.volume;
-        e.wasPlaybackRate = e.playbackRate;
-        e.volume = 0;
-        e.playbackRate = 0;
-        e.wasPlaying = true;
-    }
+async function pauseElement(e) {
+    if (e.paused) return;
+    e.wasPlaying = true;
+    await e.pause();
 }
 
 async function pause() {
+    if (!ActiveAudio) return
     Elements.forEach(e => {
-        if (e.paused || e.playbackRate === 0) return;
         pauseElement(e);
     });
 }
 
 async function resume() {
-    Elements.forEach(e => {
+    Elements.forEach(async e => {
         if (!e.wasPlaying) return
-        if (e.paused) e.play();
-        e.volume = e.wasVolume;
-        e.playbackRate = e.wasPlaybackRate;
-        e.wasPlaying = false;
+        if (ActiveAudio === null) {
+            e.wasPlaying = false;
+            e.dispatchEvent(new Event("pause"));
+        } else if (e.paused) {
+            await e.play();
+            e.wasPlaying = false;
+        }
     });
 }

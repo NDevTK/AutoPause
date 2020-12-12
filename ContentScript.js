@@ -21,47 +21,45 @@ function injectScript(file_path) {
 }
 
 window.addEventListener('play', function(event) {
-    let e = event.srcElement;
-    if (e instanceof HTMLMediaElement === true) {
-        if (e.wasPlaying) event.stopPropagation();
-        if (ActiveAudio || e.wasPlaying && e.isTrusted) pauseElement(e);
-        if (!Elements.includes(e)) Elements.push(e);
+    let src = event.srcElement;
+    if (src instanceof HTMLMediaElement === true) {
+        if (ActiveAudio) pauseElement(src);
+        if (!Elements.includes(src)) Elements.push(src);
     }
 }, true);
 
-window.addEventListener('pause', function(event) {
-    let e = event.srcElement;
-    if (e instanceof HTMLMediaElement === true) {
-        if (e.wasPlaying) {
-            // Event from extension so ignore to avoid issues
+// Dont tell the media please
+window.addEventListener('ratechange', function(event) {
+    let src = event.srcElement;
+    if (src instanceof HTMLMediaElement === true) {
+        if (ActiveAudio && src.playbackRate === 0) {
             event.stopPropagation();
         }
     }
 }, true);
 
-async function pauseElement(e) {
-    if (e.paused) return;
+function pauseElement(e) {
+    e.wasVolume = e.volume;
+    e.wasPlaybackRate = e.playbackRate;
+    e.volume = 0;
+    e.playbackRate = 0;
     e.wasPlaying = true;
-    await e.pause();
 }
 
 async function pause() {
-    if (!ActiveAudio) return
     Elements.forEach(e => {
+        if (e.paused || e.playbackRate === 0) return;
         pauseElement(e);
     });
 }
 
 async function resume() {
-    Elements.forEach(async e => {
+    Elements.forEach(e => {
         if (!e.wasPlaying) return
-        if (ActiveAudio === null) {
-            // If automatic resume is disabled just tell the website its paused.
-            e.wasPlaying = false;
-            e.dispatchEvent(new Event("pause"));
-        } else if (e.paused) {
-            await e.play();
-            e.wasPlaying = false;
-        }
+        // Pause foreground media normaly
+        if (ActiveAudio === null) e.pause();
+        e.volume = e.wasVolume;
+        e.playbackRate = e.wasPlaybackRate;
+        e.wasPlaying = false;
     });
 }

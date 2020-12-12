@@ -33,6 +33,7 @@ window.addEventListener('pause', function(event) {
     let e = event.srcElement;
     if (e instanceof HTMLMediaElement === true) {
         if (e.wasPlaying) {
+            // Event from extension so ignore to avoid issues
             event.stopPropagation();
         }
     }
@@ -55,6 +56,7 @@ async function resume() {
     Elements.forEach(async e => {
         if (!e.wasPlaying) return
         if (ActiveAudio === null) {
+            // If automatic resume is disabled just tell the website its paused.
             e.wasPlaying = false;
             e.dispatchEvent(new Event("pause"));
         } else if (e.paused) {

@@ -42,7 +42,7 @@ function checkOrigin() {
         var message = tab[0].audible;
         if (options.hasOwnProperty("disableresume")) {
             chrome.tabs.sendMessage(activeTab, null, sendHandler); // Only allow playback
-            if (message === false) message = null;
+            if (message === false) return
         } else {
             chrome.tabs.sendMessage(activeTab, false, sendHandler); // Resume when active
         }
@@ -51,7 +51,7 @@ function checkOrigin() {
 }
 
 function sendHandler() {
-	var lastError = chrome.runtime.lastError;
+    var lastError = chrome.runtime.lastError;
 }
 
 chrome.tabs.onActivated.addListener(checkOrigin);

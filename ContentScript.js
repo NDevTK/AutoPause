@@ -16,7 +16,7 @@ window.addEventListener('DOMContentLoaded', function(event) {
 function injectScript(file_path) {
     var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', chrome.extension.getURL(file_path));
+    script.setAttribute('src', chrome.runtime.getURL(file_path));
     document.head.appendChild(script);
 }
 

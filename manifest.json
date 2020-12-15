@@ -14,7 +14,7 @@
       "run_at": "document_start"
     }
   ],
-  "content_security_policy": "default-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
+  "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "commands": {
     "gotoaudible": {
         "suggested_key": {

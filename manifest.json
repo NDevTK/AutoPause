@@ -14,7 +14,7 @@
       "run_at": "document_start"
     }
   ],
-  "content_security_policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'self'; child-src 'self'; frame-src 'self'; worker-src 'self'; frame-ancestors 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content; manifest-src 'self'",
+  "content_security_policy": "default-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "commands": {
     "gotoaudible": {
         "suggested_key": {

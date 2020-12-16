@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "1.5",
+  "version": "1.6",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_scripts": [
     {

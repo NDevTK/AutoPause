@@ -39,19 +39,19 @@ function checkOrigin() {
     }, tab => {
         if (tab.length !== 1 || tab[0].active === false || tab[0].id === undefined || tab[0].url === undefined) return
         activeTab = tab[0].id;
-        var message = tab[0].audible;
+        let message = tab[0].audible;
         if (options.hasOwnProperty("disableresume")) {
             chrome.tabs.sendMessage(activeTab, null, sendHandler); // Only allow playback
             if (message === false) return
         } else {
             chrome.tabs.sendMessage(activeTab, false, sendHandler); // Resume when active
         }
-        Broardcast(message, activeTab);
+        Broadcast(message, activeTab);
     });
 }
 
 function sendHandler() {
-    var lastError = chrome.runtime.lastError;
+    let lastError = chrome.runtime.lastError;
 }
 
 chrome.tabs.onActivated.addListener(checkOrigin);
@@ -66,10 +66,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
         sounds.push(tabId);
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
-    if (tabId === activeTab) Broardcast(changeInfo.audible, activeTab); // Tell the other tabs the state of the active tab
+    if (tabId === activeTab) Broadcast(changeInfo.audible, activeTab); // Tell the other tabs the state of the active tab
 });
 
-async function Broardcast(message, exclude = false) {
+async function Broadcast(message, exclude = false) {
     sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
         chrome.tabs.sendMessage(id, message, sendHandler);
@@ -84,7 +84,7 @@ function toggleOption(o) {
     }
     return new Promise(resolve => {
         chrome.storage.sync.set({
-            ["options"]: options
+            options
         }, function(result) {
             resolve(result);
         });

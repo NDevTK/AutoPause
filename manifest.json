@@ -38,6 +38,7 @@
   "background": {
     "scripts":["background.js"]
   },
+  "icons": {"256": "icon.png"},
   "web_accessible_resources": ["WindowScript.js"],
   "browser_specific_settings":{
       "gecko":{

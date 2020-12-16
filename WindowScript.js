@@ -3,7 +3,7 @@
 (function() {
     "use strict";
     const play = window.HTMLMediaElement.prototype.play;
-    var div;
+    let div = null;
     window.HTMLMediaElement.prototype.play = function() {
         let result = play.apply(this, arguments);
         if (!document.contains(this)) {
@@ -14,7 +14,7 @@
                 // If media gets paused remove it from the div
                 div.addEventListener("pause", event => {
                     let src = event.srcElement;
-                    if (src instanceof HTMLMediaElement === true) {
+                    if (src instanceof HTMLMediaElement) {
                         div.removeChild(src);
                     }
                 }, true);

@@ -29,11 +29,21 @@ window.addEventListener('play', function(event) {
     }
 }, true);
 
+
 // Dont tell the media please
 window.addEventListener('ratechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
         if (ActiveAudio && src.playbackRate === 0) {
+            event.stopPropagation();
+        }
+    }
+}, true);
+
+window.addEventListener('volumechange', function(event) {
+    let src = event.srcElement;
+    if (src instanceof HTMLMediaElement === true) {
+        if (ActiveAudio && src.volume === 0) {
             event.stopPropagation();
         }
     }

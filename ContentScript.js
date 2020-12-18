@@ -40,15 +40,6 @@ window.addEventListener('ratechange', function(event) {
     }
 }, true);
 
-window.addEventListener('volumechange', function(event) {
-    let src = event.srcElement;
-    if (src instanceof HTMLMediaElement === true) {
-        if (ActiveAudio && src.volume === 0) {
-            event.stopPropagation();
-        }
-    }
-}, true);
-
 function pauseElement(e) {
     e.wasVolume = e.volume;
     e.wasPlaybackRate = e.playbackRate;

@@ -41,8 +41,10 @@ window.addEventListener('ratechange', function(event) {
 }, true);
 
 function pauseElement(e) {
-    e.wasVolume = e.volume;
-    e.wasPlaybackRate = e.playbackRate;
+    if (!e.wasPlaying) {
+        e.wasVolume = e.volume;
+        e.wasPlaybackRate = e.playbackRate;
+    }
     e.volume = 0;
     e.playbackRate = 0;
     e.wasPlaying = true;

@@ -1,0 +1,38 @@
+{
+  "name": "AutoPause",
+  "version": "1.8",
+  "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
+  "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
+  "commands": {
+    "gotoaudible": {
+        "suggested_key": {
+            "default": "Alt+K",
+            "mac": "Alt+K"
+        },
+        "description": "Go to tab with audio"
+    },
+    "disableresume": {
+        "suggested_key": {
+            "default": "Alt+R",
+            "mac": "Alt+R"
+        },
+        "description": "Toggle auto resume"
+    }
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "declarativeContent"
+  ],
+  "background": {
+    "scripts":["background.js"]
+  },
+  "icons": {"48": "icon48.png"},
+  "web_accessible_resources": ["WindowScript.js"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "optional_permissions": ["<all_urls>"],
+  "manifest_version": 2
+}

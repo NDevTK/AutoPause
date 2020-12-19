@@ -14,7 +14,7 @@ function registerScriptFirefox() {
         contentscript = null;
     }
     browser.permissions.getAll(async p => {
-        if(p.origins.length < 1) return
+        if (p.origins.length < 1) return
         contentscript = await browser.contentScripts.register({
             "js": [{
                 file: "ContentScript.js"
@@ -30,21 +30,24 @@ if (typeof(browser) !== "undefined") {
     browser.permissions.onAdded.addListener(registerScriptFirefox);
     browser.permissions.onRemoved.addListener(registerScriptFirefox);
     registerScriptFirefox();
-} else {
-    chrome.declarativeContent.onPageChanged.addRules([{
-        conditions: [new chrome.declarativeContent.PageStateMatcher({
-            pageUrl: {
-                schemes: ["http", "https", "file", "ftp"]
-            }
-        })],
-        actions: [new chrome.declarativeContent.RequestContentScript({
-            allFrames: true,
-            js: ["ContentScript.js"]
-        })]
-    }]);
 }
 
 chrome.runtime.onInstalled.addListener(function(details) {
+    if (typeof(browser) === "undefined") {
+        chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
+            chrome.declarativeContent.onPageChanged.addRules([{
+                conditions: [new chrome.declarativeContent.PageStateMatcher({
+                    pageUrl: {
+                        schemes: ["http", "https", "file", "ftp"]
+                    }
+                })],
+                actions: [new chrome.declarativeContent.RequestContentScript({
+                    allFrames: true,
+                    js: ["ContentScript.js"]
+                })]
+            }]);
+        });
+    }
     if (details.reason == "install") {
         chrome.runtime.openOptionsPage();
     }

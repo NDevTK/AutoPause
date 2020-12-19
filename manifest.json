@@ -33,10 +33,10 @@
          "id":"automute@ndevtk"
       }
    },
-"options_ui": {
-  "page": "options.html",
-  "open_in_tab": false
-},
+  "options_ui": {
+      "page": "options.html",
+      "open_in_tab": false
+  },
   "optional_permissions": ["<all_urls>"],
   "manifest_version": 2
 }

@@ -29,6 +29,7 @@ function registerScriptFirefox() {
 if (typeof(browser) !== "undefined") {
     browser.permissions.onAdded.addListener(registerScriptFirefox);
     browser.permissions.onRemoved.addListener(registerScriptFirefox);
+    registerScriptFirefox();
 } else {
     chrome.declarativeContent.onPageChanged.addRules([{
         conditions: [new chrome.declarativeContent.PageStateMatcher({

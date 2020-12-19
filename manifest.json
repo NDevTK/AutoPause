@@ -1,19 +1,7 @@
 {
   "name": "AutoPause",
-  "version": "1.7",
+  "version": "1.8",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
-  "content_scripts": [
-    {
-      "all_frames": true,
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "ContentScript.js"
-      ],
-      "run_at": "document_start"
-    }
-  ],
   "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "commands": {
     "gotoaudible": {
@@ -33,7 +21,8 @@
   },
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+	"declarativeContent"
   ],
   "background": {
     "scripts":["background.js"]
@@ -45,5 +34,10 @@
          "id":"automute@ndevtk"
       }
    },
+"options_ui": {
+  "page": "options.html",
+  "open_in_tab": false
+},
+  "optional_permissions": ["<all_urls>"],
   "manifest_version": 2
 }

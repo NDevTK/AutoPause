@@ -27,12 +27,8 @@ function registerScriptFirefox() {
 }
 
 if (typeof(browser) !== "undefined") {
-    browser.permissions.onAdded.addListener(r => {
-        registerScriptFirefox();
-    });
-    browser.permissions.onRemoved.addListener(r => {
-        registerScriptFirefox();
-    });
+    browser.permissions.onAdded.addListener(registerScriptFirefox);
+    browser.permissions.onRemoved.addListener(registerScriptFirefox);
 } else {
     chrome.declarativeContent.onPageChanged.addRules([{
         conditions: [new chrome.declarativeContent.PageStateMatcher({

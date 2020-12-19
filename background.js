@@ -14,7 +14,7 @@ function registerScriptFirefox() {
         contentscript = null;
     }
     browser.permissions.getAll(async p => {
-		if(p.origins.length < 1) return
+        if(p.origins.length < 1) return
         contentscript = await browser.contentScripts.register({
             "js": [{
                 file: "ContentScript.js"

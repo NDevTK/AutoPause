@@ -1,5 +1,6 @@
 "use strict";
 var permissions = [];
+const isChrome = (typeof(browser) === "undefined");
 
 window.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {
@@ -14,7 +15,17 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 function getPermissions() {
     chrome.permissions.getAll(resp => {
         permissions = resp.origins;
-        userinput.value = permissions.join(",");
+		if(resp.origins.length < 1) return;
+		if (isChrome) {
+			for (origin of ["http://*/*", "https://*/*", "*://*/*", "<all_urls>"]) {
+				if(resp.origins.includes(origin)) {
+					userinput.value = 'Extension has acesss to all urls use the native "Site access" option to revoke this.';
+					userinput.disabled = true;
+					return
+				}
+			}
+		}
+		userinput.value = permissions.join(",");
     });
 }
 

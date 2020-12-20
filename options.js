@@ -15,14 +15,13 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 function getPermissions() {
     chrome.permissions.getAll(resp => {
         permissions = resp.origins;
-        if(resp.origins.length < 1 || isChrome) return;
         userinput.value = permissions.join(",");
     });
 }
 
 getPermissions();
 
-function permissionUpdate() {
+async function permissionUpdate() {
     var domains = userinput.value.split(",");
 
     var add = [];
@@ -41,15 +40,26 @@ function permissionUpdate() {
 
     userinput.value = "";
 
+
+    if (remove.length > 0) {
+        await new Promise(resolve => {
+            chrome.permissions.remove({
+                origins: remove
+            }, function(removed) {
+                resolve();
+            });
+        });
+    }
+	
     if (add.length > 0) {
-        chrome.permissions.request({
-            origins: add
-        }, function(result) {});
+        await new Promise(resolve => {
+            chrome.permissions.request({
+                origins: add
+            }, function(result) {
+                resolve();
+            });
+        });
     }
 
-    if (remove.length > 0 && !isChrome) {
-        chrome.permissions.remove({
-            origins: remove
-        }, function(removed) {});
-    }
+    getPermissions();
 }

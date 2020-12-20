@@ -38,9 +38,6 @@ async function permissionUpdate() {
         if (!domains.includes(domain)) remove.push(domain);
     }
 
-    userinput.value = "";
-
-
     if (remove.length > 0) {
         await new Promise(resolve => {
             chrome.permissions.remove({

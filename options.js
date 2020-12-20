@@ -30,7 +30,7 @@ async function permissionUpdate() {
 
     for (let domain of domains) {
         if (domain === "<all_urls>" || regex.test(domain)) {
-            if (!permissions.includes(domain)) add.push(domain);
+            add.push(domain);
         }
     };
 
@@ -39,24 +39,18 @@ async function permissionUpdate() {
     }
 
     if (remove.length > 0) {
-        await new Promise(resolve => {
-            chrome.permissions.remove({
-                origins: remove
-            }, function(removed) {
-                resolve();
-            });
-        });
-    }
-	
-    if (add.length > 0) {
-        await new Promise(resolve => {
-            chrome.permissions.request({
-                origins: add
-            }, function(result) {
-                resolve();
-            });
+        chrome.permissions.remove({
+            origins: remove
+        }, function(removed) {
+            getPermissions();
         });
     }
 
-    getPermissions();
+    if (add.length > 0) {
+        chrome.permissions.request({
+            origins: add
+        }, function(result) {
+            getPermissions();
+        });
+    }
 }

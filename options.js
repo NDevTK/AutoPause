@@ -15,17 +15,8 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 function getPermissions() {
     chrome.permissions.getAll(resp => {
         permissions = resp.origins;
-        if (resp.origins.length < 1) return;
-        if (isChrome) {
-            for (origin of ["http://*/*", "https://*/*", "*://*/*", "<all_urls>"]) {
-                if (resp.origins.includes(origin)) {
-                    userinput.value = 'Extension has acesss to all urls use the native "Site access" option to revoke this.';
-                    userinput.disabled = true;
-                    return
-                }
-            }
-        }
-        userinput.value = permissions.join(",");
+		if(resp.origins.length < 1) return;
+		userinput.value = permissions.join(",");
     });
 }
 
@@ -56,7 +47,7 @@ function permissionUpdate() {
         }, function(result) {});
     }
 
-    if (remove.length > 0) {
+    if (remove.length > 0 && !isChrome) {
         chrome.permissions.remove({
             origins: remove
         }, function(removed) {});

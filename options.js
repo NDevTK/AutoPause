@@ -15,8 +15,8 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 function getPermissions() {
     chrome.permissions.getAll(resp => {
         permissions = resp.origins;
-		if(resp.origins.length < 1) return;
-		userinput.value = permissions.join(",");
+        if(resp.origins.length < 1 || isChrome) return;
+        userinput.value = permissions.join(",");
     });
 }
 

@@ -85,7 +85,7 @@ chrome.commands.onCommand.addListener(command => {
 });
 
 function checkOrigin(tab) {
-    if (tab.active === false || tab.id === undefined || tab.url === undefined) return
+    if (tab.active === false || tab.id === undefined) return
     let message = tab.audible;
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback

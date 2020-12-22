@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>After changes press enter.</h2>
-    <label>Places to use this extension (comma separated): <br><input id="userinput" size="500" placeholder="Examples: <all_urls> or https://*.youtube.com/*,https://example.com/*"></label>
+    <label>Places to use this extension (space separated): <br><input id="userinput" size="500" pattern="(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+[^,]*,?)" placeholder="Examples: <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com"></label>
     <p>This permission is needed to pause and resume media its not needed to detect audio.</p>
 </body>
 </html>

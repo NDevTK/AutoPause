@@ -15,14 +15,14 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 function getPermissions() {
     chrome.permissions.getAll(resp => {
         permissions = resp.origins;
-        userinput.value = permissions.join(",");
+        userinput.value = permissions.join(" ");
     });
 }
 
 getPermissions();
 
 async function permissionUpdate() {
-    var domains = userinput.value.split(",");
+    var domains = userinput.value.split(" ");
 
     var add = [];
     var remove = [];

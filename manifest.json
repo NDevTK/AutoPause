@@ -36,6 +36,10 @@
       "page": "options.html",
       "open_in_tab": false
   },
+  "developer": {
+      "name": "NDevTK",
+      "url": "https://github.com/NDevTK/AutoPause"
+  },
   "optional_permissions": ["<all_urls>"],
   "manifest_version": 2
 }

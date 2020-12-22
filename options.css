@@ -3,6 +3,3 @@ html, body {
 	max-width: 50rem;
 	overflow-y: hidden;
 }
-#userinput:invalid {
-  border-color: red;
-}

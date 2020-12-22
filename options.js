@@ -28,15 +28,9 @@ async function permissionUpdate() {
     var remove = [];
     var regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
 
-    for (let domain of domains) {
-        if (domain === "<all_urls>" || regex.test(domain)) {
-            add.push(domain);
-        }
-    };
-
-    for (let domain of permissions) {
-        if (!domains.includes(domain)) remove.push(domain);
-    }
+    
+    add = domains.filter(domain => domain === "<all_urls>" || regex.test(domain));
+    remove = permissions.filter(permission => !domains.includes(permission));
 
     if (remove.length > 0) {
         chrome.permissions.remove({

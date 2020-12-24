@@ -19,8 +19,6 @@ function registerScriptFirefox() {
     });
 }
 
-if (typeof(browser) !== "undefined") {
-    browser.permissions.onAdded.addListener(registerScriptFirefox);
-    browser.permissions.onRemoved.addListener(registerScriptFirefox);
-    registerScriptFirefox();
-}
+browser.permissions.onAdded.addListener(registerScriptFirefox);
+browser.permissions.onRemoved.addListener(registerScriptFirefox);
+registerScriptFirefox();

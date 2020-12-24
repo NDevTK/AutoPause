@@ -20,8 +20,8 @@
     },
     "toggleFastPlayback": {
         "suggested_key": {
-            "default": "Alt+X",
-            "mac": "Alt+X"
+            "default": "Alt+F",
+            "mac": "Alt+F"
         },
         "description": "Toggle fast playback"
     }

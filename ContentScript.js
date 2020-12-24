@@ -3,6 +3,10 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
+    if (state === "fast" || state === "normal") {
+        setRate(state);
+        return
+    }
     ActiveAudio = state; // React based on state of active tab
     Elements = Elements.filter(e => document.contains(e));
     (ActiveAudio) ? pause(): resume();
@@ -12,6 +16,21 @@ window.addEventListener('DOMContentLoaded', function(event) {
     // Adds content to DOM
     injectScript("WindowScript.js");
 });
+
+function fastRate() {
+    Elements.forEach(e => {
+        if (e.paused || e.playbackRate === 0) return;
+        e.wasPlaybackRate = 2;
+    });
+}
+
+function normalRate() {
+    Elements.forEach(e => {
+        if (e.paused || e.playbackRate === 0) return;
+        if (e.wasPlaybackRate) e.playbackRate = e.wasPlaybackRate;
+    });
+}
+
 
 function injectScript(file_path) {
     var script = document.createElement('script');

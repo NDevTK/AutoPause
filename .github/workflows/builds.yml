@@ -20,4 +20,4 @@ jobs:
       with:
         name: firefox
         path: firefox
-    - run: cp *.js *.css *.html *.png /chrome && rm /firefox/chrome-* icon.png
+    - run: cp *.js *.css *.html *.png /firefox && rm /firefox/chrome-* icon.png

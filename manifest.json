@@ -23,7 +23,7 @@
     "storage"
   ],
   "background": {
-    "scripts":["background.js"]
+    "scripts":["registerScript-firefox.js", "background.js"]
   },
   "icons": {"48": "icon48.png"},
   "web_accessible_resources": ["WindowScript.js"],

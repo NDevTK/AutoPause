@@ -4,7 +4,7 @@ var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
     if (state === "fast" || state === "normal") {
-        setRate(state);
+        (state === "fast") ? fastRate() : normalRate();
         return
     }
     ActiveAudio = state; // React based on state of active tab

@@ -16,7 +16,7 @@ jobs:
         path: ./chrome
  
     - name: Firefox
-      run: mkdir ./firefox && cp ./firefox *.js *.css *.html *.png *.json && rm ./firefox/chrome-* icon.png
+      run: mkdir ./firefox && cp ./firefox *.{js,css,html,json,png} && rm ./firefox/chrome-* icon.png
     - uses: actions/upload-artifact@v2
       with:
         name: firefox

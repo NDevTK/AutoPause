@@ -17,6 +17,13 @@
             "mac": "Alt+R"
         },
         "description": "Toggle auto resume"
+    },
+    "toggleFastPlayback": {
+        "suggested_key": {
+            "default": "Alt+X",
+            "mac": "Alt+X"
+        },
+        "description": "Toggle fast playback"
     }
   },
   "permissions": [

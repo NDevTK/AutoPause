@@ -10,7 +10,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Chrome
-      shell: bash
       run: |
         mkdir -p chrome
         cp -R -t chrome *.{js,css,html,json,png}

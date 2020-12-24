@@ -16,7 +16,7 @@ jobs:
         ls
         cp -R -t chrome *.{js,css,html,json,png}
         rm -f chrome/firefox-* icon.png
-        mv chrome/chrome-manifest.json chrome/manifest.json    
+        mv chrome/manifest-chrome.json chrome/manifest.json    
     - uses: actions/upload-artifact@v2
       with:
         name: chrome

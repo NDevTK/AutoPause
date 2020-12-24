@@ -21,11 +21,11 @@ jobs:
         path: chrome
  
     - name: Firefox
-      shell: bash
       run: |
         mkdir -p firefox
         cp -R -t firefox *.{js,css,html,json,png}
-        rm -f firefox/*-chrome firefox/icon.png
+        rm -f firefox/*-chrome.* firefox/icon.png
+        mv chrome/manifest-firefox.json firefox/manifest.json
     - uses: actions/upload-artifact@v2
       with:
         name: firefox

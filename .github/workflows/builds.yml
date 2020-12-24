@@ -13,7 +13,7 @@ jobs:
       run: |
         mkdir -p chrome
         cp -R -t chrome *.{js,css,html,json,png}
-        rm -f chrome/*-firefox icon.png
+        rm -f chrome/*-firefox.* icon.png
         mv chrome/manifest-chrome.json chrome/manifest.json
     - uses: actions/upload-artifact@v2
       with:

@@ -9,14 +9,14 @@ jobs:
 
     steps:
     - name: Chrome
-      run: cp *.js *.css *.html *.png /chrome && rm /chrome/firefox-* icon.png
+      run: mkdir /chrome && cp *.js *.css *.html *.png /chrome && rm /chrome/firefox-* icon.png
     - uses: actions/upload-artifact@v2
       with:
         name: chrome
         path: chrome
  
     - name: Firefox
-      run: cp *.js *.css *.html *.png /firefox && rm /firefox/chrome-* icon.png
+      run: mkdir /firefox && cp *.js *.css *.html *.png /firefox && rm /firefox/chrome-* icon.png
     - uses: actions/upload-artifact@v2
       with:
         name: firefox

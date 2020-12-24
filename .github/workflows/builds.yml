@@ -1,0 +1,25 @@
+name: Builds
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Create artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Chrome
+    - run: cp *.js *.css *.html *.png /chrome
+    - run: rm /chrome/firefox-* icon.png
+    - uses: actions/upload-artifact@v2
+    with:
+      name: chrome
+      path: chrome
+
+    - name: Firefox
+    - uses: actions/upload-artifact@v2
+    - run: cp *.js *.css *.html *.png /firefox
+    - run: rm /firefox/chrome-*
+    with:
+      name: firefox
+      path: firefox

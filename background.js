@@ -1,6 +1,7 @@
 "use strict";
 var sounds = []; // List of tab ids that have had audio
 var options = {};
+var rate = "normal";
 
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -23,7 +24,7 @@ chrome.windows.onFocusChanged.addListener(id => {
     });
 });
 
-chrome.commands.onCommand.addListener(command => {
+chrome.commands.onCommand.addListener(async command => {
     switch (command) {
         case "gotoaudible":
             chrome.tabs.query({
@@ -39,6 +40,10 @@ chrome.commands.onCommand.addListener(command => {
             return
         case "disableresume":
             toggleOption("disableresume");
+            return
+        case "toggleFastPlayback":
+            rate = (rate === "normal") ? rate = "fast" : rate = "normal";
+            Broadcast(rate);
             return
     }
 });

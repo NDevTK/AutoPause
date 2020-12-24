@@ -17,7 +17,7 @@
             "mac": "Alt+R"
         },
         "description": "Toggle auto resume"
-    }
+    },
     "togglePlayback": {
         "suggested_key": {
             "default": "Alt+X",

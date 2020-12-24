@@ -20,7 +20,8 @@ window.addEventListener('DOMContentLoaded', function(event) {
 function fastRate() {
     Elements.forEach(e => {
         if (e.paused || e.playbackRate === 0) return;
-        e.wasPlaybackRate = 2;
+        e.wasPlaybackRate = e.playbackRate;
+        e.playbackRate = 2;
     });
 }
 

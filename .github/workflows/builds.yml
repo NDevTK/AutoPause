@@ -9,6 +9,7 @@ jobs:
 
     steps:
     - name: Chrome
+      shell: bash
       run: |
         mkdir -p chrome
         cp -R *.js *.css *.html *.json *.png chrome
@@ -20,6 +21,7 @@ jobs:
         path: chrome
  
     - name: Firefox
+      shell: bash
       run: |
         mkdir -p firefox
         cp -R *.js *.css *.html *.json *.png firefox

@@ -13,7 +13,6 @@ jobs:
       shell: bash
       run: |
         mkdir -p chrome
-        ls
         cp -R -t chrome *.{js,css,html,json,png}
         rm -f chrome/firefox-* icon.png
         mv chrome/manifest-chrome.json chrome/manifest.json    

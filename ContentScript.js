@@ -3,8 +3,8 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
-    if (state === "fast" || state === "normal") {
-        (state === "fast") ? fastRate() : normalRate();
+    if (state === "toggleRate") {
+        toggleRate();
         return
     }
     ActiveAudio = state; // React based on state of active tab
@@ -17,18 +17,11 @@ window.addEventListener('DOMContentLoaded', function(event) {
     injectScript("WindowScript.js");
 });
 
-function fastRate() {
+function toggleRate() {
     Elements.forEach(e => {
         if (e.paused || e.playbackRate === 0) return;
         e.wasPlaybackRate = e.playbackRate;
-        e.playbackRate = 2;
-    });
-}
-
-function normalRate() {
-    Elements.forEach(e => {
-        if (e.paused || e.playbackRate === 0) return;
-        if (e.wasPlaybackRate) e.playbackRate = e.wasPlaybackRate;
+        e.playbackRate = (e.playbackRate > 1) ? 1 : 2;
     });
 }
 

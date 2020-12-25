@@ -3,7 +3,7 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
-    if (state === "toggleRate") {
+    if (state === "toggleFastPlayback") {
         toggleRate();
         return
     }

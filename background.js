@@ -41,7 +41,7 @@ chrome.commands.onCommand.addListener(async command => {
             toggleOption("disableresume");
             return
         case "toggleFastPlayback":
-            Broadcast("toggleRate");
+            Broadcast("toggleFastPlayback");
             return
     }
 });

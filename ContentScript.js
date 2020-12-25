@@ -21,7 +21,7 @@ function toggleRate() {
     Elements.forEach(e => {
         if (e.paused || e.playbackRate === 0) return;
         e.wasPlaybackRate = e.playbackRate;
-        e.playbackRate = (e.playbackRate > 1) ? 1 : 2;
+        e.playbackRate = (e.playbackRate > e.wasPlaybackRate) ? e.wasPlaybackRate : 2;
     });
 }
 

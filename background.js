@@ -1,7 +1,6 @@
 "use strict";
 var sounds = []; // List of tab ids that have had audio
 var options = {};
-var rate = "normal";
 
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -42,8 +41,7 @@ chrome.commands.onCommand.addListener(async command => {
             toggleOption("disableresume");
             return
         case "toggleFastPlayback":
-            rate = (rate === "normal") ? rate = "fast" : rate = "normal";
-            Broadcast(rate);
+            Broadcast("toggleRate");
             return
     }
 });

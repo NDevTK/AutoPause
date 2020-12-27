@@ -51,7 +51,7 @@ window.addEventListener('play', function(event) {
                     }
                 }
             });
-            obs.observe(document, {
+            obs.observe(src, {
                 childList: true
             });
         }

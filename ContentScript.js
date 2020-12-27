@@ -29,15 +29,6 @@ function toggleRate() {
     });
 }
 
-const obs = new MutationObserver(mutations => {
-    for (const mutation of mutations) {
-        if (mutation.removedNodes.length > 0) Elements = Elements.filter(e => !mutation.removedNodes.includes(e)); // Remove reference of removed elements
-    }
-});
-obs.observe(document, {
-    childList: true
-});
-
 
 function injectScript(file_path) {
     var script = document.createElement('script');
@@ -51,7 +42,19 @@ window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
         if (ActiveAudio) pauseElement(src);
-        if (!Elements.includes(src)) Elements.push(src);
+        if (!Elements.includes(src)) {
+            Elements.push(src);
+            var obs = new MutationObserver(mutations => {
+                for (const mutation of mutations) {
+                    if (mutation.removedNodes.length > 0) {
+                        Elements = Elements.filter(e => !mutation.removedNodes.includes(e)); // Remove reference of removed elements
+                    }
+                }
+            });
+            obs.observe(document, {
+                childList: true
+            });
+        }
     }
 }, true);
 

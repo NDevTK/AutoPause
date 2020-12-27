@@ -1,6 +1,5 @@
 "use strict";
 var permissions = [];
-const isChrome = (typeof(browser) === "undefined");
 
 window.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {

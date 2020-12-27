@@ -19,7 +19,7 @@ window.addEventListener('DOMContentLoaded', function(event) {
 
 function toggleRate() {
     Elements.forEach(e => {
-        if (e.paused || e.playbackRate === 0) return;
+        if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
         if (e.wasPlaybackRate && e.playbackRate > 1) {
             e.playbackRate = e.wasPlaybackRate;
         } else {

@@ -37,7 +37,8 @@ const obs = new MutationObserver(mutations => {
     }
 });
 obs.observe(document, {
-    childList: true
+    childList: true,
+    subtree: true
 });
 
 

@@ -3,6 +3,7 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
+    Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
     if (state === "toggleFastPlayback") {
         toggleRate();
         return
@@ -31,7 +32,7 @@ function toggleRate() {
 const obs = new MutationObserver(mutations => {
     for (const mutation of mutations) {
         for (const el of mutation.removedNodes) {
-            Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
+            Elements = Elements.filter(e => e !== el); // Remove reference of element
         }
     }
 });

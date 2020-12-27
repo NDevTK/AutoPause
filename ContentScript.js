@@ -31,9 +31,7 @@ function toggleRate() {
 
 const obs = new MutationObserver(mutations => {
     for (const mutation of mutations) {
-        for (const el of mutation.removedNodes) {
-            Elements = Elements.filter(e => e !== el); // Remove reference of element
-        }
+        Elements = Elements.filter(e => !mutation.removedNodes.includes(e)); // Remove reference of removed elements
     }
 });
 obs.observe(document, {

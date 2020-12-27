@@ -3,12 +3,12 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
+    cleanReferences();
     if (state === "toggleFastPlayback") {
         toggleRate();
         return
     }
     ActiveAudio = state; // React based on state of active tab
-    Elements = Elements.filter(e => document.contains(e));
     (ActiveAudio) ? pause(): resume();
 });
 
@@ -29,6 +29,10 @@ function toggleRate() {
     });
 }
 
+function cleanReferences() {
+    Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
+}
+
 
 function injectScript(file_path) {
     var script = document.createElement('script');
@@ -43,6 +47,7 @@ window.addEventListener('play', function(event) {
     if (src instanceof HTMLMediaElement === true) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) Elements.push(src);
+        cleanReferences();
     }
 }, true);
 

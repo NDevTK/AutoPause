@@ -3,7 +3,6 @@ var ActiveAudio = false;
 var Elements = [];
 
 chrome.runtime.onMessage.addListener(async (state) => {
-    cleanReferences();
     if (state === "toggleFastPlayback") {
         toggleRate();
         return
@@ -29,9 +28,16 @@ function toggleRate() {
     });
 }
 
-function cleanReferences() {
-    Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
-}
+const obs = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+        for (const el of mutation.removedNodes) {
+            Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
+        }
+    }
+});
+obs.observe(document, {
+    childList: true
+});
 
 
 function injectScript(file_path) {
@@ -47,7 +53,6 @@ window.addEventListener('play', function(event) {
     if (src instanceof HTMLMediaElement === true) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) Elements.push(src);
-        cleanReferences();
     }
 }, true);
 

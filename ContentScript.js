@@ -44,16 +44,13 @@ window.addEventListener('play', function(event) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) {
             Elements.push(src);
-            var obs = new MutationObserver(mutations => {
-                for (const mutation of mutations) {
-                    if (mutation.removedNodes.length > 0) {
-                        Elements = Elements.filter(e => !mutation.removedNodes.includes(e)); // Remove reference of removed elements
-                    }
+            // If media gets paused remove it from the div
+            src.addEventListener("pause", event => {
+                let src = event.srcElement;
+                if (src instanceof HTMLMediaElement && !e.wasPlaying) {
+                    Elements = Elements.filter(e => e !== src); // Remove reference not in DOM
                 }
-            });
-            obs.observe(src, {
-                childList: true
-            });
+            }, true);
         }
     }
 }, true);

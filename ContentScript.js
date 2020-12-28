@@ -44,7 +44,7 @@ window.addEventListener('play', function(event) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) {
             Elements.push(src);
-            // If media gets paused remove it from the div
+            // If media gets paused remove it from the array
             src.addEventListener("pause", event => {
                 let src = event.srcElement;
                 if (src instanceof HTMLMediaElement) {

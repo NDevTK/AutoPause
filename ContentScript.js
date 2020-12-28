@@ -47,7 +47,7 @@ window.addEventListener('play', function(event) {
             // If media gets paused remove it from the div
             src.addEventListener("pause", event => {
                 let src = event.srcElement;
-                if (src instanceof HTMLMediaElement && !e.wasPlaying) {
+                if (src instanceof HTMLMediaElement) {
                     Elements = Elements.filter(e => e !== src); // Remove reference not in DOM
                 }
             }, true);

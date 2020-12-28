@@ -40,17 +40,17 @@ function injectScript(file_path) {
 
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
-    if (src instanceof HTMLMediaElement === true) {
+    if (src instanceof HTMLMediaElement) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) {
             Elements.push(src);
             // If media gets paused remove it from the array
-            src.addEventListener("pause", event => {
-                let src = event.srcElement;
-                if (src instanceof HTMLMediaElement) {
-                    Elements = Elements.filter(e => e !== src); // Remove reference not in DOM
+            src.addEventListener("pause", event2 => {
+                let src2 = event2.srcElement;
+                if (src2 instanceof HTMLMediaElement) {
+                    Elements = Elements.filter(e => e !== src2); // Remove reference not in DOM
                 }
-            }, true);
+            });
         }
     }
 }, true);

@@ -79,7 +79,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
     if (tab.active) {
-        Broadcast(changeInfo.audible, tabId, sendHandler); // Tell the other tabs the state of the active tab
+        Broadcast(changeInfo.audible, tabId); // Tell the other tabs the state of the active tab
     }
 });
 

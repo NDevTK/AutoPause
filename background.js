@@ -74,7 +74,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
-    if (changeInfo.audible && !sounds.includes(tabId)) {
+    if (changeInfo.audible && !sounds.has(tabId)) {
         sounds.add(tabId);
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return

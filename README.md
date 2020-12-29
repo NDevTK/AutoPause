@@ -7,3 +7,8 @@
 
 Pause other audio and video sources if audio is playing on the active tab with automatic resume.  
 ![Extension icon](icon.png)
+
+Features:
+- Automatic pause
+- Optional automatic resume
+- Global Fast forward

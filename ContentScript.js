@@ -1,6 +1,6 @@
 "use strict";
 
-if(ActiveAudio !== false) {
+if(ActiveAudio === undefined) {
     var ActiveAudio = false;
     var Elements = new Set();
 }

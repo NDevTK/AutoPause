@@ -1,4 +1,5 @@
 "use strict";
+
 var ActiveAudio = false;
 var Elements = new Set();
 
@@ -52,7 +53,7 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        if (!document.contains(src)) Elements.delete(src);
+        Elements.delete(src);
         src.removeEventListener("pause", onPause);
     }
 }

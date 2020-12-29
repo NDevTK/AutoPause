@@ -52,7 +52,7 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        Elements.delete(src);
+        if (!document.contains(src)) Elements.delete(src);
         src.removeEventListener("pause", onPause);
     }
 }

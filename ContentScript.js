@@ -3,7 +3,6 @@ var ActiveAudio = false;
 var Elements = new Set();
 
 chrome.runtime.onMessage.addListener(async (state) => {
-    Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
     if (state === "toggleFastPlayback") {
         toggleRate();
         return

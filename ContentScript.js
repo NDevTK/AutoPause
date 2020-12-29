@@ -1,6 +1,6 @@
 "use strict";
 var ActiveAudio = false;
-var Elements = [];
+var Elements = new Set();
 
 chrome.runtime.onMessage.addListener(async (state) => {
     Elements = Elements.filter(e => document.contains(e)); // Remove references not in DOM
@@ -42,8 +42,8 @@ window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         if (ActiveAudio) pauseElement(src);
-        if (!Elements.includes(src)) {
-            Elements.push(src);
+        if (!Elements.has(src)) {
+            Elements.add(src);
             src.addEventListener("pause", onPause);
         }
     }
@@ -53,7 +53,7 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        Elements = Elements.filter(e => e !== src); // Remove reference
+        Elements.delete(src);
         src.removeEventListener("pause", onPause);
     }
 }

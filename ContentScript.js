@@ -53,7 +53,7 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        Elements = Elements.filter(e => e !== src); // Remove reference not in DOM
+        Elements = Elements.filter(e => e !== src); // Remove reference
         src.removeEventListener("pause", onPause);
     }
 }

@@ -1,7 +1,9 @@
 "use strict";
 
-var ActiveAudio = false;
-var Elements = new Set();
+if(ActiveAudio !== false) {
+    var ActiveAudio = false;
+    var Elements = new Set();
+}
 
 chrome.runtime.onMessage.addListener(async (state) => {
     if (state === "toggleFastPlayback") {

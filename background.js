@@ -1,5 +1,5 @@
 "use strict";
-var sounds = []; // List of tab ids that have had audio
+var sounds = new Set(); // List of tab ids that have had audio
 var options = {};
 
 chrome.storage.sync.get("options", function(result) {
@@ -69,13 +69,13 @@ chrome.tabs.onActivated.addListener(info => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-    sounds = sounds.filter(id => id !== tabId);
+    sounds.delete(tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
     if (changeInfo.audible && !sounds.includes(tabId)) {
-        sounds.push(tabId);
+        sounds.add(tabId);
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
     if (tab.active) {

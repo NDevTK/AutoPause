@@ -45,16 +45,19 @@ window.addEventListener('play', function(event) {
         if (!Elements.includes(src)) {
             Elements.push(src);
             // If media gets paused remove it from the array
-            src.addEventListener("pause", event2 => {
-                let src2 = event2.srcElement;
-                if (src2 instanceof HTMLMediaElement) {
-                    Elements = Elements.filter(e => e !== src2); // Remove reference not in DOM
-                }
-            });
+            src.addEventListener("pause", onPause);
         }
     }
 }, true);
 
+
+function onPause(event) {
+    let src = event.srcElement;
+    if (src instanceof HTMLMediaElement) {
+        Elements = Elements.filter(e => e !== src); // Remove reference not in DOM
+        src.removeEventListener("pause", onPause);
+    }
+}
 
 // Dont tell the media please
 window.addEventListener('ratechange', function(event) {

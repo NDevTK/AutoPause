@@ -44,7 +44,6 @@ window.addEventListener('play', function(event) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.includes(src)) {
             Elements.push(src);
-            // If media gets paused remove it from the array
             src.addEventListener("pause", onPause);
         }
     }

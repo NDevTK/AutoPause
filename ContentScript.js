@@ -1,9 +1,7 @@
 "use strict";
 
-if (ActiveAudio === undefined) {
-    var ActiveAudio = false;
-    var Elements = new Set();
-}
+// Script should only run once
+if (ActiveAudio !== undefined) return
 
 chrome.runtime.onMessage.addListener(async (state) => {
     if (state === "toggleFastPlayback") {

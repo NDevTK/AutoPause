@@ -16,7 +16,7 @@ chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) {
         options = result["options"];
         for (var key in options) {
-            setState(key);
+            setState(key, options[key]);
         }
     }
 });
@@ -24,7 +24,7 @@ chrome.storage.sync.get("options", function(result) {
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     for (var key in changes) {
         options[key] = changes[key].newValue;
-        setState(key);
+        setState(key, options[key]);
     }
 });
 

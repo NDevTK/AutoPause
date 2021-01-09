@@ -79,14 +79,18 @@ function checkOrigin(tab) {
         chrome.tabs.sendMessage(id, false, sendHandler); // Resume when active
     }
     // Only auto resume if theres no audio or active tab
-    chrome.tabs.query({
-        audible: true,
-        active: false
-     }, tab => {
-        if (tab.length === 0) {
-            Broadcast(message, id);
-        }
-    });
+    if (message === true) {
+        Broadcast(message, id);
+    } else {
+        chrome.tabs.query({
+            audible: true,
+            active: false
+        }, tab => {
+            if (tab.length === 0) {
+                Broadcast(message, id);
+            }
+        });
+    }
 }
 
 function sendHandler() {

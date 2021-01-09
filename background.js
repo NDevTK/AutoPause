@@ -62,13 +62,14 @@ chrome.commands.onCommand.addListener(async command => {
 function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
     let message = tab.audible;
+    let id = (backgroundAudio === false) ? tab.id : backgroundAudio);
     if (options.hasOwnProperty("disableresume")) {
-        chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
+        chrome.tabs.sendMessage(id, null, sendHandler); // Only allow playback
         if (message === false) return
     } else {
-        chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
+        chrome.tabs.sendMessage(id, false, sendHandler); // Resume when active
     }
-    Broadcast(message, tab.id);
+    Broadcast(message, id);
 }
 
 function sendHandler() {
@@ -92,13 +93,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
     if (tab.active) {
-        Broadcast(changeInfo.audible, tabId); // Tell the other tabs the state of the active tab
+        let id = (backgroundAudio === false) ? tab.id : backgroundAudio);
+        Broadcast(changeInfo.audible, id); // Tell the other tabs the state of the active tab
     }
 });
 
 async function Broadcast(message, exclude = false) {
-    var tabs = (backgroundAudio === false) ? sounds : [backgroundAudio];
-    tabs.forEach(id => { // Only for tabs that have had sound
+    sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
         if (!message && options.hasOwnProperty("pauseoninactive")) {
             message = true;

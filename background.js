@@ -1,6 +1,7 @@
 "use strict";
 var sounds = new Set(); // List of tab ids that have had audio
 var options = {};
+var backgroundAudio = false;
 
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -46,6 +47,15 @@ chrome.commands.onCommand.addListener(async command => {
         case "pauseoninactive":
             toggleOption("pauseoninactive");
             return
+        case "resumeoveride":
+            chrome.tabs.query({
+                active: true,
+                currentWindow: true
+            }, tab => {
+                if (tab.length < 1) return  
+                backgroundAudio = (tab[0].id === backgroundAudio) ? false : tab[0].id;
+            });
+            return
     }
 });
 
@@ -87,7 +97,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 async function Broadcast(message, exclude = false) {
-    sounds.forEach(id => { // Only for tabs that have had sound
+    var tabs = (backgroundAudio === false) ? sounds : [backgroundAudio];
+    tabs.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
         if (!message && options.hasOwnProperty("pauseoninactive")) {
             message = true;

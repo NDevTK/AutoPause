@@ -13,17 +13,30 @@ chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
 chrome.storage.sync.get("options", function(result) {
-    if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
+    if (typeof result["options"] === 'object' && result["options"] !== null) {
+        options = result["options"];
+        for (var key in options) {
+            setState(key);
+        }
+    }
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     for (var key in changes) {
         options[key] = changes[key].newValue;
+        setState(key);
     }
 });
 
-function save() {
-    chrome.storage.sync.set({options}, function(result) {});
+function setState(key) {
+    switch (key) {
+        case "disableresume":
+            disableresume.checked = options.disableresume;
+            return
+        case "pauseoninactive":
+            pauseoninactive.checked = options.pauseoninactive;
+            return
+    }
 }
 
 disableresume.onclick = _ => {
@@ -52,7 +65,7 @@ async function permissionUpdate() {
     var remove = [];
     var regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
 
-    
+
     add = domains.filter(domain => domain === "<all_urls>" || regex.test(domain));
     remove = permissions.filter(permission => !domains.includes(permission));
 

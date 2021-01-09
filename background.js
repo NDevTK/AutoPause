@@ -9,8 +9,8 @@ chrome.storage.sync.get("options", function(result) {
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (changes.hasOwnProperty("options")) {
-		options = changes["options"].newValue;
-	}
+        options = changes["options"].newValue;
+    }
 });
 
 chrome.runtime.onInstalled.addListener(function(details) {
@@ -68,10 +68,10 @@ chrome.commands.onCommand.addListener(async command => {
 function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
     let message = tab.audible;
-	let id = tab.id;
-	if (!message && backgroundAudio !== false) {
-		id = backgroundAudio;
-	}
+    let id = tab.id;
+    if (!message && backgroundAudio !== false) {
+        id = backgroundAudio;
+    }
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
         if (message === false) return
@@ -92,7 +92,7 @@ chrome.tabs.onActivated.addListener(info => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-	if(tabId === backgroundAudio) backgroundAudio = false;
+    if (tabId === backgroundAudio) backgroundAudio = false;
     sounds.delete(tabId);
 });
 

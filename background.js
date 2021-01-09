@@ -52,8 +52,8 @@ chrome.commands.onCommand.addListener(async command => {
                 active: true,
                 currentWindow: true
             }, tab => {
-                if (tab.length < 1) return  
-                backgroundAudio = (tab[0].id === backgroundAudio) ? false : tab[0].id;
+                if (tab.length < 1) return
+                backgroundAudio = tab[0].id;
             });
             return
     }
@@ -82,6 +82,7 @@ chrome.tabs.onActivated.addListener(info => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
+	if(tabId === backgroundAudio) backgroundAudio = false;
     sounds.delete(tabId);
 });
 

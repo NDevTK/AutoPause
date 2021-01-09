@@ -2,8 +2,8 @@
 
 // Script should only run once
 if (window.hasOwnProperty("ActiveAudio")) {
-	var ActiveAudio = false;
-	var Elements = new Set();
+    var ActiveAudio = false;
+    var Elements = new Set();
 }
 
 chrome.runtime.onMessage.addListener(async (state) => {

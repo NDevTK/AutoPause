@@ -8,9 +8,9 @@ chrome.storage.sync.get("options", function(result) {
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
-    for (var key in changes) {
-        options[key] = changes[key].newValue;
-    }
+    if (changes.hasOwnProperty("options")) {
+		options = changes["options"].newValue;
+	}
 });
 
 chrome.runtime.onInstalled.addListener(function(details) {
@@ -67,8 +67,11 @@ chrome.commands.onCommand.addListener(async command => {
 
 function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
-    if (!options.hasOwnProperty("pauseoninactive") && !sounds.has(tab.id)) return
     let message = tab.audible;
+	let id = tab.id;
+	if (!message && backgroundAudio !== false) {
+		id = backgroundAudio;
+	}
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
         if (message === false) return
@@ -105,8 +108,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 async function Broadcast(message, exclude = false) {
-    var tabs = (backgroundAudio !== false && !message) ? [backgroundAudio] : sounds;
-    tabs.forEach(id => { // Only for tabs that have had sound
+    sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
         if (!message && options.hasOwnProperty("pauseoninactive")) {
             message = true;

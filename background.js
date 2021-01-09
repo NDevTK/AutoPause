@@ -78,8 +78,11 @@ function checkOrigin(tab) {
         active: false,
         audible: true
     }, tab => {
-        if (tab.length > 1) return
-        Broadcast(message, tab.id);
+        if (tab.length > 1 && !message && backgroundAudio !== false) {
+            Broadcast(message, backgroundAudio);
+        } else {
+            Broadcast(message, backgroundAudio);
+        }        
     });
 }
 

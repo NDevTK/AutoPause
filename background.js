@@ -43,6 +43,9 @@ chrome.commands.onCommand.addListener(async command => {
         case "toggleFastPlayback":
             Broadcast("toggleFastPlayback");
             return
+        case "pauseoninactive":
+            toggleOption("pauseoninactive");
+            return
     }
 });
 
@@ -86,6 +89,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 async function Broadcast(message, exclude = false) {
     sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
+        if (!message && options.hasOwnProperty("pauseoninactive")) {
+            message = true;
+        }
         chrome.tabs.sendMessage(id, message, sendHandler);
     });
 };

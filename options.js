@@ -29,10 +29,10 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 function setState(key, value) {
     if(typeof value !== "boolean") return
     switch(key) {
-        case: "disableresume":
+        case "disableresume":
             disableresume.checked = value;
             return
-        case: "pauseoninactive":
+        case "pauseoninactive":
             pauseoninactive.checked = value;
             return
     }

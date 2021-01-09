@@ -2,6 +2,8 @@
 var permissions = [];
 var options = {};
 
+const supported = ["disableresume", "pauseoninactive"];
+
 window.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {
         event.preventDefault();
@@ -15,39 +17,44 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) {
         options = result["options"];
-        for (var key in options) {
-            setState(key, options[key]);
-        }
-    }
+		applyChanges();
+    }	
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
-    for (var key in changes) {
-        options[key] = changes[key].newValue;
-        setState(key, options[key]);
-    }
+    if (changes.hasOwnProperty("options")) {
+		options = changes["options"].newValue;
+		applyChanges();
+	}
 });
 
-function setState(key, value) {
-    var state = (value === true);
-    switch (key) {
-        case "disableresume":
-            disableresume.checked = state;
-            return
-        case "pauseoninactive":
-            pauseoninactive.checked = state;
-            return
+
+function applyChanges() {
+	supported.forEach(id => {
+		var state = options.hasOwnProperty(id);
+		document.getElementById(id).checked = state;
+	});
+}
+
+supported.forEach(id => {
+	document.getElementById(id).onclick = _ => {
+		toggleOption(id);
+	}
+});
+
+function toggleOption(o) {
+    if (options.hasOwnProperty(o)) {
+        delete options[o];
+    } else {
+        options[o] = true;
     }
-}
-
-document.getElementById("disableresume").onclick = _ => {
-    options.disableresume = disableresume.checked;
-    save();
-}
-
-document.getElementById("pauseoninactive").onclick = _ => {
-    options.pauseoninactive = pauseoninactive.checked;
-    save();
+    return new Promise(resolve => {
+        chrome.storage.sync.set({
+            options
+        }, function(result) {
+            resolve(result);
+        });
+    });
 }
 
 function getPermissions() {

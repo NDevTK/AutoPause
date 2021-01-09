@@ -7,6 +7,12 @@ chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
 });
 
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+    for (var key in changes) {
+        options[key] = changes[key].newValue;
+    }
+});
+
 chrome.runtime.onInstalled.addListener(function(details) {
     if (details.reason == "install") {
         chrome.runtime.openOptionsPage();

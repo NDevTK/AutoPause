@@ -28,13 +28,14 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     }
 });
 
-function setState(key) {
+function setState(key, value) {
+    var state = (value === true);
     switch (key) {
         case "disableresume":
-            disableresume.checked = options.disableresume;
+            disableresume.checked = state;
             return
         case "pauseoninactive":
-            pauseoninactive.checked = options.pauseoninactive;
+            pauseoninactive.checked = state;
             return
     }
 }

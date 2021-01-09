@@ -3,6 +3,9 @@
 // Script should only run once
 if (ActiveAudio !== undefined) return
 
+var ActiveAudio = false;
+var Elements = new Set();
+
 chrome.runtime.onMessage.addListener(async (state) => {
     if (state === "toggleFastPlayback") {
         toggleRate();

@@ -40,12 +40,12 @@ function setState(key, value) {
     }
 }
 
-disableresume.onclick = _ => {
+document.getElementById("disableresume").onclick = _ => {
     options.disableresume = disableresume.checked;
     save();
 }
 
-pauseoninactive.onclick = _ => {
+document.getElementById("pauseoninactive").onclick = _ => {
     options.pauseoninactive = pauseoninactive.checked;
     save();
 }

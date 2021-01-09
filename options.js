@@ -14,28 +14,26 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
-    for (var key in options) {
-        setState(key, options[key]);
-    }
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     for (var key in changes) {
-        setState(key, options[key].newValue);
+        options[key] = changes[key].newValue;
     }
 });
 
+function save() {
+    chrome.storage.sync.set({options}, function(result) {});
+}
 
-function setState(key, value) {
-    if(typeof value !== "boolean") return
-    switch(key) {
-        case "disableresume":
-            disableresume.checked = value;
-            return
-        case "pauseoninactive":
-            pauseoninactive.checked = value;
-            return
-    }
+disableresume.onclick = _ => {
+    options.disableresume = disableresume.checked;
+    save();
+}
+
+pauseoninactive.onclick = _ => {
+    options.pauseoninactive = pauseoninactive.checked;
+    save();
 }
 
 function getPermissions() {

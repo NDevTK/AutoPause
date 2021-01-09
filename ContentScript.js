@@ -1,7 +1,7 @@
 "use strict";
 
 // Script should only run once
-if (window.hasOwnProperty("ActiveAudio")) {
+if (ActiveAudio === undefined) {
     var ActiveAudio = false;
     var Elements = new Set();
 }

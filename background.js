@@ -71,13 +71,12 @@ function checkOrigin(tab) {
     let id = tab.id;
     if (!message && backgroundAudio !== false) {
         id = backgroundAudio;
-        message = true;
     }
     if (options.hasOwnProperty("disableresume")) {
-        chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
+        chrome.tabs.sendMessage(id, null, sendHandler); // Only allow playback
         if (message === false) return
     } else {
-        chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
+        chrome.tabs.sendMessage(id, false, sendHandler); // Resume when active
     }
     // Only auto resume if theres no audio or active tab
     chrome.tabs.query({
@@ -85,7 +84,7 @@ function checkOrigin(tab) {
         active: false
      }, tab => {
         if (tab.length === 0) {
-            Broadcast(message, tab.id);
+            Broadcast(message, id);
         }
     });
 }

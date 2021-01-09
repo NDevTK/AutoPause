@@ -71,6 +71,7 @@ function checkOrigin(tab) {
     let id = tab.id;
     if (!message && backgroundAudio !== false) {
         id = backgroundAudio;
+        message = true;
     }
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback

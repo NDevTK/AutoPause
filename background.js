@@ -53,29 +53,20 @@ chrome.commands.onCommand.addListener(async command => {
         case "pauseoninactive":
             toggleOption("pauseoninactive");
             return
-        case "resumeoveride":
-            chrome.tabs.query({
-                active: true,
-                currentWindow: true
-            }, tab => {
-                if (tab.length < 1) return
-                backgroundAudio = tab[0].id;
-            });
-            return
     }
 });
 
 async function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
     let message = tab.audible;
+    let id = tab.id
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
+        if (message === false) return
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
-    if (message === true) {
-        Broadcast(message, tab.id);
-    }
+    Broadcast(message, tab.id);
 }
 
 function sendHandler() {
@@ -89,26 +80,15 @@ chrome.tabs.onActivated.addListener(info => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-    if (tabId === backgroundAudio) backgroundAudio = false;
     sounds.delete(tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
-    if (changeInfo.audible && !sounds.has(tabId)) {
+    if (changeInfo.audible) {
         sounds.add(tabId);
     }
-    if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
-    if (tab.active && sounds.length > 0) {
-        if (changeInfo.audible) {
-            // Move tab id to end of set
-            sounds.delete(tab.id);
-            sounds.add(tab.id);
-            Broadcast(true, tab.id); // Tell the other tabs the state of the active tab
-        } else {
-            chrome.tabs.sendMessage([...sounds][sounds.length - 2], message, sendHandler);
-        }
-    }
+    checkOrigin(tab);
 });
 
 async function Broadcast(message, exclude = false) {

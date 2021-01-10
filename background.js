@@ -76,9 +76,7 @@ async function checkOrigin(tab) {
     }
     if (message === true) {
         Broadcast(message, tab.id);
-    } else {
-        if (sounds.length > 1) chrome.tabs.sendMessage([...sounds][sounds.length - 2], false, sendHandler);
-    }  
+    }
 }
 
 function sendHandler() {
@@ -102,8 +100,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         sounds.add(tabId);
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
-    if (tab.active) {
-        Broadcast(changeInfo.audible, tab.id); // Tell the other tabs the state of the active tab
+    if (tab.active && sounds.length > 1) {
+        if (changeInfo.audible) {
+            Broadcast(true, tab.id); // Tell the other tabs the state of the active tab
+        } else {
+            chrome.tabs.sendMessage([...sounds][sounds.length - 2], message, sendHandler);
+        }
     }
 });
 

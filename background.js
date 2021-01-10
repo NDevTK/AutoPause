@@ -101,6 +101,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
     if (tab.active && sounds.length > 0) {
         if (changeInfo.audible) {
+            // Move tab id to end of set
+            sounds.delete(tab.id);
+            sounds.add(tab.id);
             Broadcast(true, tab.id); // Tell the other tabs the state of the active tab
         } else {
             chrome.tabs.sendMessage([...sounds][sounds.length - 2], message, sendHandler);

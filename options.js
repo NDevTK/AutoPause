@@ -2,8 +2,10 @@
 var permissions = [];
 var options = {};
 
+// ID for each checkbox
 const supported = ["disableresume", "pauseoninactive"];
 
+// User presses enter
 window.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {
         event.preventDefault();

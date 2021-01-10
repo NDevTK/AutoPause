@@ -67,9 +67,6 @@ chrome.commands.onCommand.addListener(async command => {
 
 async function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
-    if (backgroundAudio !== false && !tab.audible) {
-        tab = await new Promise(resolve => chrome.tabs.get(backgroundAudio, resolve));
-    }
     let message = tab.audible;
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
@@ -77,7 +74,11 @@ async function checkOrigin(tab) {
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
-    Broadcast(message, tab.id);
+    if (message === true) {
+        Broadcast(message, tab.id);
+    } else {
+        if (sounds.length > 1) chrome.tabs.sendMessage([...sounds][sounds.length - 2], false, sendHandler);
+    }  
 }
 
 function sendHandler() {

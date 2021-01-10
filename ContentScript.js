@@ -16,10 +16,11 @@ chrome.runtime.onMessage.addListener(async (state) => {
 });
 
 window.addEventListener('DOMContentLoaded', function(event) {
-    // Adds content to DOM
+    // Adds content to DOM needed because of isolation
     injectScript("WindowScript.js");
 }, {passive: true});
 
+// Controlled by global fast forward shortcut
 function toggleRate() {
     Elements.forEach(e => {
         if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
@@ -41,6 +42,7 @@ function injectScript(file_path) {
     document.head.appendChild(script);
 }
 
+// On media play event
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
@@ -73,6 +75,7 @@ window.addEventListener('ratechange', function(event) {
 }, {capture: true});
 
 function pauseElement(e) {
+    // If media attempts to play when it should be paused dont change its old values.
     if (!e.wasPlaying) {
         e.wasVolume = e.volume;
         e.wasPlaybackRate = e.playbackRate;

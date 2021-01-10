@@ -47,10 +47,10 @@ window.addEventListener('play', function(event) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
-            src.addEventListener("pause", onPause, {once: true});
+            src.addEventListener("pause", onPause, {once: true, passive: true});
         }
     }
-}, true);
+}, {capture: true, passive: true});
 
 
 function onPause(event) {
@@ -68,7 +68,7 @@ window.addEventListener('ratechange', function(event) {
             event.stopPropagation();
         }
     }
-}, true);
+}, {capture: true});
 
 function pauseElement(e) {
     if (!e.wasPlaying) {

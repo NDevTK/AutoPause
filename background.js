@@ -12,12 +12,14 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     }
 });
 
+// On install display the options page so the user can give permissions
 chrome.runtime.onInstalled.addListener(details => {
     if (details.reason == "install") {
         chrome.runtime.openOptionsPage();
     }
 });
 
+// For when the media is silent
 chrome.runtime.onMessage.addListener((message, sender) => {
     if (!sender.hasOwnProperty("tab")) return
     switch(message) {
@@ -30,6 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     }
 });
 
+// User may have mutiple windows open
 chrome.windows.onFocusChanged.addListener(id => {
     if (id === -1) return
     chrome.tabs.query({
@@ -41,9 +44,11 @@ chrome.windows.onFocusChanged.addListener(id => {
     });
 });
 
+// Handle keyboard shortcuts
 chrome.commands.onCommand.addListener(async command => {
     switch (command) {
         case "gotoaudible":
+            // Go to audible tab thats not active 
             chrome.tabs.query({
                 audible: true,
                 active: false,
@@ -67,28 +72,36 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
+// Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
+    sounds.add(tab.id);
     if (tab.active === false || tab.id === undefined) return
     let message = (override === null) ? tab.audible : override;
     if (options.hasOwnProperty("disableresume")) {
-        chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
+         // Only allow playback
+        chrome.tabs.sendMessage(tab.id, null, sendHandler);
     } else {
-        chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
+         // Resume when active
+        chrome.tabs.sendMessage(tab.id, false, sendHandler);
     }
     if (!message) {
         if (options.hasOwnProperty("pauseoninactive")) {
+            // All inactive tabs should pause
             message = true;
         } else if (options.hasOwnProperty("disableresume")) {
             return
         }
     }
+    // Send a message to the other media tabs
     Broadcast(message, tab.id);
 }
 
+// Errors from sendMessage
 function sendHandler() {
     let lastError = chrome.runtime.lastError;
 }
 
+// On tab change
 chrome.tabs.onActivated.addListener(info => {
     chrome.tabs.get(info.tabId, tab => {
         checkOrigin(tab);
@@ -99,11 +112,9 @@ chrome.tabs.onRemoved.addListener(tabId => {
     sounds.delete(tabId);
 });
 
+// Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
-    if (changeInfo.audible) {
-        sounds.add(tabId);
-    }
     checkOrigin(tab);
 });
 
@@ -114,6 +125,7 @@ async function Broadcast(message, exclude = false) {
     });
 };
 
+// Saves options to storage
 function toggleOption(o) {
     if (options.hasOwnProperty(o)) {
         delete options[o];

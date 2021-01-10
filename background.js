@@ -58,10 +58,13 @@ chrome.commands.onCommand.addListener(async command => {
 async function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
     let message = tab.audible;
-    let id = tab.id
+    if (!message && options.hasOwnProperty("pauseoninactive")) {
+        message = true;
+    }
     if (options.hasOwnProperty("disableresume")) {
-        chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
         if (message === false) return
+        chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
+
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
@@ -93,9 +96,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 async function Broadcast(message, exclude = false) {
     sounds.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
-        if (!message && options.hasOwnProperty("pauseoninactive")) {
-            message = true;
-        }
         chrome.tabs.sendMessage(id, message, sendHandler);
     });
 };

@@ -65,8 +65,11 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-function checkOrigin(tab) {
+async function checkOrigin(tab) {
     if (tab.active === false || tab.id === undefined) return
+    if (backgroundAudio !== false && !tab.audible) {
+        tab = await new Promise(resolve => chrome.tabs.get(backgroundAudio, resolve));
+    }
     let message = tab.audible;
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
@@ -74,13 +77,7 @@ function checkOrigin(tab) {
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
-    chrome.tabs.query({
-        active: false,
-        audible: true
-    }, tab => {
-        if (tab.length > 0 && !message) return;
-        Broadcast(message, tab.id);
-    });
+    Broadcast(message, tab.id);
 }
 
 function sendHandler() {

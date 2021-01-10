@@ -45,7 +45,7 @@ chrome.windows.onFocusChanged.addListener(id => {
 });
 
 // Handle keyboard shortcuts
-chrome.commands.onCommand.addListener(async command => {
+chrome.commands.onCommand.addListener(async (command, tab) => {
     switch (command) {
         case "gotoaudible":
             // Go to audible tab thats not active 
@@ -69,8 +69,23 @@ chrome.commands.onCommand.addListener(async command => {
         case "pauseoninactive":
             toggleOption("pauseoninactive");
             return
+        case "backgroundaudio":
+            backgroundaudio = tab.id;
+            return
     }
 });
+
+// Rules for resumes
+function resumeAllowed() {
+    return new Promise(resolve => {
+        if (options.hasOwnProperty("disableresume")) resolve(false);
+        chrome.tabs.query({
+            audible: true
+        }, tabs => {
+            resolve(tabs.length === 0);
+        });
+    });
+}
 
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
@@ -84,17 +99,15 @@ async function checkOrigin(tab, override = null) {
          // Resume when active
         chrome.tabs.sendMessage(tab.id, false, sendHandler);
     }
-    if (!message) {
-        if (options.hasOwnProperty("pauseoninactive")) {
-            // All inactive tabs should pause
-            message = true;
-        } else if (options.hasOwnProperty("disableresume")) {
-            return
-        }
+    if (!message && options.hasOwnProperty("pauseoninactive")) {
+        // All inactive tabs should pause
+        message = true;
     }
     // Send a message to the other media tabs
+    if (!message && await resumeAllowed() === false) return
     Broadcast(message, tab.id);
 }
+
 
 // Errors from sendMessage
 function sendHandler() {

@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener(async (state) => {
 window.addEventListener('DOMContentLoaded', function(event) {
     // Adds content to DOM
     injectScript("WindowScript.js");
-});
+}, {passive: true});
 
 function toggleRate() {
     Elements.forEach(e => {

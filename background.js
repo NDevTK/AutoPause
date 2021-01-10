@@ -70,7 +70,6 @@ async function checkOrigin(tab) {
     let message = tab.audible;
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
-        if (message === false) return
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
@@ -100,7 +99,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         sounds.add(tabId);
     }
     if (options.hasOwnProperty("disableresume") && changeInfo.audible === false) return
-    if (tab.active && sounds.length > 1) {
+    if (tab.active && sounds.length > 0) {
         if (changeInfo.audible) {
             Broadcast(true, tab.id); // Tell the other tabs the state of the active tab
         } else {

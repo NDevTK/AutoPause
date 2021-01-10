@@ -31,13 +31,6 @@
             "mac": "Alt+I"
         },
         "description": "Toggle pause on inactive"
-    },
-    "resumeoveride": {
-        "suggested_key": {
-            "default": "Alt+O",
-            "mac": "Alt+O"
-        },
-        "description": "Toggle resume overide"
     }
   },
   "permissions": [

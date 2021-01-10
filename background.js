@@ -1,7 +1,6 @@
 "use strict";
 var sounds = new Set(); // List of tab ids that have had audio
 var options = {};
-var backgroundAudio = false;
 
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];

@@ -57,8 +57,8 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        chrome.runtime.sendMessage("pause");
         Elements.delete(src);
+        if (Elements.size === 0) chrome.runtime.sendMessage("pause");
     }
 }
 

@@ -78,7 +78,7 @@ function checkOrigin(tab) {
         active: false,
         audible: true
     }, tab => {
-        if (tab.length > 1 && !message) message = true;
+        if (tab.length > 0 && !message) return;
         Broadcast(message, tab.id);
     });
 }

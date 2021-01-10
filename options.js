@@ -17,29 +17,29 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 chrome.storage.sync.get("options", function(result) {
     if (typeof result["options"] === 'object' && result["options"] !== null) {
         options = result["options"];
-		applyChanges();
-    }	
+        applyChanges();
+    }
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (changes.hasOwnProperty("options")) {
-		options = changes["options"].newValue;
-		applyChanges();
-	}
+        options = changes["options"].newValue;
+        applyChanges();
+    }
 });
 
 
 function applyChanges() {
-	supported.forEach(id => {
-		var state = options.hasOwnProperty(id);
-		document.getElementById(id).checked = state;
-	});
+    supported.forEach(id => {
+        var state = options.hasOwnProperty(id);
+        document.getElementById(id).checked = state;
+    });
 }
 
 supported.forEach(id => {
-	document.getElementById(id).onclick = _ => {
-		toggleOption(id);
-	}
+    document.getElementById(id).onclick = _ => {
+        toggleOption(id);
+    }
 });
 
 function toggleOption(o) {

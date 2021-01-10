@@ -5,9 +5,7 @@
     const play = window.HTMLMediaElement.prototype.play;
     let div = null;
     window.HTMLMediaElement.prototype.play = function() {
-        let result = play.apply(this, arguments);
-        if (this instanceof HTMLMediaElement === false) return result
-        if (!document.contains(this)) {
+        if (this instanceof HTMLMediaElement === false && !document.contains(this)) {
             if (!document.contains(div)) {
                 div = document.createElement('div');
                 div.hidden = true;
@@ -18,10 +16,10 @@
                     if (src instanceof HTMLMediaElement) {
                         div.removeChild(src);
                     }
-                }, true);
+                }, {passive: true, capture: true});
             }
             div.appendChild(this);
         }
-        return result
+        return play.apply(this, arguments);
     }
 })();

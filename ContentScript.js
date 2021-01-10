@@ -47,7 +47,7 @@ window.addEventListener('play', function(event) {
         if (ActiveAudio) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
-            src.addEventListener("pause", onPause);
+            src.addEventListener("pause", onPause, {once: true});
         }
     }
 }, true);
@@ -57,7 +57,6 @@ function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         Elements.delete(src);
-        src.removeEventListener("pause", onPause);
     }
 }
 

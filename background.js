@@ -2,19 +2,31 @@
 var sounds = new Set(); // List of tab ids that have had audio
 var options = {};
 
-chrome.storage.sync.get("options", function(result) {
+chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
 });
 
-chrome.storage.onChanged.addListener(function(changes, namespace) {
+chrome.storage.onChanged.addListener((changes, namespace) => {
     if (changes.hasOwnProperty("options")) {
         options = changes["options"].newValue;
     }
 });
 
-chrome.runtime.onInstalled.addListener(function(details) {
+chrome.runtime.onInstalled.addListener(details => {
     if (details.reason == "install") {
         chrome.runtime.openOptionsPage();
+    }
+});
+
+chrome.runtime.onMessage.addListener((message, sender) => {
+    if (!sender.hasOwnProperty("tab")) return
+    switch(message) {
+        case "play":
+            checkOrigin(sender.tab, true);
+            return
+        case "pause":
+            checkOrigin(sender.tab, false);
+            return
     }
 });
 
@@ -55,18 +67,20 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-async function checkOrigin(tab) {
+async function checkOrigin(tab, override = null) {
     if (tab.active === false || tab.id === undefined) return
-    let message = tab.audible;
+    let message = (override === null) ? tab.audible : override;
     if (options.hasOwnProperty("disableresume")) {
-        if (message === false) return
         chrome.tabs.sendMessage(tab.id, null, sendHandler); // Only allow playback
-
     } else {
         chrome.tabs.sendMessage(tab.id, false, sendHandler); // Resume when active
     }
-    if (!message && options.hasOwnProperty("pauseoninactive")) {
-        message = true;
+    if (!message) {
+        if (options.hasOwnProperty("pauseoninactive")) {
+            message = true;
+        } else if (options.hasOwnProperty("disableresume")) {
+            return
+        }
     }
     Broadcast(message, tab.id);
 }

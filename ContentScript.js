@@ -1,8 +1,8 @@
 "use strict";
 
 // Script should only run once
-if (ActiveAudio === undefined) {
-    var ActiveAudio = false;
+if (ActiveMedia === undefined) {
+    var ActiveMedia = false;
     var Elements = new Set();
 }
 
@@ -11,8 +11,8 @@ chrome.runtime.onMessage.addListener(async (state) => {
         toggleRate();
         return
     }
-    ActiveAudio = state; // React based on state of active tab
-    (ActiveAudio) ? pause(): resume();
+    ActiveMedia = state; // React based on state of active tab
+    (ActiveMedia) ? pause(): resume();
 });
 
 window.addEventListener('DOMContentLoaded', function(event) {
@@ -44,7 +44,8 @@ function injectScript(file_path) {
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        if (ActiveAudio) pauseElement(src);
+        chrome.runtime.sendMessage("play");
+        if (ActiveMedia) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
             src.addEventListener("pause", onPause, {once: true, passive: true});
@@ -56,6 +57,7 @@ window.addEventListener('play', function(event) {
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
+        chrome.runtime.sendMessage("pause");
         Elements.delete(src);
     }
 }
@@ -64,7 +66,7 @@ function onPause(event) {
 window.addEventListener('ratechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
-        if (ActiveAudio && src.playbackRate === 0) {
+        if (ActiveMedia && src.playbackRate === 0) {
             event.stopPropagation();
         }
     }
@@ -91,7 +93,7 @@ async function resume() {
     Elements.forEach(e => {
         if (!e.wasPlaying) return
         // Pause foreground media normaly
-        if (ActiveAudio === null) e.pause();
+        if (ActiveMedia === null) e.pause();
         e.volume = e.wasVolume;
         e.playbackRate = e.wasPlaybackRate;
         e.wasPlaying = false;

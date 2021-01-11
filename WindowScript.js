@@ -5,7 +5,7 @@
     const play = window.HTMLMediaElement.prototype.play;
     let div = null;
     window.HTMLMediaElement.prototype.play = function() {
-        if (this instanceof HTMLMediaElement === false && !document.contains(this)) {
+        if (this instanceof HTMLMediaElement && !document.contains(this)) {
             if (!document.contains(div)) {
                 div = document.createElement('div');
                 div.hidden = true;

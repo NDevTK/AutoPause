@@ -1,7 +1,7 @@
 "use strict";
 var sounds = new Set(); // List of tab ids that have had audio
 var options = {};
-var backgroundaudio = false;
+var backgroundaudio = new Set();
 
 chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -71,8 +71,8 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
             toggleOption("pauseoninactive");
             return
         case "backgroundaudio":
-            // could support multiple
-            backgroundaudio = [tab.id];
+            // Currently only has one tab
+            backgroundaudio = new Set(tab.id);
             return
     }
 });
@@ -107,8 +107,8 @@ async function checkOrigin(tab, override = null) {
     }
     // Send a message to the other media tabs
     if (!message && await resumeAllowed() === false) return
-    // Only resume to the backgroundaudio tab if its been set
-    let tabs = (!message && backgroundaudio !== false) ? backgroundaudio : tab.id;
+    // Only resume to marked backgroundaudio tabs if its been set
+    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : tab.id;
     Broadcast(message, tab.id, tabs);
 }
 
@@ -127,7 +127,7 @@ chrome.tabs.onActivated.addListener(info => {
 
 chrome.tabs.onRemoved.addListener(tabId => {
     sounds.delete(tabId);
-    if (backgroundaudio === tabId) backgroundaudio = false;
+    if (backgroundaudio === tabId) backgroundaudio.delete(tabId);
 });
 
 // Detect changes to audible status of tabs

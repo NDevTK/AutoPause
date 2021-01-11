@@ -72,7 +72,8 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
             return
         case "backgroundaudio":
             // Currently only has one tab
-            backgroundaudio = new Set(tab.id);
+            backgroundaudio.clear();
+            backgroundaudio.add(tab.id);
             return
     }
 });

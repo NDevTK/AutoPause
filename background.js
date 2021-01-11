@@ -39,14 +39,14 @@ chrome.windows.onFocusChanged.addListener(id => {
     chrome.tabs.query({
         active: true,
         currentWindow: true
-    }, tab => {
-        if (tab.length !== 1) return
-        checkOrigin(tab[0]);
+    }, tabs => {
+        if (tabs.length !== 1) return
+        checkOrigin(tabs[0]);
     });
 });
 
 // Handle keyboard shortcuts
-chrome.commands.onCommand.addListener(async (command, tab) => {
+chrome.commands.onCommand.addListener(async command => {
     switch (command) {
         case "gotoaudible":
             // Go to audible tab thats not active 
@@ -54,9 +54,9 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
                 audible: true,
                 active: false,
                 currentWindow: true
-            }, tab => {
-                if (tab.length < 1) return
-                chrome.tabs.update(tab[0].id, {
+            }, tabs => {
+                if (tabs.length < 1) return
+                chrome.tabs.update(tabs[0].id, {
                     active: true
                 });
             });
@@ -71,9 +71,12 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
             toggleOption("pauseoninactive");
             return
         case "backgroundaudio":
-            // Currently only has one tab
-            backgroundaudio.clear();
-            backgroundaudio.add(tab.id);
+            chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+                if(tabs.length === 0) return
+                // Currently only has one tab
+                backgroundaudio.clear();
+                backgroundaudio.add(tabs[0].id);
+            });
             return
     }
 });

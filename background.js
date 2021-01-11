@@ -71,7 +71,8 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
             toggleOption("pauseoninactive");
             return
         case "backgroundaudio":
-            backgroundaudio = tab.id;
+            // could support multiple
+            backgroundaudio = [tab.id];
             return
     }
 });

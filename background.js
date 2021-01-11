@@ -131,7 +131,7 @@ chrome.tabs.onActivated.addListener(info => {
 
 chrome.tabs.onRemoved.addListener(tabId => {
     sounds.delete(tabId);
-    if (backgroundaudio === tabId) backgroundaudio.delete(tabId);
+    backgroundaudio.delete(tabId);
 });
 
 // Detect changes to audible status of tabs

@@ -37,7 +37,7 @@
             "default": "Alt+O",	
             "mac": "Alt+O"	
         },	
-        "description": "Toggle resume overide"	
+        "description": "Set tab for resume overide"	
     }
   },
   "permissions": [

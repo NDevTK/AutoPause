@@ -1,8 +1,8 @@
 "use strict";
 
 // Script should only run once
-if (ActiveMedia === undefined) {
-    var ActiveMedia = false;
+if (tabPause === undefined) {
+    var tabPause = false;
     var Elements = new Set();
 }
 
@@ -13,15 +13,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return
         case "pause":
             pause();
-            ActiveMedia = message;
             return
         case "play":
-            resume();
-            ActiveMedia = message;
+            resume(true);
             return
-        case "pauseNoResume":
-            resume();
-            ActiveMedia = message;
+        case "allowplayback":
+            resume(false);
             return
     }
     
@@ -59,7 +56,7 @@ window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         chrome.runtime.sendMessage("play");
-        if (ActiveMedia) pauseElement(src);
+        if (tabPause) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
             src.addEventListener("pause", onPause, {once: true, passive: true});
@@ -80,7 +77,7 @@ function onPause(event) {
 window.addEventListener('ratechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
-        if (ActiveMedia && src.playbackRate === 0) {
+        if (tabPause && src.playbackRate === 0) {
             event.stopPropagation();
         }
     }
@@ -98,17 +95,19 @@ function pauseElement(e) {
 }
 
 async function pause() {
+    tabPause = true;
     Elements.forEach(e => {
         if (e.paused || e.playbackRate === 0) return;
         pauseElement(e);
     });
 }
 
-async function resume() {
+async function resume(shouldPlay) {
+    tabPause = false;
     Elements.forEach(e => {
         if (!e.wasPlaying) return
         // Pause foreground media normaly
-        if (ActiveMedia === null) e.pause();
+        if (shouldPlay === false) e.pause();
         e.volume = e.wasVolume;
         e.playbackRate = e.wasPlaybackRate;
         e.wasPlaying = false;

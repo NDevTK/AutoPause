@@ -114,7 +114,7 @@ async function checkOrigin(tab, override = null) {
     // Send a message to the other media tabs
     if (!message && await resumeAllowed() === false) return
     // Only resume to marked backgroundaudio tabs if its been set
-    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()[0]];
+    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()];
     Broadcast(message, tab.id, tabs);
 }
 

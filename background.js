@@ -1,5 +1,5 @@
 "use strict";
-var sounds = new Set(); // List of tab ids that have had audio
+var sounds = new Set(); // List of tab ids that have had audio and the extension has permission to acesss.
 var options = {};
 var backgroundaudio = new Set();
 
@@ -25,9 +25,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!sender.hasOwnProperty("tab")) return
     switch(message) {
         case "play":
+            sounds.delete(sender.tab);
+            sounds.add(sender.tab);
             checkOrigin(sender.tab, true);
             return
         case "pause":
+            sounds.delete(sender.tab);
             checkOrigin(sender.tab, false);
             return
     }
@@ -95,7 +98,6 @@ function resumeAllowed() {
 
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
-    sounds.add(tab.id);
     if (tab.active === false || tab.id === undefined) return
     let message = (override === null) ? tab.audible : override;
     if (options.hasOwnProperty("disableresume")) {
@@ -112,7 +114,7 @@ async function checkOrigin(tab, override = null) {
     // Send a message to the other media tabs
     if (!message && await resumeAllowed() === false) return
     // Only resume to marked backgroundaudio tabs if its been set
-    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : sounds;
+    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : Array.from(sounds).pop();
     Broadcast(message, tab.id, tabs);
 }
 

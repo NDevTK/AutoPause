@@ -11,18 +11,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "toggleFastPlayback":
             toggleRate();
             return
-        case true:
-            // Pause
+        case "pause":
             pause();
             ActiveMedia = message;
             return
-        case false:
-            // Resume
+        case "play":
             resume();
             ActiveMedia = message;
             return
-        case null:
-            // Allow resume
+        case "pauseNoResume":
             resume();
             ActiveMedia = message;
             return

@@ -6,13 +6,43 @@ if (ActiveMedia === undefined) {
     var Elements = new Set();
 }
 
-chrome.runtime.onMessage.addListener(async (state) => {
-    if (state === "toggleFastPlayback") {
-        toggleRate();
-        return
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    switch (message) {
+        case "toggleFastPlayback":
+            toggleRate();
+            return
+        case "getState":
+            if (Elements.size < 1) {
+                sendResponse("noMedia");
+                return true;
+            }
+            for (let Element of Elements) {
+                if (Element.playing) {
+                    sendResponse("playingMedia");
+                    return true
+                } else if (Element.wasPlaying) {
+                    sendResponse("resumebleMedia");
+                    return true
+                }
+            }
+            return
+        case true:
+            // Pause
+            pause();
+            ActiveMedia = message;
+            return
+        case false:
+            // Resume
+            resume();
+            ActiveMedia = message;
+            return
+        case null:
+            // Allow resume
+            resume();
+            ActiveMedia = message;
+            return
     }
-    ActiveMedia = state; // React based on state of active tab
-    (ActiveMedia) ? pause(): resume();
+    
 });
 
 window.addEventListener('DOMContentLoaded', function(event) {

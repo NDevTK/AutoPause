@@ -11,21 +11,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "toggleFastPlayback":
             toggleRate();
             return
-        case "getState":
-            if (Elements.size < 1) {
-                sendResponse("noMedia");
-                return true;
-            }
-            for (let Element of Elements) {
-                if (Element.playing) {
-                    sendResponse("playingMedia");
-                    return true
-                } else if (Element.wasPlaying) {
-                    sendResponse("resumebleMedia");
-                    return true
-                }
-            }
-            return
         case true:
             // Pause
             pause();

@@ -84,36 +84,22 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-// Rules for resumes
-function resumeAllowed() {
-    return new Promise(resolve => {
-        if (options.hasOwnProperty("disableresume")) resolve(false);
-        chrome.tabs.query({
-            audible: true
-        }, tabs => {
-            resolve(tabs.length === 0);
-        });
-    });
-}
-
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
-    if (tab.active === false || tab.id === undefined) return
-    let message = (override === null) ? tab.audible : override;
+    if (tab.active === false || tab.id === undefined) return  
+    let activePlaying = (override === null) ? tab.audible : override;    
     if (options.hasOwnProperty("disableresume")) {
-         // Only allow playback
-        chrome.tabs.sendMessage(tab.id, null, sendHandler);
+        chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);
     } else {
-         // Resume when active
-        chrome.tabs.sendMessage(tab.id, false, sendHandler);
+        chrome.tabs.sendMessage(tab.id, "play", sendHandler);
     }
-    if (!message && options.hasOwnProperty("pauseoninactive")) {
-        // All inactive tabs should pause
-        message = true;
+    if (activePlaying === true || options.hasOwnProperty("pauseoninactive")) {
+        Broadcast("pause", tab.id);
+    } else {
+        if (options.hasOwnProperty("disableresume")) return
+        let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()];
+        Broadcast("pause", tab.id, resumeTabs);
     }
-    // Only resume to marked backgroundaudio tabs if its been set
-    let tabs = (!message && backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()];
-    Broadcast(message, tab.id, tabs);
 }
 
 

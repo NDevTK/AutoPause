@@ -69,9 +69,7 @@ window.addEventListener('play', function(event) {
 }, {capture: true, passive: true});
 
 window.addEventListener("pause", event => {
-    setTimeout(_ => {
-        onPause(event);
-    }, 50)
+    onPause(event);
 }, {capture: true, passive: true});
 
 window.addEventListener("abort", event => {

@@ -76,17 +76,10 @@ window.addEventListener("abort", event => {
     onPause(event);
 }, {capture: true, passive: true});
 
-window.addEventListener("seeking", event => {
+window.addEventListener("waiting", event => {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        src.seeking = true;
-    }
-}, {capture: true, passive: true});
-
-window.addEventListener("seeked", event => {
-    let src = event.srcElement;
-    if (src instanceof HTMLMediaElement) {
-        src.seeking = false;
+        chrome.runtime.sendMessage("play");
     }
 }, {capture: true, passive: true});
 

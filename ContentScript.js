@@ -24,9 +24,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
 });
 
-window.addEventListener('DOMContentLoaded', function(event) {
+window.addEventListener('beforeunload', event => {
     Elements.clear();
     chrome.runtime.sendMessage("pause");
+}, {passive: true});
+
+window.addEventListener('DOMContentLoaded', event => {
     // Adds content to DOM needed because of isolation
     injectScript("WindowScript.js");
 }, {passive: true});

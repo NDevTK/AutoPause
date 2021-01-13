@@ -9,7 +9,7 @@ Pause other audio and video sources if audio is playing on the active tab with a
 ![Extension icon](icon.png)
 
 Features:
-- Automatic pause
+- Automatic pause (per tab or new media)
 - Optional automatic resume
 - Global Fast forward
 - Mark tab for automatic resume

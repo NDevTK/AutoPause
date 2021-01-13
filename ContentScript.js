@@ -60,6 +60,7 @@ function injectScript(file_path) {
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
+        if (src.muted === true) return
         chrome.runtime.sendMessage("play");
         if (tabPause) pauseElement(src);
         if (!Elements.has(src)) {

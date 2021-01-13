@@ -47,7 +47,6 @@ function toggleRate() {
     });
 }
 
-
 function injectScript(file_path) {
     var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
@@ -60,6 +59,7 @@ function injectScript(file_path) {
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
+        src.waiting = false;
         if (src.muted === true) return
         chrome.runtime.sendMessage("play");
         if (tabPause) pauseElement(src);
@@ -73,19 +73,22 @@ window.addEventListener("pause", event => {
     onPause(event);
 }, {capture: true, passive: true});
 
-window.addEventListener("pause", event => {
+window.addEventListener("abort", event => {
     onPause(event);
 }, {capture: true, passive: true});
 
-window.addEventListener("abort", event => {
-    onPause(event);
+window.addEventListener("waiting", event => {
+    let src = event.srcElement;
+    if (src instanceof HTMLMediaElement) {
+        src.waiting = true;
+    }
 }, {capture: true, passive: true});
 
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         Elements.delete(src);
-        if (Elements.size === 0) chrome.runtime.sendMessage("pause");
+        if (Elements.size === 0 && !src.waiting) chrome.runtime.sendMessage("pause");
     }
 }
 

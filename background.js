@@ -25,10 +25,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!sender.hasOwnProperty("tab")) return
     switch(message) {
         case "play":
-            if (sender.tab.active) {
-                sounds.delete(sender.tab.id);
-                sounds.add(sender.tab.id);
-            }
             checkOrigin(sender.tab, true);
             return
         case "pause":
@@ -88,8 +84,13 @@ chrome.commands.onCommand.addListener(async command => {
 
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
-    if (tab.active === false || tab.id === undefined) return  
-    let activePlaying = (override === null) ? tab.audible : override;    
+    if (tab.active === false || tab.id === undefined) return 
+    let activePlaying = (override === null) ? tab.audible : override;
+    if (activePlaying) {
+        // Make tab top priority
+        sounds.delete(tab.id);
+        sounds.add(tab.id;
+    }
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);
     } else {

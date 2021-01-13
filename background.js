@@ -60,7 +60,7 @@ chrome.commands.onCommand.addListener(async command => {
             }, tabs => {
                 if (tabs.length > 0) {
                     chrome.tabs.update(tabs[0].id, {active: true});
-                } else if (tabs.length < 1 && sounds.size > 0) {
+                } else if (sounds.size > 0) {
                     chrome.tabs.update(Array.from(sounds).pop(), {active: true});
                 }
             });

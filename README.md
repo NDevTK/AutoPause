@@ -12,3 +12,4 @@ Features:
 - Automatic pause
 - Optional automatic resume
 - Global Fast forward
+- Mark tab for automatic resume

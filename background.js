@@ -30,7 +30,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             checkOrigin(sender.tab, true);
             return
         case "pause":
-            backgroundaudio.delete(sender.tab.id);
             sounds.delete(sender.tab.id);
             checkOrigin(sender.tab, false);
             return

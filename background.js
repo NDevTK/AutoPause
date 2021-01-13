@@ -29,9 +29,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             checkOrigin(sender.tab, true);
             return
         case "pause":
-            sounds.delete(sender.tab.id);
             backgroundaudio.delete(sender.tab.id);
             checkOrigin(sender.tab, false);
+            sounds.delete(sender.tab.id);
             return
     }
 });

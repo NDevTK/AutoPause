@@ -2,6 +2,7 @@
 var sounds = new Set(); // List of tab ids that have had audio and the extension has permission to acesss.
 var options = {};
 var backgroundaudio = new Set();
+var mediaPlaying = null; // Tab ID of active media
 
 chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -102,11 +103,14 @@ async function checkOrigin(tab, override = null) {
     }
     if (activePlaying === true || options.hasOwnProperty("pauseoninactive")) {
         Broadcast("pause", tab.id);
+        mediaPlaying = tab.id;
     } else {
         if (options.hasOwnProperty("disableresume") || sounds.size === 0) return
-        let resumeTabs = (backgroundaudio.size > 0 && !sounds.has(tab.id)) ? backgroundaudio : [Array.from(sounds).pop()];
+        let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()];
         if (options.hasOwnProperty("multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = sounds;
+        } else if (tab.id !== mediaPlaying) {
+            return
         }
         Broadcast("play", tab.id, resumeTabs);
     }

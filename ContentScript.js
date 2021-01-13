@@ -86,7 +86,7 @@ window.addEventListener("seeking", event => {
 window.addEventListener("seeked", event => {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        src.seeking = true;
+        src.seeking = false;
     }
 }, {capture: true, passive: true});
 

@@ -57,8 +57,11 @@ chrome.commands.onCommand.addListener(async command => {
                 active: false,
                 currentWindow: true
             }, tabs => {
-                if (tabs.length < 1) return
-                chrome.tabs.update(tabs[0].id, {
+                var id = tabs[0].id;
+                if (tabs.length < 1 && sounds.size > 0) {
+                    id = Array.from(sounds).pop();
+                }
+                chrome.tabs.update(id, {
                     active: true
                 });
             });

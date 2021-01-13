@@ -3,7 +3,7 @@ var permissions = [];
 var options = {};
 
 // ID for each checkbox
-const supported = ["disableresume", "pauseoninactive"];
+const supported = ["disableresume", "pauseoninactive", "multipletabs"];
 
 // User presses enter
 window.addEventListener("keyup", function(event) {

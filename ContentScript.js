@@ -76,13 +76,6 @@ window.addEventListener("abort", event => {
     onPause(event);
 }, {capture: true, passive: true});
 
-window.addEventListener("waiting", event => {
-    let src = event.srcElement;
-    if (src instanceof HTMLMediaElement) {
-        chrome.runtime.sendMessage("play");
-    }
-}, {capture: true, passive: true});
-
 function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {

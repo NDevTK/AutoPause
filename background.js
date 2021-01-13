@@ -89,7 +89,7 @@ async function checkOrigin(tab, override = null) {
     if (activePlaying) {
         // Make tab top priority
         sounds.delete(tab.id);
-        sounds.add(tab.id;
+        sounds.add(tab.id);
     }
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);

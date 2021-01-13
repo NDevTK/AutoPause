@@ -64,11 +64,17 @@ window.addEventListener('play', function(event) {
         if (tabPause) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
-            src.addEventListener("pause", onPause, {once: true, passive: true});
         }
     }
 }, {capture: true, passive: true});
 
+window.addEventListener("pause", event => {
+    onPause(event);
+}, {capture: true, passive: true});
+
+window.addEventListener("abort", event => {
+    onPause(event);
+}, {capture: true, passive: true});
 
 function onPause(event) {
     let src = event.srcElement;

@@ -106,7 +106,7 @@ async function checkOrigin(tab, override = null) {
     } else {
         if (options.hasOwnProperty("disableresume") || sounds.size === 0) return
         let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [Array.from(sounds).pop()];
-        if (options.hasOwnProperty("multipletabs")) {
+        if (options.hasOwnProperty("multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = sounds;
         }
         Broadcast("play", tab.id, resumeTabs);

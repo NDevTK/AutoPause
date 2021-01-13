@@ -25,6 +25,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!sender.hasOwnProperty("tab")) return
     switch(message) {
         case "play":
+            sounds.add(tab.id);
             checkOrigin(sender.tab, true);
             return
         case "pause":
@@ -86,7 +87,8 @@ chrome.commands.onCommand.addListener(async command => {
 async function checkOrigin(tab, override = null) {
     if (tab.active === false || tab.id === undefined) return 
     let activePlaying = (override === null) ? tab.audible : override;
-    if (activePlaying) {
+    // Dont add anything new
+    if (activePlaying && sounds.has(tab.id)) {
         // Make tab top priority
         sounds.delete(tab.id);
         sounds.add(tab.id);

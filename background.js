@@ -58,13 +58,11 @@ chrome.commands.onCommand.addListener(async command => {
                 active: false,
                 currentWindow: true
             }, tabs => {
-                var id = tabs[0].id;
-                if (tabs.length < 1 && sounds.size > 0) {
-                    id = Array.from(sounds).pop();
+                if (tabs.length > 0) {
+                    chrome.tabs.update(tabs[0].id, {active: true});
+                } else if (tabs.length < 1 && sounds.size > 0) {
+                    chrome.tabs.update(Array.from(sounds).pop(), {active: true});
                 }
-                chrome.tabs.update(id, {
-                    active: true
-                });
             });
             return
         case "disableresume":

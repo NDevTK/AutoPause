@@ -87,7 +87,7 @@ function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         Elements.delete(src);
-        if (Elements.size === 0 && !src.seeking) chrome.runtime.sendMessage("pause");
+        if (Elements.size === 0) chrome.runtime.sendMessage("pause");
     }
 }
 

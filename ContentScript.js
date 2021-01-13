@@ -73,6 +73,10 @@ window.addEventListener("pause", event => {
     onPause(event);
 }, {capture: true, passive: true});
 
+window.addEventListener("pause", event => {
+    onPause(event);
+}, {capture: true, passive: true});
+
 window.addEventListener("abort", event => {
     onPause(event);
 }, {capture: true, passive: true});

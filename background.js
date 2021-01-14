@@ -27,7 +27,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     switch(message) {
         case "play":
             sounds.add(sender.tab.id);
-            checkOrigin(sender.tab, true);
             return
         case "pause":
             sounds.delete(sender.tab.id);

@@ -59,7 +59,11 @@ function injectScript(file_path) {
 window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        if (src.muted === false) chrome.runtime.sendMessage("play");
+        if (src.muted === false) {
+            chrome.runtime.sendMessage("play");
+        } else {
+            chrome.runtime.sendMessage("playMuted");
+        }
         src.wasMuted = src.muted;
         if (tabPause) pauseElement(src);
         if (!Elements.has(src)) {

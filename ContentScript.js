@@ -60,6 +60,7 @@ window.addEventListener('play', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         if (src.muted === false) chrome.runtime.sendMessage("play");
+        src.wasMuted = src.muted;
         if (tabPause) pauseElement(src);
         if (!Elements.has(src)) {
             Elements.add(src);
@@ -67,18 +68,16 @@ window.addEventListener('play', function(event) {
     }
 }, {capture: true, passive: true});
 
-
-window.addEventListener('play', function(event) {
+window.addEventListener('volumechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        chrome.runtime.sendMessage("play");
-        if (tabPause) pauseElement(src);
-        if (!Elements.has(src)) {
-            Elements.add(src);
+        if (src.wasMuted !== src.muted && !src.muted) {
+            chrome.runtime.sendMessage("play");
         }
+        src.wasMuted = src.muted;
     }
 }, {capture: true, passive: true});
-                                           
+
 window.addEventListener("pause", event => {
     setTimeout(_ => {
         onPause(event);	
@@ -93,7 +92,8 @@ function onPause(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement && src.paused) {
         Elements.delete(src);
-        if (Elements.size === 0) chrome.runtime.sendMessage("pause");
+        let audibleElements = Elements.filter(e => !e.muted);
+        if (audibleElements.size === 0) chrome.runtime.sendMessage("pause");
     }
 }
 

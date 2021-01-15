@@ -27,10 +27,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, "tab")) return
     switch(message) {
         case "play":
+            media.set(sender.tab.id);
             checkOrigin(sender.tab, true);
             break
         case "playMuted":
-            media.set(sender.tab.id, "noResume");
+            media.set(sender.tab.id, "muted");
             break
         case "pause":
             media.delete(sender.tab.id);
@@ -43,7 +44,7 @@ function getResumeTabs() {
     if (backgroundaudio.size > 0) {
         return backgroundaudio;
     } else {
-        let resumableMedia = Array.from(media).filter(s => s[1] !== "noResume");
+        let resumableMedia = Array.from(media).filter(s => s[1] !== "muted");
         if (resumableMedia.length > 0) {
             let lastActive = resumableMedia.pop();
             return new Map().set(lastActive[0], lastActive[1]);
@@ -107,21 +108,17 @@ async function checkOrigin(tab, override = null) {
     if (tab.active === false || tab.id === undefined) return
     let activePlaying = (override === null) ? tab.audible : override;
     
-    if (activePlaying) {
-        if (media.has(tab.id)) {
-            // Make tab top priority and keep metadata
-            let metadata = media.get(tab.id);
-            media.delete(tab.id);
-            media.set(tab.id, metadata);
-        } else {
-            media.set(tab.id);
-        }
+    if (activePlaying && media.has(tab.id)) {
+        // Make tab top priority and keep metadata
+        let metadata = media.get(tab.id);
+        media.delete(tab.id);
+        media.set(tab.id, metadata);
     }
     
     if (hasProperty(options, "disableresume")) {
-        chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);
+        chrome.tabs.sendMessage(tab.id, "allowplayback");
     } else {
-        chrome.tabs.sendMessage(tab.id, "play", sendHandler);
+        chrome.tabs.sendMessage(tab.id, "play");
     }
     
     if (activePlaying === true || hasProperty(options, "pauseoninactive")) {
@@ -142,11 +139,6 @@ async function checkOrigin(tab, override = null) {
     }
 }
 
-// Errors from sendMessage
-function sendHandler() {
-    let lastError = chrome.runtime.lastError;
-}
-
 // On tab change
 chrome.tabs.onActivated.addListener(info => {
     chrome.tabs.get(info.tabId, tab => {
@@ -162,13 +154,14 @@ chrome.tabs.onRemoved.addListener(tabId => {
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
+    if(!media.has(tab.id)) media.set(tab.id, "noResume");
     checkOrigin(tab);
 });
 
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach((metadata, id) => { // Only for tabs that have had sound
-        if (id === exclude) return
-        chrome.tabs.sendMessage(id, message, sendHandler);
+        if (id === exclude || metadata === "noResume") return
+        chrome.tabs.sendMessage(id, message);
     });
 };
 

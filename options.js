@@ -52,7 +52,7 @@ function hasProperty(value, key) {
 }
 
 function toggleOption(o) {
-    if (options.hasOwnProperty(o)) {
+    if (hasProperty(options, o)) {
         delete options[o];
     } else {
         options[o] = true;

@@ -27,13 +27,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     switch(message) {
         case "play":
             checkOrigin(sender.tab, true);
-            return
+            break
         case "playMuted":
             media.set(sender.tab.id, "noResume");
+            break
         case "pause":
             media.delete(sender.tab.id);
             checkOrigin(sender.tab, false);
-            return
+            break
     }
 });
 

@@ -6,6 +6,8 @@ var options = {};
 // ID for each checkbox
 const supported = ["disableresume", "pauseoninactive", "multipletabs"];
 
+var userinput = document.getElementById("userinput");
+
 // User presses enter
 window.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {

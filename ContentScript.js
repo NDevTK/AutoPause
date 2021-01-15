@@ -97,7 +97,7 @@ function onPause(event) {
     if (src instanceof HTMLMediaElement && src.paused) {
         Elements.delete(src);
         let audibleElements = [...Elements].filter(e => !e.muted);
-        if (audibleElements.size === 0) chrome.runtime.sendMessage("pause");
+        if (audibleElements.length === 0) chrome.runtime.sendMessage("pause");
     }
 }
 

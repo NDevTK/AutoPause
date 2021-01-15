@@ -107,15 +107,15 @@ chrome.commands.onCommand.addListener(async command => {
 async function checkOrigin(tab, override = null) {
     if (tab.active === false || tab.id === undefined) return
     let activePlaying = (override === null) ? tab.audible : override;
+    let metadata = media.get(tab.id);
     
     if (activePlaying && media.has(tab.id)) {
         // Make tab top priority and keep metadata
-        let metadata = media.get(tab.id);
         media.delete(tab.id);
         media.set(tab.id, metadata);
     }
     
-    if (hasProperty(options, "disableresume")) {
+    if (hasProperty(options, "disableresume") && metadata !== "noPermission") {
         chrome.tabs.sendMessage(tab.id, "allowplayback");
     } else {
         chrome.tabs.sendMessage(tab.id, "play");

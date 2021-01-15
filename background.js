@@ -145,6 +145,7 @@ async function checkOrigin(tab, override = null) {
 // Errors from sendMessage
 function sendHandler() {
     let lastError = chrome.runtime.lastError;
+    console.error(lastError);
 }
 
 // On tab change

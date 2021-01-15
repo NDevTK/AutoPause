@@ -1,4 +1,5 @@
 "use strict";
+/*global chrome*/
 
 // Script should only run once
 if (tabPause === undefined) {

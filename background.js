@@ -38,7 +38,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function getResumeTab() {
-    return Array.from(media).filter(s => s[1] !== "noResume").pop();
+    let result = Array.from(media).filter(s => s[1] !== "noResume");
+    if (result.length < 1) return false;
+    return result.pop();
 }
 
 // User may have mutiple windows open
@@ -66,7 +68,8 @@ chrome.commands.onCommand.addListener(async command => {
                 if (tabs.length > 0) {
                     chrome.tabs.update(tabs[0].id, {active: true});
                 } else if (media.size > 0) {
-                    chrome.tabs.update(getResumeTab(), {active: true});
+                    let result = getResumeTab();
+                    if (result !== false) chrome.tabs.update(result, {active: true});
                 }
             });
             return
@@ -117,7 +120,9 @@ async function checkOrigin(tab, override = null) {
         mediaPlaying = tab.id;
     } else {
         if (options.hasOwnProperty("disableresume") || media.size === 0) return
-        let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [getResumeTab()];
+        let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [];
+        let result = getResumeTab();
+        if (result !== false) resumeTabs = [result];
         if (options.hasOwnProperty("multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = media;
         } else if (tab.id !== mediaPlaying) {

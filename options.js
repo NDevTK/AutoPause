@@ -1,4 +1,5 @@
 "use strict";
+/*global chrome*/
 var permissions = [];
 var options = {};
 

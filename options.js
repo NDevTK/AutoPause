@@ -27,7 +27,7 @@ chrome.storage.sync.get("options", result => {
 });
 
 chrome.storage.onChanged.addListener(changes => {
-    if (changes.hasOwnProperty("options")) {
+    if (hasProperty(changes, "options") {
         options = changes["options"].newValue;
         applyChanges();
     }
@@ -36,7 +36,7 @@ chrome.storage.onChanged.addListener(changes => {
 
 function applyChanges() {
     supported.forEach(id => {
-        var state = options.hasOwnProperty(id);
+        var state = hasProperty(options, id);
         document.getElementById(id).checked = state;
     });
 }
@@ -46,6 +46,10 @@ supported.forEach(id => {
         toggleOption(id);
     }
 });
+
+function hasProperty(value, key) {
+    return Object.prototype.hasOwnProperty.call(value, key);
+}
 
 function toggleOption(o) {
     if (options.hasOwnProperty(o)) {

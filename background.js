@@ -1,7 +1,7 @@
 "use strict";
 var media = new Map(); // List of tabs with media
 var options = {};
-var backgroundaudio = new Set();
+var backgroundaudio = new Map();
 var mediaPlaying = null; // Tab ID of active media
 
 chrome.storage.sync.get("options", result => {
@@ -37,10 +37,17 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     }
 });
 
-function getResumeTab() {
-    let result = Array.from(media).filter(s => s[1] !== "noResume");
-    if (result.length < 1) return false;
-    return result.pop();
+function getResumeTabs() {
+    if (backgroundaudio.size > 0) {
+        return backgroundaudio;
+    } else {
+        let resumableMedia = Array.from(media).filter(s => s[1] !== "noResume");
+        if (resumableMedia.length > 0) {
+            let lastActive = resumableMedia.pop();
+            return new Map(lastActive[0], lastActive[1]);
+        }
+    }
+    return new Map();
 }
 
 // User may have mutiple windows open
@@ -68,8 +75,8 @@ chrome.commands.onCommand.addListener(async command => {
                 if (tabs.length > 0) {
                     chrome.tabs.update(tabs[0].id, {active: true});
                 } else if (media.size > 0) {
-                    let result = getResumeTab();
-                    if (result !== false) chrome.tabs.update(result, {active: true});
+                    let result = getResumeTabs();
+                    if (result.length > 0) chrome.tabs.update(result[0], {active: true});
                 }
             });
             return
@@ -87,7 +94,7 @@ chrome.commands.onCommand.addListener(async command => {
                 if(tabs.length === 0) return
                 // Currently only has one tab
                 backgroundaudio.clear();
-                backgroundaudio.add(tabs[0].id);
+                backgroundaudio.set(tabs[0].id);
             });
             return
     }
@@ -120,9 +127,7 @@ async function checkOrigin(tab, override = null) {
         mediaPlaying = tab.id;
     } else {
         if (options.hasOwnProperty("disableresume") || media.size === 0) return
-        let resumeTabs = (backgroundaudio.size > 0) ? backgroundaudio : [];
-        let result = getResumeTab();
-        if (result !== false) resumeTabs = [result];
+        let resumeTabs = getResumeTabs();
         if (options.hasOwnProperty("multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = media;
         } else if (tab.id !== mediaPlaying) {

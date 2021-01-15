@@ -151,7 +151,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 async function Broadcast(message, exclude = false, tabs = media) {
-    tabs.forEach(id => { // Only for tabs that have had sound
+    tabs.forEach((metadata, id) => { // Only for tabs that have had sound
         if (id === exclude) return
         chrome.tabs.sendMessage(id, message, sendHandler);
     });

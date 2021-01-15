@@ -9,7 +9,7 @@ chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
 });
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
+chrome.storage.onChanged.addListener(changes => {
     if (changes.hasOwnProperty("options")) {
         options = changes["options"].newValue;
     }

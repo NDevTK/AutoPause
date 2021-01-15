@@ -162,7 +162,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!hasProperty(changeInfo, "audible") return // Bool that contains if audio is playing on tab
+    if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
     checkOrigin(tab);
 });
 

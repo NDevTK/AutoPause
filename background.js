@@ -80,16 +80,16 @@ chrome.commands.onCommand.addListener(async command => {
                     if (result !== false) chrome.tabs.update(Array.from(result)[0][0], {active: true});
                 }
             });
-            return
+            break
         case "disableresume":
             toggleOption("disableresume");
-            return
+            break
         case "toggleFastPlayback":
             Broadcast("toggleFastPlayback");
-            return
+            break
         case "pauseoninactive":
             toggleOption("pauseoninactive");
-            return
+            break
         case "backgroundaudio":
             chrome.tabs.query({active: true, currentWindow: true}, tabs => {
                 if(tabs.length === 0) return
@@ -97,7 +97,7 @@ chrome.commands.onCommand.addListener(async command => {
                 backgroundaudio.clear();
                 backgroundaudio.set(tabs[0].id);
             });
-            return
+            break
     }
 });
 

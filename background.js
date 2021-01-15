@@ -154,13 +154,13 @@ chrome.tabs.onRemoved.addListener(tabId => {
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
-    if(!media.has(tab.id)) media.set(tab.id, "noResume");
+    if(!media.has(tab.id)) media.set(tab.id, "noPermission");
     checkOrigin(tab);
 });
 
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach((metadata, id) => { // Only for tabs that have had sound
-        if (id === exclude || metadata === "noResume") return
+        if (id === exclude || metadata === "noPermission") return
         chrome.tabs.sendMessage(id, message);
     });
 };

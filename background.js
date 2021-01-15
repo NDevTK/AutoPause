@@ -26,7 +26,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!sender.hasOwnProperty("tab")) return
     switch(message) {
         case "play":
-            media.set(sender.tab.id);
             checkOrigin(sender.tab, true);
             return
         case "playMuted":
@@ -93,20 +92,26 @@ chrome.commands.onCommand.addListener(async command => {
 
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
-    if (tab.active === false || tab.id === undefined) return 
+    if (tab.active === false || tab.id === undefined) return
     let activePlaying = (override === null) ? tab.audible : override;
-    // Dont add anything new
-    if (activePlaying && media.has(tab.id)) {
-        // Make tab top priority
-        let metadata = media.get(tab.id);
-        media.delete(tab.id);
-        media.set(tab.id, metadata);
+    
+    if (activePlaying) {
+        if (media.has(tab.id)) {
+            // Make tab top priority and keep metadata
+            let metadata = media.get(tab.id);
+            media.delete(tab.id);
+            media.set(tab.id, metadata);
+        } else {
+            media.set(tab.id);
+        }
     }
+    
     if (options.hasOwnProperty("disableresume")) {
         chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);
     } else {
         chrome.tabs.sendMessage(tab.id, "play", sendHandler);
     }
+    
     if (activePlaying === true || options.hasOwnProperty("pauseoninactive")) {
         Broadcast("pause", tab.id);
         mediaPlaying = tab.id;
@@ -142,11 +147,10 @@ chrome.tabs.onRemoved.addListener(tabId => {
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
-    if (!media.has(tabId)) media.set(sender.tab.id, "noResume");
     checkOrigin(tab);
 });
 
-async function Broadcast(message, exclude = false, tabs = sounds) {
+async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach(id => { // Only for tabs that have had sound
         if (id === exclude) return
         chrome.tabs.sendMessage(id, message, sendHandler);

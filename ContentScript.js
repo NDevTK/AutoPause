@@ -75,8 +75,12 @@ window.addEventListener('play', function(event) {
 window.addEventListener('volumechange', function(event) {
     let src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
-        if (src.wasMuted !== src.muted && !src.muted) {
-            chrome.runtime.sendMessage("play");
+        if (src.wasMuted !== src.muted && !src.paused) {
+            if(src.muted) {
+                chrome.runtime.sendMessage("playMuted");
+            } else {
+                chrome.runtime.sendMessage("play");
+            }
         }
         src.wasMuted = src.muted;
     }

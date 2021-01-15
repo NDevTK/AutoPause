@@ -1,4 +1,6 @@
 "use strict";
+/*global browser*/
+
 var contentscript = null;
 
 function registerScriptFirefox() {

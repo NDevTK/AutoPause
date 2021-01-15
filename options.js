@@ -9,7 +9,7 @@ const supported = ["disableresume", "pauseoninactive", "multipletabs"];
 var userinput = document.getElementById("userinput");
 
 // User presses enter
-window.addEventListener("keyup", function(event) {
+window.addEventListener("keyup", event => {
     if (event.keyCode === 13) {
         event.preventDefault();
         permissionUpdate();
@@ -19,14 +19,14 @@ window.addEventListener("keyup", function(event) {
 chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
-chrome.storage.sync.get("options", function(result) {
+chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) {
         options = result["options"];
         applyChanges();
     }
 });
 
-chrome.storage.onChanged.addListener(function(changes, namespace) {
+chrome.storage.onChanged.addListener(changes => {
     if (changes.hasOwnProperty("options")) {
         options = changes["options"].newValue;
         applyChanges();
@@ -42,7 +42,7 @@ function applyChanges() {
 }
 
 supported.forEach(id => {
-    document.getElementById(id).onclick = _ => {
+    document.getElementById(id).onclick = () => {
         toggleOption(id);
     }
 });
@@ -85,7 +85,7 @@ async function permissionUpdate() {
     if (remove.length > 0) {
         chrome.permissions.remove({
             origins: remove
-        }, function(removed) {
+        }, () => {
             getPermissions();
         });
     }
@@ -93,7 +93,7 @@ async function permissionUpdate() {
     if (add.length > 0) {
         chrome.permissions.request({
             origins: add
-        }, function(result) {
+        }, () => {
             getPermissions();
         });
     }

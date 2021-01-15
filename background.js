@@ -44,7 +44,9 @@ function getResumeTabs() {
         let resumableMedia = Array.from(media).filter(s => s[1] !== "noResume");
         if (resumableMedia.length > 0) {
             let lastActive = resumableMedia.pop();
-            return new Map(lastActive[0], lastActive[1]);
+            let map = new Map();
+            map.set(lastActive[0], lastActive[1]);
+            reuturn map;
         }
     }
     return new Map();

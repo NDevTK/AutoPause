@@ -24,7 +24,7 @@ chrome.runtime.onInstalled.addListener(details => {
 
 // For when the media is silent
 chrome.runtime.onMessage.addListener((message, sender) => {
-    if (!sender.hasOwnProperty("tab")) return
+    if (!hasProperty(sender, "tab")) return
     switch(message) {
         case "play":
             checkOrigin(sender.tab, true);
@@ -124,13 +124,13 @@ async function checkOrigin(tab, override = null) {
         chrome.tabs.sendMessage(tab.id, "play", sendHandler);
     }
     
-    if (activePlaying === true || options.hasOwnProperty("pauseoninactive")) {
+    if (activePlaying === true || hasProperty(options, "pauseoninactive")) {
         Broadcast("pause", tab.id);
         mediaPlaying = tab.id;
     } else {
-        if (options.hasOwnProperty("disableresume") || media.size === 0) return
+        if (hasProperty(options, "disableresume") || media.size === 0) return
         let resumeTabs = false;
-        if (options.hasOwnProperty("multipletabs") && backgroundaudio.size === 0) {
+        if (hasProperty(options, "multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = media;
         } else if (tab.id !== mediaPlaying) {
             return
@@ -162,7 +162,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!changeInfo.hasOwnProperty("audible")) return // Bool that contains if audio is playing on tab
+    if (!hasProperty(changeInfo, "audible") return // Bool that contains if audio is playing on tab
     checkOrigin(tab);
 });
 
@@ -173,9 +173,13 @@ async function Broadcast(message, exclude = false, tabs = media) {
     });
 };
 
+function hasProperty(value, key) {
+    return Object.prototype.hasOwnProperty.call(value, key);
+}
+
 // Saves options to storage
 function toggleOption(o) {
-    if (options.hasOwnProperty(o)) {
+    if (hasProperty(options, o)) {
         delete options[o];
     } else {
         options[o] = true;

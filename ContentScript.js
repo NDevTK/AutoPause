@@ -7,7 +7,7 @@ if (tabPause === undefined) {
     var Elements = new Set();
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(message => {
     switch (message) {
         case "toggleFastPlayback":
             toggleRate();
@@ -25,12 +25,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
 });
 
-window.addEventListener('beforeunload', event => {
+window.addEventListener('beforeunload', () => {
     Elements.clear();
     chrome.runtime.sendMessage("pause");
 }, {passive: true});
 
-window.addEventListener('DOMContentLoaded', event => {
+window.addEventListener('DOMContentLoaded', () => {
     // Adds content to DOM needed because of isolation
     injectScript("WindowScript.js");
 }, {passive: true});
@@ -88,7 +88,7 @@ window.addEventListener('volumechange', function(event) {
 }, {capture: true, passive: true});
 
 window.addEventListener("pause", event => {
-    setTimeout(_ => {
+    setTimeout(() => {
         onPause(event);	
     }, 100);
 }, {capture: true, passive: true});

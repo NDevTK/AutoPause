@@ -1,7 +1,7 @@
 "use strict";
 /*global chrome*/
-chrome.runtime.onInstalled.addListener(function(details) {
-    chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
         chrome.declarativeContent.onPageChanged.addRules([{
             conditions: [new chrome.declarativeContent.PageStateMatcher({
                 pageUrl: {

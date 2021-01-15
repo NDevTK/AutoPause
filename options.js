@@ -27,7 +27,7 @@ chrome.storage.sync.get("options", result => {
 });
 
 chrome.storage.onChanged.addListener(changes => {
-    if (hasProperty(changes, "options") {
+    if (hasProperty(changes, "options")) {
         options = changes["options"].newValue;
         applyChanges();
     }

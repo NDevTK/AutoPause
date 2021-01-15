@@ -10,7 +10,7 @@ chrome.storage.sync.get("options", result => {
 });
 
 chrome.storage.onChanged.addListener(changes => {
-    if (changes.hasOwnProperty("options")) {
+    if (hasProperty(changes, "options")) {
         options = changes["options"].newValue;
     }
 });
@@ -118,7 +118,7 @@ async function checkOrigin(tab, override = null) {
         }
     }
     
-    if (options.hasOwnProperty("disableresume")) {
+    if (hasProperty(options, "disableresume")) {
         chrome.tabs.sendMessage(tab.id, "allowplayback", sendHandler);
     } else {
         chrome.tabs.sendMessage(tab.id, "play", sendHandler);

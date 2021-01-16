@@ -20,15 +20,15 @@ chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
 chrome.storage.sync.get("options", result => {
-    if (typeof result["options"] === 'object' && result["options"] !== null) {
-        options = result["options"];
+    if (typeof result.options === 'object' && result.options !== null) {
+        options = result.options;
         applyChanges();
     }
 });
 
 chrome.storage.onChanged.addListener(changes => {
     if (hasProperty(changes, "options")) {
-        options = changes["options"].newValue;
+        options = changes.options.newValue;
         applyChanges();
     }
 });

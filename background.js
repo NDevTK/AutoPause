@@ -118,7 +118,7 @@ async function checkOrigin(tab, override = null) {
     }
     
     // Attempt to play media
-    if (activePlaying === false && media.has(tab.id) && metadata !== "noPermission") {
+    if (activePlaying === false && media.has(tab.id) && !metadata) {
         if (hasProperty(options, "disableresume")) {
             chrome.tabs.sendMessage(tab.id, "allowplayback");
         } else {

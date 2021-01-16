@@ -9,3 +9,7 @@ html, body {
 #userinput:invalid {
   border-color: red;
 }
+
+input[type="checkbox"] {
+  vertical-align: middle;
+}

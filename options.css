@@ -1,19 +1,11 @@
 html, body {
+  color: white;
+	background-color: #1b262c;
   min-height: 10rem;
   max-width: 50rem;
   overflow-y: hidden;
 }
+
 #userinput:invalid {
   border-color: red;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-color: #1e1f23;
-    --secondary-color: #232428;
-    --text-dark: #efefef;
-    --text: #c4c5c9;
-    --text-light: #6c6d71;
-    --text-lighter: #8e8f93;
-  }
 }

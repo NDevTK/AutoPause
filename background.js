@@ -3,7 +3,8 @@
 var media = new Map(); // List of tabs with media
 var options = {};
 var backgroundaudio = new Map();
-var mediaPlaying = null; // Tab ID of active media
+var mediaPlaying = null; // Tab IDs of active media
+var audibleTabs = new Set(); // Tab IDs of audible tabs hopefully faster then chrome.tabs.query
 
 chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -32,6 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             break
         case "playMuted":
             media.set(sender.tab.id, "muted");
+            checkOrigin(sender.tab, false);
             break
         case "pause":
             media.delete(sender.tab.id);
@@ -129,7 +131,7 @@ async function checkOrigin(tab, override = null) {
         Broadcast("pause", tab.id);
         mediaPlaying = tab.id;
     } else {
-        if (hasProperty(options, "disableresume") || media.size === 0) return
+        if (hasProperty(options, "disableresume") || media.size === 0 || audibleTabs.size > 0) return
         let resumeTabs = false;
         if (hasProperty(options, "multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = media;
@@ -158,7 +160,11 @@ chrome.tabs.onRemoved.addListener(tabId => {
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
-    if(!media.has(tab.id)) media.set(tab.id, "noPermission");
+    if (changeInfo.audible) {
+        audibleTabs.set(tabId);
+    } else {
+        audibleTabs.delete(tabId);
+    }
     checkOrigin(tab);
 });
 

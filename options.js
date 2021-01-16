@@ -75,14 +75,11 @@ function getPermissions() {
 getPermissions();
 
 async function permissionUpdate() {
-  var domains = userinput.value.split(' ');
+  const domains = userinput.value.split(' ');
+  const regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
 
-  var add = [];
-  var remove = [];
-  var regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
-
-  add = domains.filter(domain => domain === '<all_urls>' || regex.test(domain));
-  remove = permissions.filter(permission => !domains.includes(permission));
+  const add = domains.filter(domain => domain === '<all_urls>' || regex.test(domain));
+  const remove = permissions.filter(permission => !domains.includes(permission));
 
   if (remove.length > 0) {
     chrome.permissions.remove({

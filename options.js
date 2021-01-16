@@ -33,7 +33,6 @@ chrome.storage.onChanged.addListener(changes => {
   }
 });
 
-
 function applyChanges() {
   supported.forEach(id => {
     var state = hasProperty(options, id);
@@ -81,7 +80,6 @@ async function permissionUpdate() {
   var add = [];
   var remove = [];
   var regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
-
 
   add = domains.filter(domain => domain === "<all_urls>" || regex.test(domain));
   remove = permissions.filter(permission => !domains.includes(permission));

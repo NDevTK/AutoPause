@@ -115,10 +115,12 @@ async function checkOrigin(tab, override = null) {
         media.set(tab.id, metadata);
     }
     
-    if (hasProperty(options, "disableresume") && metadata !== "noPermission") {
-        chrome.tabs.sendMessage(tab.id, "allowplayback");
-    } else {
-        chrome.tabs.sendMessage(tab.id, "play");
+    if (metadata !== "noPermission") {
+        if (hasProperty(options, "disableresume")) {
+            chrome.tabs.sendMessage(tab.id, "allowplayback");
+        } else {
+            chrome.tabs.sendMessage(tab.id, "play");
+        }
     }
     
     if (activePlaying === true || hasProperty(options, "pauseoninactive")) {

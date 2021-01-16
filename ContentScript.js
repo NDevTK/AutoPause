@@ -108,7 +108,7 @@ function onPause(event) {
 
 // Dont tell the media please
 window.addEventListener('ratechange', function(event) {
-    let src = event.srcElement;
+    const src = event.srcElement;
     if (src instanceof HTMLMediaElement === true) {
         if (tabPause && src.playbackRate === 0) {
             event.stopPropagation();

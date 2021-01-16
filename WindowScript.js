@@ -16,7 +16,7 @@
           if (src instanceof HTMLMediaElement) {
             div.removeChild(src);
           }
-        }, {passive: true, capture: true});
+        }, { passive: true, capture: true });
       }
       div.appendChild(this);
     }

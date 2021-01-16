@@ -131,10 +131,10 @@ async function checkOrigin(tab, override = null) {
     }
   }
 
-  if (activePlaying === true || hasProperty(options, 'pauseoninactive')) {
+  if (activePlaying || hasProperty(options, 'pauseoninactive')) {
     Broadcast('pause', tab.id);
     mediaPlaying = tab.id;
-    if (hasProperty(options, 'pauseoninactive') && backgroundaudio.size > 0) autoResume(tab.id);
+    if (backgroundaudio.size > 0 && !activePlaying) autoResume(tab.id);
   } else {
     autoResume(tab.id);
   }

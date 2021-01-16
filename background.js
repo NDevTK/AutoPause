@@ -124,7 +124,6 @@ async function checkOrigin(tab, override = null) {
         } else {
             chrome.tabs.sendMessage(tab.id, "play");
         }
-        return
     }
     
     if (activePlaying === true || hasProperty(options, "pauseoninactive")) {

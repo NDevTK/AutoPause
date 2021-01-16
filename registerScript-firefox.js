@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /*global browser*/
 
 var contentscript = null;
@@ -11,12 +11,12 @@ function registerScriptFirefox() {
   browser.permissions.getAll(async p => {
     if (p.origins.length < 1) return
     contentscript = await browser.contentScripts.register({
-      "js": [{
-        file: "ContentScript.js"
+      'js': [{
+        file: 'ContentScript.js'
       }],
-      "matches": p.origins,
-      "allFrames": true,
-      "runAt": "document_start"
+      'matches': p.origins,
+      'allFrames': true,
+      'runAt': 'document_start'
     });
   });
 }

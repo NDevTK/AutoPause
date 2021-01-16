@@ -40,7 +40,7 @@ async function getCommands() {
       return
     }
     const label = document.createElement('label');
-    label.innerText = command.description + " ";
+    label.innerText = command.description + ' ';
     label.setAttribute('for', id);
     const input = document.createElement('input');
     input.type = 'text'

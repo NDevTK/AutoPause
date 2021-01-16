@@ -11,12 +11,12 @@ function registerScriptFirefox() {
   browser.permissions.getAll(async p => {
     if (p.origins.length < 1) return
     contentscript = await browser.contentScripts.register({
-      'js': [{
+      js: [{
         file: 'ContentScript.js'
       }],
-      'matches': p.origins,
-      'allFrames': true,
-      'runAt': 'document_start'
+      matches: p.origins,
+      allFrames: true,
+      runAt: 'document_start'
     });
   });
 }

@@ -22,7 +22,6 @@ chrome.runtime.onMessage.addListener(message => {
       resume(false);
       break
   }
-
 });
 
 window.addEventListener('beforeunload', () => {

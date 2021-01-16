@@ -115,12 +115,14 @@ async function checkOrigin(tab, override = null) {
         media.set(tab.id, metadata);
     }
     
-    if (metadata !== "noPermission") {
+    // Attempt to play media
+    if (activePlaying === false && metadata !== "noPermission") {
         if (hasProperty(options, "disableresume")) {
             chrome.tabs.sendMessage(tab.id, "allowplayback");
         } else {
             chrome.tabs.sendMessage(tab.id, "play");
         }
+        return
     }
     
     if (activePlaying === true || hasProperty(options, "pauseoninactive")) {
@@ -137,7 +139,11 @@ async function checkOrigin(tab, override = null) {
            resumeTabs = getResumeTabs();
         }
         if(resumeTabs === false) return
-        Broadcast("play", tab.id, resumeTabs);
+        if (hasProperty(options, "disableresume")) {
+            Broadcast("allowplayback", tab.id, resumeTabs);
+        } else {
+            Broadcast("play", tab.id, resumeTabs);
+        }
     }
 }
 

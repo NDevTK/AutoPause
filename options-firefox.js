@@ -6,7 +6,7 @@ var shortcuts = document.getElementById('shortcuts');
 function commandsUpdate() {
   commands.forEach(async command => {
     const id = command.name + "shortcut";
-    let element = document.getElementById(id);
+    const element = document.getElementById(id);
     if (element.value !== command.shortcut) {
       try {
         await browser.commands.update({
@@ -34,21 +34,21 @@ async function getCommands() {
   commands = await browser.commands.getAll();
   commands.forEach(command => {
     const id = command.name + "shortcut";
-    let element = document.getElementById(id);
+    const element = document.getElementById(id);
     if (element) {
       element.value = command.shortcut;
       return
     }
-    let label = document.createElement("label");
+    const label = document.createElement("label");
     label.innerText = command.description + " ";
     label.setAttribute("for", id);
-    let input = document.createElement("input");
+    const input = document.createElement("input");
     input.type = "text";
     input.id = id;
     input.value = command.shortcut;
     label.appendChild(input);
     shortcuts.appendChild(label);
-    let br = document.createElement("br");
+    const br = document.createElement("br");
     shortcuts.appendChild(br);
   });
 };

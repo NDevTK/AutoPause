@@ -62,8 +62,7 @@ chrome.windows.onFocusChanged.addListener(id => {
     active: true,
     currentWindow: true
   }, tabs => {
-    if (tabs.length !== 1) return
-    checkOrigin(tabs[0]);
+    if (tabs.length === 1) checkOrigin(tabs[0]);
   });
 });
 
@@ -83,9 +82,9 @@ chrome.commands.onCommand.addListener(async command => {
           });
         } else if (media.size > 0) {
           const result = getResumeTabs();
-          if (result !== false) chrome.tabs.update(Array.from(result)[0][0], {
-            active: true
-          });
+          if (result !== false) {
+            chrome.tabs.update(Array.from(result)[0][0], {active: true});
+          }
         }
       });
       break

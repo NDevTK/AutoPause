@@ -1,5 +1,5 @@
 'use strict';
-/*global browser*/
+/* global browser*/
 
 var contentscript = null;
 

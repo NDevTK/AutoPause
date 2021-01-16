@@ -18,7 +18,7 @@ chrome.storage.onChanged.addListener(changes => {
 
 // On install display the options page so the user can give permissions
 chrome.runtime.onInstalled.addListener(details => {
-    if (details.reason == "install") {
+    if (details.reason === "install") {
         chrome.runtime.openOptionsPage();
     }
 });
@@ -46,9 +46,9 @@ function getResumeTabs() {
     if (backgroundaudio.size > 0) {
         return backgroundaudio;
     } else {
-        let resumableMedia = Array.from(media).filter(s => s[1] !== "muted");
+        const resumableMedia = Array.from(media).filter(s => s[1] !== "muted");
         if (resumableMedia.length > 0) {
-            let lastActive = resumableMedia.pop();
+            const lastActive = resumableMedia.pop();
             return new Map().set(lastActive[0], lastActive[1]);
         }
     }
@@ -80,7 +80,7 @@ chrome.commands.onCommand.addListener(async command => {
                 if (tabs.length > 0) {
                     chrome.tabs.update(tabs[0].id, {active: true});
                 } else if (media.size > 0) {
-                    let result = getResumeTabs();
+                    const result = getResumeTabs();
                     if (result !== false) chrome.tabs.update(Array.from(result)[0][0], {active: true});
                 }
             });
@@ -108,8 +108,8 @@ chrome.commands.onCommand.addListener(async command => {
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
     if (tab.active === false || tab.id === undefined) return
-    let activePlaying = (override === null) ? tab.audible : override;
-    let metadata = media.get(tab.id);
+    const activePlaying = (override === null) ? tab.audible : override;
+    const metadata = media.get(tab.id);
     
     if (activePlaying && media.has(tab.id)) {
         // Make tab top priority and keep metadata

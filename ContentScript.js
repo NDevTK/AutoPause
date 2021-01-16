@@ -27,16 +27,12 @@ chrome.runtime.onMessage.addListener(message => {
 window.addEventListener('beforeunload', () => {
   Elements.clear();
   chrome.runtime.sendMessage('pause');
-}, {
-  passive: true
-});
+}, { passive: true });
 
 window.addEventListener('DOMContentLoaded', () => {
   // Adds content to DOM needed because of isolation
   injectScript('WindowScript.js');
-}, {
-  passive: true
-});
+}, { passive: true });
 
 // Controlled by global fast forward shortcut
 function toggleRate() {
@@ -74,10 +70,7 @@ window.addEventListener('play', function(event) {
       Elements.add(src);
     }
   }
-}, {
-  capture: true,
-  passive: true
-});
+}, { capture: true, passive: true });
 
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
@@ -91,26 +84,17 @@ window.addEventListener('volumechange', function(event) {
     }
     src.wasMuted = src.muted;
   }
-}, {
-  capture: true,
-  passive: true
-});
+}, { capture: true, passive: true });
 
 window.addEventListener('pause', event => {
   setTimeout(() => {
     onPause(event);
   }, 100);
-}, {
-  capture: true,
-  passive: true
-});
+}, { capture: true, passive: true });
 
 window.addEventListener('abort', event => {
   onPause(event);
-}, {
-  capture: true,
-  passive: true
-});
+}, { capture: true, passive: true });
 
 function onPause(event) {
   const src = event.srcElement;
@@ -129,9 +113,7 @@ window.addEventListener('ratechange', function(event) {
       event.stopPropagation();
     }
   }
-}, {
-  capture: true
-});
+}, { capture: true });
 
 function pauseElement(e) {
   // If media attempts to play when it should be paused dont change its old values.

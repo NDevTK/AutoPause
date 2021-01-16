@@ -7,12 +7,12 @@ var mediaPlaying = null; // Tab IDs of active media
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
 
 chrome.storage.sync.get("options", result => {
-    if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
+    if (typeof result.options === 'object' && result.options !== null) options = result.options;
 });
 
 chrome.storage.onChanged.addListener(changes => {
     if (hasProperty(changes, "options")) {
-        options = changes["options"].newValue;
+        options = changes.options.newValue;
     }
 });
 

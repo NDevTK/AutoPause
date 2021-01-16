@@ -70,7 +70,7 @@ chrome.windows.onFocusChanged.addListener(id => {
 chrome.commands.onCommand.addListener(async command => {
   switch (command) {
     case "gotoaudible":
-      // Go to audible tab thats not active 
+      // Go to audible tab thats not active
       chrome.tabs.query({
         audible: true,
         active: false,

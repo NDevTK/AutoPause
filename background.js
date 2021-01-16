@@ -4,7 +4,7 @@ var media = new Map(); // List of tabs with media
 var options = {};
 var backgroundaudio = new Map();
 var mediaPlaying = null; // Tab IDs of active media
-var audibleTabs = new Set(); // Tab IDs of audible tabs hopefully faster then chrome.tabs.query
+var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
 
 chrome.storage.sync.get("options", result => {
     if (typeof result["options"] === 'object' && result["options"] !== null) options = result["options"];
@@ -113,6 +113,7 @@ async function checkOrigin(tab, override = null) {
     
     if (activePlaying && media.has(tab.id)) {
         // Make tab top priority and keep metadata
+        otherTabs.delete(tab.id);
         media.delete(tab.id);
         media.set(tab.id, metadata);
     }
@@ -130,7 +131,7 @@ async function checkOrigin(tab, override = null) {
         Broadcast("pause", tab.id);
         mediaPlaying = tab.id;
     } else {
-        if (hasProperty(options, "disableresume") || media.size === 0 || audibleTabs.size > 0) return
+        if (hasProperty(options, "disableresume") || media.size === 0 || otherTabs.size > 0) return
         let resumeTabs = false;
         if (hasProperty(options, "multipletabs") && backgroundaudio.size === 0) {
             resumeTabs = media;
@@ -153,6 +154,7 @@ chrome.tabs.onActivated.addListener(info => {
 
 chrome.tabs.onRemoved.addListener(tabId => {
     media.delete(tabId);
+    otherTabs.delete(tabId);
     backgroundaudio.delete(tabId);
 });
 
@@ -160,9 +162,9 @@ chrome.tabs.onRemoved.addListener(tabId => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
     if (changeInfo.audible) {
-        audibleTabs.add(tabId);
+        if (!media.has(tabId)) otherTabs.add(tabId);
     } else {
-        audibleTabs.delete(tabId);
+        otherTabs.delete(tabId);
     }
     checkOrigin(tab);
 });

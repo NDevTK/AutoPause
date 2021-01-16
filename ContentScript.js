@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /*global chrome*/
 
 // Script should only run once
@@ -9,16 +9,16 @@ if (tabPause === undefined) {
 
 chrome.runtime.onMessage.addListener(message => {
   switch (message) {
-    case "toggleFastPlayback":
+    case 'toggleFastPlayback':
       toggleRate();
       break
-    case "pause":
+    case 'pause':
       pause();
       break
-    case "play":
+    case 'play':
       resume(true);
       break
-    case "allowplayback":
+    case 'allowplayback':
       resume(false);
       break
   }
@@ -26,14 +26,14 @@ chrome.runtime.onMessage.addListener(message => {
 
 window.addEventListener('beforeunload', () => {
   Elements.clear();
-  chrome.runtime.sendMessage("pause");
+  chrome.runtime.sendMessage('pause');
 }, {
   passive: true
 });
 
 window.addEventListener('DOMContentLoaded', () => {
   // Adds content to DOM needed because of isolation
-  injectScript("WindowScript.js");
+  injectScript('WindowScript.js');
 }, {
   passive: true
 });
@@ -64,9 +64,9 @@ window.addEventListener('play', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
     if (src.muted === false) {
-      chrome.runtime.sendMessage("play");
+      chrome.runtime.sendMessage('play');
     } else {
-      chrome.runtime.sendMessage("playMuted");
+      chrome.runtime.sendMessage('playMuted');
     }
     src.wasMuted = src.muted;
     if (tabPause) pauseElement(src);
@@ -84,9 +84,9 @@ window.addEventListener('volumechange', function(event) {
   if (src instanceof HTMLMediaElement) {
     if (src.wasMuted !== src.muted && !src.paused) {
       if (src.muted) {
-        chrome.runtime.sendMessage("playMuted");
+        chrome.runtime.sendMessage('playMuted');
       } else {
-        chrome.runtime.sendMessage("play");
+        chrome.runtime.sendMessage('play');
       }
     }
     src.wasMuted = src.muted;
@@ -96,7 +96,7 @@ window.addEventListener('volumechange', function(event) {
   passive: true
 });
 
-window.addEventListener("pause", event => {
+window.addEventListener('pause', event => {
   setTimeout(() => {
     onPause(event);
   }, 100);
@@ -105,7 +105,7 @@ window.addEventListener("pause", event => {
   passive: true
 });
 
-window.addEventListener("abort", event => {
+window.addEventListener('abort', event => {
   onPause(event);
 }, {
   capture: true,
@@ -117,7 +117,7 @@ function onPause(event) {
   if (src instanceof HTMLMediaElement && src.paused) {
     Elements.delete(src);
     const audibleElements = [...Elements].filter(e => !e.muted);
-    if (audibleElements.length === 0) chrome.runtime.sendMessage("pause");
+    if (audibleElements.length === 0) chrome.runtime.sendMessage('pause');
   }
 }
 

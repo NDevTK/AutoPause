@@ -58,7 +58,7 @@ function injectScript(file_path) {
 
 // On media play event
 window.addEventListener('play', function(event) {
-    let src = event.srcElement;
+    const src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         if (src.muted === false) {
             chrome.runtime.sendMessage("play");
@@ -74,7 +74,7 @@ window.addEventListener('play', function(event) {
 }, {capture: true, passive: true});
 
 window.addEventListener('volumechange', function(event) {
-    let src = event.srcElement;
+    const src = event.srcElement;
     if (src instanceof HTMLMediaElement) {
         if (src.wasMuted !== src.muted && !src.paused) {
             if(src.muted) {
@@ -98,10 +98,10 @@ window.addEventListener("abort", event => {
 }, {capture: true, passive: true});
 
 function onPause(event) {
-    let src = event.srcElement;
+    const src = event.srcElement;
     if (src instanceof HTMLMediaElement && src.paused) {
         Elements.delete(src);
-        let audibleElements = [...Elements].filter(e => !e.muted);
+        const audibleElements = [...Elements].filter(e => !e.muted);
         if (audibleElements.length === 0) chrome.runtime.sendMessage("pause");
     }
 }

@@ -83,7 +83,7 @@ chrome.commands.onCommand.addListener(async command => {
         } else if (media.size > 0) {
           const result = getResumeTabs();
           if (result !== false) {
-            chrome.tabs.update(Array.from(result)[0][0], {active: true});
+            chrome.tabs.update(Array.from(result)[0][0], { active: true });
           }
         }
       });

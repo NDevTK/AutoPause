@@ -10,7 +10,7 @@ function commandsUpdate() {
     if (element.value !== command.shortcut) {
       browser.commands.update({
         name: command.name,
-        shortcut: command.shortcut
+        shortcut: element.value
       });
     }
   });

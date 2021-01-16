@@ -25,7 +25,7 @@ window.addEventListener('keyup', event => {
 
 getCommands();
 
-function getCommands() {
+async function getCommands() {
   commands = await browser.commands.getAll();
   commands.forEach(command => {
     const id = command.name + "shortcut";

@@ -15,7 +15,7 @@ jobs:
         cp -R -t chrome *.{js,css,html,json,png} LICENSE
         rm -f chrome/*-firefox.* chrome/icon.png
         mv chrome/manifest-chrome.json chrome/manifest.json
-        mv chrome/options-firefox.js chrome/options-browser.js
+        mv chrome/options-chrome.js chrome/options-browser.js
     - uses: actions/upload-artifact@v2
       with:
         name: chrome

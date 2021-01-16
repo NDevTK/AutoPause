@@ -4,14 +4,19 @@ var commands = [];
 var shortcuts = document.getElementById('shortcuts');
 
 function commandsUpdate() {
-  commands.forEach(command => {
+  commands.forEach(async command => {
     const id = command.name + "shortcut";
     let element = document.getElementById(id);
     if (element.value !== command.shortcut) {
-      browser.commands.update({
-        name: command.name,
-        shortcut: element.value
-      });
+      try {
+        await browser.commands.update({
+          name: command.name,
+          shortcut: element.value
+        });
+      } catch {
+        alert("Invalid shortcut used.");
+      }
+      getCommands();
     }
   });
 }

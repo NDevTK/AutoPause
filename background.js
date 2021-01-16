@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /*global chrome*/
 var media = new Map(); // List of tabs with media
 var options = {};
@@ -6,36 +6,36 @@ var backgroundaudio = new Map();
 var mediaPlaying = null; // Tab IDs of active media
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
 
-chrome.storage.sync.get("options", result => {
+chrome.storage.sync.get('options', result => {
   if (typeof result.options === 'object' && result.options !== null) options = result.options;
 });
 
 chrome.storage.onChanged.addListener(changes => {
-  if (hasProperty(changes, "options")) {
+  if (hasProperty(changes, 'options')) {
     options = changes.options.newValue;
   }
 });
 
 // On install display the options page so the user can give permissions
 chrome.runtime.onInstalled.addListener(details => {
-  if (details.reason === "install") {
+  if (details.reason === 'install') {
     chrome.runtime.openOptionsPage();
   }
 });
 
 // For when the media is silent
 chrome.runtime.onMessage.addListener((message, sender) => {
-  if (!hasProperty(sender, "tab")) return
+  if (!hasProperty(sender, 'tab')) return
   switch (message) {
-    case "play":
+    case 'play':
       media.set(sender.tab.id);
       checkOrigin(sender.tab, true);
       break
-    case "playMuted":
-      media.set(sender.tab.id, "muted");
+    case 'playMuted':
+      media.set(sender.tab.id, 'muted');
       checkOrigin(sender.tab, false);
       break
-    case "pause":
+    case 'pause':
       media.delete(sender.tab.id);
       checkOrigin(sender.tab, false);
       break
@@ -46,7 +46,7 @@ function getResumeTabs() {
   if (backgroundaudio.size > 0) {
     return backgroundaudio;
   } else {
-    const resumableMedia = Array.from(media).filter(s => s[1] !== "muted");
+    const resumableMedia = Array.from(media).filter(s => s[1] !== 'muted');
     if (resumableMedia.length > 0) {
       const lastActive = resumableMedia.pop();
       return new Map().set(lastActive[0], lastActive[1]);
@@ -69,7 +69,7 @@ chrome.windows.onFocusChanged.addListener(id => {
 // Handle keyboard shortcuts
 chrome.commands.onCommand.addListener(async command => {
   switch (command) {
-    case "gotoaudible":
+    case 'gotoaudible':
       // Go to audible tab thats not active
       chrome.tabs.query({
         audible: true,
@@ -88,16 +88,16 @@ chrome.commands.onCommand.addListener(async command => {
         }
       });
       break
-    case "disableresume":
-      toggleOption("disableresume");
+    case 'disableresume':
+      toggleOption('disableresume');
       break
-    case "toggleFastPlayback":
-      Broadcast("toggleFastPlayback");
+    case 'toggleFastPlayback':
+      Broadcast('toggleFastPlayback');
       break
-    case "pauseoninactive":
-      toggleOption("pauseoninactive");
+    case 'pauseoninactive':
+      toggleOption('pauseoninactive');
       break
-    case "backgroundaudio":
+    case 'backgroundaudio':
       chrome.tabs.query({
         active: true,
         currentWindow: true
@@ -126,20 +126,20 @@ async function checkOrigin(tab, override = null) {
 
   // Attempt to play media
   if (activePlaying === false && media.has(tab.id)) {
-    if (hasProperty(options, "disableresume")) {
-      chrome.tabs.sendMessage(tab.id, "allowplayback");
+    if (hasProperty(options, 'disableresume')) {
+      chrome.tabs.sendMessage(tab.id, 'allowplayback');
     } else {
-      chrome.tabs.sendMessage(tab.id, "play");
+      chrome.tabs.sendMessage(tab.id, 'play');
     }
   }
 
-  if (activePlaying === true || hasProperty(options, "pauseoninactive")) {
-    Broadcast("pause", tab.id);
+  if (activePlaying === true || hasProperty(options, 'pauseoninactive')) {
+    Broadcast('pause', tab.id);
     mediaPlaying = tab.id;
   } else {
-    if (hasProperty(options, "disableresume") || media.size === 0 || otherTabs.size > 0) return
+    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
     let resumeTabs = false;
-    if (hasProperty(options, "multipletabs") && backgroundaudio.size === 0) {
+    if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
       resumeTabs = media;
     } else if (tab.id !== mediaPlaying) {
       return
@@ -147,7 +147,7 @@ async function checkOrigin(tab, override = null) {
       resumeTabs = getResumeTabs();
     }
     if (resumeTabs === false) return
-    Broadcast("play", tab.id, resumeTabs);
+    Broadcast('play', tab.id, resumeTabs);
   }
 }
 
@@ -166,7 +166,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (!hasProperty(changeInfo, "audible")) return // Bool that contains if audio is playing on tab
+  if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab
   if (changeInfo.audible) {
     if (!media.has(tabId)) otherTabs.add(tabId);
   } else {

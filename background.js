@@ -1,5 +1,5 @@
 'use strict';
-/* global chrome*/
+/* global chrome */
 var media = new Map(); // List of tabs with media
 var options = {};
 var backgroundaudio = new Map();

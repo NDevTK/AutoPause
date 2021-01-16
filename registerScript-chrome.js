@@ -1,5 +1,5 @@
 'use strict';
-/* global chrome*/
+/* global chrome */
 chrome.runtime.onInstalled.addListener(() => {
   chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
     chrome.declarativeContent.onPageChanged.addRules([{

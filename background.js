@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
 function getResumeTabs() {
   let tabs = (backgroundaudio.size > 0) ? backgroundaudio : media;
-  const resumableMedia = Array.from(media).filter(s => s[1] !== 'muted');
+  const resumableMedia = Array.from(tabs).filter(s => s[1] !== 'muted');
   if (resumableMedia.length > 0) {
       const lastActive = resumableMedia.pop();
       return new Map().set(lastActive[0], lastActive[1]);

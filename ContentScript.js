@@ -55,34 +55,33 @@ function injectScript(filePath) {
   document.head.appendChild(script);
 }
 
+function onPlay(src) {
+  if (src.wasMuted !== src.muted && !src.paused) {
+    if (src.muted) {
+      chrome.runtime.sendMessage('playMuted');
+    } else {
+      chrome.runtime.sendMessage('play');
+    }
+  }
+  src.wasMuted = src.muted;
+}
+
 // On media play event
 window.addEventListener('play', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.muted === false) {
-      chrome.runtime.sendMessage('play');
-    } else {
-      chrome.runtime.sendMessage('playMuted');
-    }
-    src.wasMuted = src.muted;
+    onPlay();
     if (tabPause) pauseElement(src);
-    if (!Elements.has(src)) {
-      Elements.add(src);
-    }
+    Elements.add(src);
   }
 }, { capture: true, passive: true });
 
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.wasMuted !== src.muted && !src.paused) {
-      if (src.muted) {
-        chrome.runtime.sendMessage('playMuted');
-      } else {
-        chrome.runtime.sendMessage('play');
-      }
+    if (src.wasMuted !== src.muted) {
+      onPlay();
     }
-    src.wasMuted = src.muted;
   }
 }, { capture: true, passive: true });
 
@@ -137,6 +136,10 @@ async function pause() {
 async function resume(shouldPlay) {
   tabPause = false;
   Elements.forEach(e => {
+    if (!document.contains(e)) {
+      Elements.delete(e);
+      return
+    }
     if (!e.wasPlaying) return
     // Pause foreground media normaly
     if (shouldPlay === false) e.pause();

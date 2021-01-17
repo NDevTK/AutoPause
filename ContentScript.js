@@ -107,9 +107,14 @@ function onPause(event) {
 // Dont tell the media please
 window.addEventListener('ratechange', function(event) {
   const src = event.srcElement;
-  if (src instanceof HTMLMediaElement === true) {
-    if (tabPause && src.playbackRate === 0) {
-      event.stopPropagation();
+  if (src instanceof HTMLMediaElement) {
+    if (src.playbackRate === 0) {
+      chrome.runtime.sendMessage('playbackDisabled');
+      if (tabPause) {
+        event.stopPropagation();
+      }
+    } else {
+      chrome.runtime.sendMessage('playbackEnabled');
     }
   }
 }, { capture: true });

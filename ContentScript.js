@@ -108,13 +108,8 @@ function onPause(event) {
 window.addEventListener('ratechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.playbackRate === 0) {
-      if (tabPause && src.wasPlaying) {
-        chrome.runtime.sendMessage('resumable');
-        event.stopPropagation();
-      }
-    } else {
-      chrome.runtime.sendMessage('notResumable');
+    if (src.playbackRate === 0 && tabPause && src.wasPlaying) {
+      event.stopPropagation();
     }
   }
 }, { capture: true });

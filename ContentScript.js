@@ -90,7 +90,7 @@ function onPlay(src) {
 window.addEventListener('play', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    onPlay();
+    onPlay(src);
     if (tabPause) pauseElement(src);
     Elements.add(src);
   }
@@ -100,7 +100,7 @@ window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
     if (src.wasMuted !== src.muted) {
-      onPlay();
+      onPlay(src);
     }
   }
 }, { capture: true, passive: true });

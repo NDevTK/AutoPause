@@ -93,8 +93,9 @@ chrome.commands.onCommand.addListener(async command => {
     case 'play':
       const result = getResumeTabs();
       if (result !== false) {
-        chrome.tabs.sendMessage(result, 'play');
-        Broadcast('pause', result);
+        let id = Array.from(result)[0][0];
+        chrome.tabs.sendMessage(id, 'play');
+        Broadcast('pause', id);
       }
       break
     case 'pause':

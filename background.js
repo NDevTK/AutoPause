@@ -54,6 +54,7 @@ function getResumeTabs() {
 
 // User may have mutiple windows open
 chrome.windows.onFocusChanged.addListener(id => {
+  if (hasProperty(options, 'ignoretabchange')) return
   if (id === -1) return
   chrome.tabs.query({
     active: true,

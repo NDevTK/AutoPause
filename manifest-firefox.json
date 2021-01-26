@@ -38,6 +38,18 @@
             "mac": "Alt+O"	
         },	
         "description": "Set tab for resume overide"	
+    },
+    "play": {
+        "description": "Play media"
+    },
+    "pause": {
+        "description": "Pause media"
+    },
+    "next": {
+        "description": "Next media"
+    },
+    "previous": {
+        "description": "Previous media"
     }
   },
   "permissions": [

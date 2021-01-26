@@ -21,8 +21,28 @@ chrome.runtime.onMessage.addListener(message => {
     case 'allowplayback':
       resume(false);
       break
+    case 'next':
+      next();
+      break
+    case 'previous':
+      previous();
+      break
   }
 });
+
+function next() {
+  Elements.forEach(e => {
+    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    e.currentTime = e.duration;
+  });
+}
+
+function previous() {
+  Elements.forEach(e => {
+    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    // Unknown
+  });
+}
 
 window.addEventListener('beforeunload', () => {
   Elements.clear();

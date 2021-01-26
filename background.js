@@ -153,6 +153,7 @@ function autoResume(id) {
 
 // On tab change
 chrome.tabs.onActivated.addListener(info => {
+  if (hasProperty(options, 'ignoretabchange')) return
   chrome.tabs.get(info.tabId, tab => {
     checkOrigin(tab);
   });

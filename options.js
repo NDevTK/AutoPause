@@ -4,7 +4,7 @@ var permissions = [];
 var options = {};
 
 // ID for each checkbox
-const supported = ['disableresume', 'pauseoninactive', 'multipletabs'];
+const supported = ['disableresume', 'pauseoninactive', 'multipletabs', 'ignoretabchange'];
 
 var userinput = document.getElementById('userinput');
 

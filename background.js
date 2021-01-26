@@ -99,10 +99,13 @@ chrome.commands.onCommand.addListener(async command => {
       break
     case 'pause':
       Broadcast('pause');
+      break
     case 'next':
       Broadcast('next');
+      break
     case 'previous':
       Broadcast('previous');
+      break
     case 'pauseoninactive':
       toggleOption('pauseoninactive');
       break

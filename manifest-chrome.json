@@ -35,17 +35,14 @@
         },	
         "description": "Set tab for resume overide"	
     },
-    "play": {
-        "description": "Play media"
-    },
-    "pause": {
-        "description": "Pause media"
+    "togglePlayback": {
+        "description": "Toggle media playback"
     },
     "next": {
-        "description": "Next media"
+        "description": "Go to end of media"
     },
     "previous": {
-        "description": "Previous media"
+        "description": "Go to start of media"
     }
   },
   "permissions": [

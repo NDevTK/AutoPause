@@ -41,6 +41,7 @@ function previous() {
   Elements.forEach(e => {
     if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
     // Unknown
+    e.currentTime = 0;
   });
 }
 

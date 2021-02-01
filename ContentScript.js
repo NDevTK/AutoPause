@@ -12,11 +12,8 @@ chrome.runtime.onMessage.addListener(message => {
     case 'toggleFastPlayback':
       toggleRate();
       break
-    case 'pause':
-      pause();
-      break
-    case 'play':
-      resume(true);
+    case 'togglePlayback':
+      togglePlayback();
       break
     case 'allowplayback':
       resume(false);
@@ -29,6 +26,18 @@ chrome.runtime.onMessage.addListener(message => {
       break
   }
 });
+
+function togglePlayback() {
+    Elements.forEach(e => {
+    if (e.paused) return;
+    if (e.wasPlaybackRate === 0) {
+      e.playbackRate = e.wasPlaybackRate;
+    } else {
+      e.wasPlaybackRate = e.playbackRate;
+      e.playbackRate = 0;
+    }
+  });
+}
 
 function next() {
   Elements.forEach(e => {

@@ -32,6 +32,7 @@ function togglePlayback() {
     if (e.paused) return;
     if (e.wasPlaybackRate === 0) {
       e.playbackRate = e.wasPlaybackRate;
+      onPlay(e);
     } else {
       e.wasPlaybackRate = e.playbackRate;
       e.playbackRate = 0;

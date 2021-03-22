@@ -36,11 +36,13 @@ chrome.runtime.onMessage.addListener(message => {
 function togglePlayback() {
     Elements.forEach(e => {
     if (e.paused) return;
-    if (e.wasPlaying) {
+    if (e.togglePause) {
+	  e.togglePause = false;
       e.playbackRate = e.wasPlaybackRate;
       onPlay(e);
     } else {
-      e.wasPlaying = true;
+      e.togglePause = true;
+	  e.wasPlaying = false;
       e.wasPlaybackRate = e.playbackRate;
       e.playbackRate = 0;
     }

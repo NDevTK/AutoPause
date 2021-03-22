@@ -3,7 +3,7 @@
 var media = new Map(); // List of tabs with media
 var options = {};
 var backgroundaudio = new Map();
-var mediaPlaying = null; // Tab IDs of active media
+var mediaPlaying = null; // Tab ID of active media
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
 
 chrome.storage.sync.get('options', result => {
@@ -42,12 +42,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
 });
 
-function getResumeTabs() {
+function getResumeTab() {
   let tabs = (backgroundaudio.size > 0) ? backgroundaudio : media;
   const resumableMedia = Array.from(tabs).filter(s => s[1] !== 'muted');
   if (resumableMedia.length > 0) {
-      const lastActive = resumableMedia.pop();
-      return new Map().set(lastActive[0], lastActive[1]);
+      return resumableMedia.pop()[0];
   }
   return false
 }
@@ -77,9 +76,9 @@ chrome.commands.onCommand.addListener(async command => {
         if (tabs.length > 0) {
           chrome.tabs.update(tabs[0].id, { active: true });
         } else if (media.size > 0) {
-          const result = getResumeTabs();
+          const result = getResumeTab();
           if (result !== false) {
-            chrome.tabs.update(Array.from(result)[0][0], { active: true });
+            chrome.tabs.update(result, { active: true });
           }
         }
       });
@@ -91,7 +90,11 @@ chrome.commands.onCommand.addListener(async command => {
       Broadcast('toggleFastPlayback');
       break
     case 'togglePlayback':
-      Broadcast('togglePlayback');
+	    const result = getResumeTab();
+        if (result !== false) {
+			Broadcast('pause', result);
+			if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
+        }
       break
     case 'next':
       Broadcast('next');
@@ -121,7 +124,6 @@ async function checkOrigin(tab, override = null) {
   if (tab.active === false || tab.id === undefined) return
   const activePlaying = (override === null) ? tab.audible : override;
   const metadata = media.get(tab.id);
-
   if (activePlaying && media.has(tab.id)) {
     // Make tab top priority and keep metadata
     otherTabs.delete(tab.id);
@@ -149,16 +151,14 @@ async function checkOrigin(tab, override = null) {
 
 function autoResume(id) {
   if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
-  let resumeTabs = false;
   if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
-    resumeTabs = media;
-  } else if (id !== mediaPlaying) {
-    return
-  } else {
-    resumeTabs = getResumeTabs();
+	return Broadcast('play', id, media);
   }
-  if (resumeTabs === false) return
-  Broadcast('play', id, resumeTabs);
+  if (id !== mediaPlaying) return
+  const result = getResumeTab();
+  if (result !== false) {
+	  chrome.tabs.sendMessage(result, 'play');
+  }
 }
 
 // On tab change

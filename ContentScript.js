@@ -24,16 +24,23 @@ chrome.runtime.onMessage.addListener(message => {
     case 'previous':
       previous();
       break
+    case 'pause':
+      pause();
+      break
+    case 'play':
+      resume(true);
+      break
   }
 });
 
 function togglePlayback() {
     Elements.forEach(e => {
     if (e.paused) return;
-    if (e.wasPlaybackRate === 0) {
+    if (e.wasPlaying) {
       e.playbackRate = e.wasPlaybackRate;
       onPlay(e);
     } else {
+      e.wasPlaying = true;
       e.wasPlaybackRate = e.playbackRate;
       e.playbackRate = 0;
     }

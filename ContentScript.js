@@ -96,14 +96,11 @@ function injectScript(filePath) {
 }
 
 function onPlay(src) {
-  if (src.wasMuted !== src.muted && !src.paused) {
     if (src.muted) {
       chrome.runtime.sendMessage('playMuted');
     } else {
       chrome.runtime.sendMessage('play');
     }
-  }
-  src.wasMuted = src.muted;
 }
 
 // On media play event
@@ -119,9 +116,7 @@ window.addEventListener('play', function(event) {
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.wasMuted !== src.muted) {
       onPlay(src);
-    }
   }
 }, { capture: true, passive: true });
 

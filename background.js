@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function getResumeTab() {
-  let tabs = (backgroundaudio.size > 0) ? backgroundaudio : media;
+  const tabs = (backgroundaudio.size > 0) ? backgroundaudio : media;
   const resumableMedia = Array.from(tabs).filter(s => s[1] !== 'muted');
   if (resumableMedia.length > 0) {
       return resumableMedia.pop()[0];
@@ -94,7 +94,7 @@ chrome.commands.onCommand.addListener(async command => {
       Broadcast('toggleFastPlayback');
       break
     case 'togglePlayback':
-	    const result = getResumeTab();
+	    var result = getResumeTab();
         if (result !== false) {
             Broadcast('pause', result);
             if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');

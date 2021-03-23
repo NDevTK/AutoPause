@@ -152,7 +152,7 @@ async function checkOrigin(tab, override = null) {
 function autoResume(id) {
   if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
   if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
-	return Broadcast('play', id, media);
+	return Broadcast('play', id);
   }
   if (id !== mediaPlaying) return
   const result = getResumeTab();

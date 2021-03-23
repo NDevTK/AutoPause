@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "2.5",
+  "version": "2.6",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "commands": {
@@ -34,6 +34,15 @@
             "mac": "Alt+O"	
         },	
         "description": "Set tab for resume overide"	
+    },
+    "togglePlayback": {
+        "description": "Toggle media playback"
+    },
+    "next": {
+        "description": "Go to end of media"
+    },
+    "previous": {
+        "description": "Go to start of media"
     }
   },
   "permissions": [

@@ -12,17 +12,57 @@ chrome.runtime.onMessage.addListener(message => {
     case 'toggleFastPlayback':
       toggleRate();
       break
+    case 'togglePlayback':
+      togglePlayback();
+      break
+    case 'allowplayback':
+      resume(false);
+      break
+    case 'next':
+      next();
+      break
+    case 'previous':
+      previous();
+      break
     case 'pause':
       pause();
       break
     case 'play':
       resume(true);
       break
-    case 'allowplayback':
-      resume(false);
-      break
   }
 });
+
+function togglePlayback() {
+    Elements.forEach(e => {
+    if (e.paused) return;
+    if (e.togglePause) {
+	  e.togglePause = false;
+      e.playbackRate = e.wasPlaybackRate;
+      onPlay(e);
+    } else {
+      e.togglePause = true;
+	  e.wasPlaying = false;
+      e.wasPlaybackRate = e.playbackRate;
+      e.playbackRate = 0;
+    }
+  });
+}
+
+function next() {
+  Elements.forEach(e => {
+    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    e.currentTime = e.duration;
+  });
+}
+
+function previous() {
+  Elements.forEach(e => {
+    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    // Unknown
+    e.currentTime = 0;
+  });
+}
 
 window.addEventListener('beforeunload', () => {
   Elements.clear();
@@ -55,34 +95,28 @@ function injectScript(filePath) {
   document.head.appendChild(script);
 }
 
+function onPlay(src) {
+    if (src.muted) {
+      chrome.runtime.sendMessage('playMuted');
+    } else {
+      chrome.runtime.sendMessage('play');
+    }
+}
+
 // On media play event
 window.addEventListener('play', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.muted === false) {
-      chrome.runtime.sendMessage('play');
-    } else {
-      chrome.runtime.sendMessage('playMuted');
-    }
-    src.wasMuted = src.muted;
+    onPlay(src);
     if (tabPause) pauseElement(src);
-    if (!Elements.has(src)) {
-      Elements.add(src);
-    }
+    Elements.add(src);
   }
 }, { capture: true, passive: true });
 
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.wasMuted !== src.muted && !src.paused) {
-      if (src.muted) {
-        chrome.runtime.sendMessage('playMuted');
-      } else {
-        chrome.runtime.sendMessage('play');
-      }
-    }
-    src.wasMuted = src.muted;
+      onPlay(src);
   }
 }, { capture: true, passive: true });
 
@@ -108,8 +142,8 @@ function onPause(event) {
 // Dont tell the media please
 window.addEventListener('ratechange', function(event) {
   const src = event.srcElement;
-  if (src instanceof HTMLMediaElement === true) {
-    if (tabPause && src.playbackRate === 0) {
+  if (src instanceof HTMLMediaElement) {
+    if (src.playbackRate === 0 && tabPause && src.wasPlaying) {
       event.stopPropagation();
     }
   }
@@ -137,6 +171,10 @@ async function pause() {
 async function resume(shouldPlay) {
   tabPause = false;
   Elements.forEach(e => {
+    if (!document.contains(e)) {
+      Elements.delete(e);
+      return
+    }
     if (!e.wasPlaying) return
     // Pause foreground media normaly
     if (shouldPlay === false) e.pause();

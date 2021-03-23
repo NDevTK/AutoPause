@@ -3,8 +3,9 @@
 var media = new Map(); // List of tabs with media
 var options = {};
 var backgroundaudio = new Map();
-var mediaPlaying = null; // Tab IDs of active media
+var mediaPlaying = null; // Tab ID of active media
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
+var activeWindow = false;
 
 chrome.storage.sync.get('options', result => {
   if (typeof result.options === 'object' && result.options !== null) options = result.options;
@@ -42,27 +43,27 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
 });
 
-function getResumeTabs() {
-  if (backgroundaudio.size > 0) {
-    return backgroundaudio;
-  } else {
-    const resumableMedia = Array.from(media).filter(s => s[1] !== 'muted');
-    if (resumableMedia.length > 0) {
-      const lastActive = resumableMedia.pop();
-      return new Map().set(lastActive[0], lastActive[1]);
-    }
+function getResumeTab() {
+  const tabs = (backgroundaudio.size > 0) ? backgroundaudio : media;
+  const resumableMedia = Array.from(tabs).filter(s => s[1] !== 'muted');
+  if (resumableMedia.length > 0) {
+      return resumableMedia.pop()[0];
   }
   return false
 }
 
 // User may have mutiple windows open
 chrome.windows.onFocusChanged.addListener(id => {
+  if (hasProperty(options, 'ignoretabchange')) return
   if (id === -1) return
   chrome.tabs.query({
     active: true,
     currentWindow: true
-  }, tabs => {
-    if (tabs.length === 1) checkOrigin(tabs[0]);
+  }, tabs => {	
+    if (tabs.length === 1) {
+        activeWindow = tabs[0].windowId;
+		checkOrigin(tabs[0]);
+	}
   });
 });
 
@@ -79,9 +80,9 @@ chrome.commands.onCommand.addListener(async command => {
         if (tabs.length > 0) {
           chrome.tabs.update(tabs[0].id, { active: true });
         } else if (media.size > 0) {
-          const result = getResumeTabs();
+          const result = getResumeTab();
           if (result !== false) {
-            chrome.tabs.update(Array.from(result)[0][0], { active: true });
+            chrome.tabs.update(result, { active: true });
           }
         }
       });
@@ -91,6 +92,19 @@ chrome.commands.onCommand.addListener(async command => {
       break
     case 'toggleFastPlayback':
       Broadcast('toggleFastPlayback');
+      break
+    case 'togglePlayback':
+	    var result = getResumeTab();
+        if (result !== false) {
+            Broadcast('pause', result);
+            if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
+        }
+      break
+    case 'next':
+      Broadcast('next');
+      break
+    case 'previous':
+      Broadcast('previous');
       break
     case 'pauseoninactive':
       toggleOption('pauseoninactive');
@@ -112,9 +126,9 @@ chrome.commands.onCommand.addListener(async command => {
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
   if (tab.active === false || tab.id === undefined) return
+  if (activeWindow !== false && tab.windowId !== activeWindow) return
   const activePlaying = (override === null) ? tab.audible : override;
   const metadata = media.get(tab.id);
-
   if (activePlaying && media.has(tab.id)) {
     // Make tab top priority and keep metadata
     otherTabs.delete(tab.id);
@@ -142,20 +156,19 @@ async function checkOrigin(tab, override = null) {
 
 function autoResume(id) {
   if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
-  let resumeTabs = false;
   if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
-    resumeTabs = media;
-  } else if (id !== mediaPlaying) {
-    return
-  } else {
-    resumeTabs = getResumeTabs();
+	return Broadcast('play', id);
   }
-  if (resumeTabs === false) return
-  Broadcast('play', id, resumeTabs);
+  if (id !== mediaPlaying) return
+  const result = getResumeTab();
+  if (result !== false) {
+	  chrome.tabs.sendMessage(result, 'play');
+  }
 }
 
 // On tab change
 chrome.tabs.onActivated.addListener(info => {
+  if (hasProperty(options, 'ignoretabchange')) return
   chrome.tabs.get(info.tabId, tab => {
     checkOrigin(tab);
   });

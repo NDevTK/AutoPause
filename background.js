@@ -90,12 +90,12 @@ chrome.commands.onCommand.addListener(async command => {
       Broadcast('toggleFastPlayback');
       break
     case 'togglePlayback':
-	    const result = getResumeTab();
-        if (result !== false) {
-			Broadcast('pause', result);
-			if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
-        }
-      break
+          const result = getResumeTab();
+          if (result !== false) {
+              Broadcast('pause', result);
+              if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
+          }
+          break
     case 'next':
       Broadcast('next');
       break

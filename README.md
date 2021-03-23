@@ -14,3 +14,4 @@ Features:
 - Optional automatic resume
 - Global Fast forward
 - Mark tab for automatic resume
+- Custom media controls for play, pause, next, previous

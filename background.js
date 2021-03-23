@@ -5,6 +5,7 @@ var options = {};
 var backgroundaudio = new Map();
 var mediaPlaying = null; // Tab ID of active media
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access
+var activeWindow = false;
 
 chrome.storage.sync.get('options', result => {
   if (typeof result.options === 'object' && result.options !== null) options = result.options;
@@ -58,8 +59,11 @@ chrome.windows.onFocusChanged.addListener(id => {
   chrome.tabs.query({
     active: true,
     currentWindow: true
-  }, tabs => {
-    if (tabs.length === 1) checkOrigin(tabs[0]);
+  }, tabs => {	
+    if (tabs.length === 1) {
+        activeWindow = tabs[0].windowId;
+		checkOrigin(tabs[0]);
+	}
   });
 });
 
@@ -90,12 +94,12 @@ chrome.commands.onCommand.addListener(async command => {
       Broadcast('toggleFastPlayback');
       break
     case 'togglePlayback':
-          const result = getResumeTab();
-          if (result !== false) {
-              Broadcast('pause', result);
-              if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
-          }
-          break
+	    const result = getResumeTab();
+        if (result !== false) {
+            Broadcast('pause', result);
+            if (otherTabs.size === 0) chrome.tabs.sendMessage(result, 'togglePlayback');
+        }
+      break
     case 'next':
       Broadcast('next');
       break
@@ -122,6 +126,7 @@ chrome.commands.onCommand.addListener(async command => {
 // Controls what gets paused or resumed
 async function checkOrigin(tab, override = null) {
   if (tab.active === false || tab.id === undefined) return
+  if (activeWindow !== false && tab.windowId !== activeWindow) return
   const activePlaying = (override === null) ? tab.audible : override;
   const metadata = media.get(tab.id);
   if (activePlaying && media.has(tab.id)) {

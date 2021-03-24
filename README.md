@@ -6,7 +6,7 @@
 ![Forks](https://img.shields.io/github/forks/NDevTK/AutoPause)
 [![DeepSource](https://deepsource.io/gh/NDevTK/AutoPause.svg/?label=active+issues)](https://deepsource.io/gh/NDevTK/AutoPause/?ref=repository-badge)
 
-Pause other audio and video sources if audio is playing on the active tab with automatic resume.  
+Browser extension to pause other audio and video sources if audio is playing on the active tab with automatic resume, fast forward and media controls.
 ![Extension icon](icon.png)
 
 Features:

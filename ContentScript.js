@@ -64,8 +64,7 @@ function previous() {
   });
 }
 
-window.addEventListener('beforeunload', () => {
-  Elements.clear();
+window.addEventListener('pagehide', () => {
   chrome.runtime.sendMessage('pause');
 }, { passive: true });
 

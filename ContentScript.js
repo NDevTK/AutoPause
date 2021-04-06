@@ -49,16 +49,20 @@ function togglePlayback() {
   });
 }
 
+function isPaused(e) {
+	return (e.paused || e.playbackRate === 0);
+}
+
 function next() {
   Elements.forEach(e => {
-    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    if (isPaused(e)) return;
     e.currentTime = e.duration;
   });
 }
 
 function previous() {
   Elements.forEach(e => {
-    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    if (isPaused(e)) return;
     // Unknown
     e.currentTime = 0;
   });
@@ -76,7 +80,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // Controlled by global fast forward shortcut
 function toggleRate() {
   Elements.forEach(e => {
-    if (e.paused || e.playbackRate === 0 || e.wasPlaying) return;
+    if (isPaused(e)) return;
     if (e.wasPlaybackRate && e.playbackRate > 1) {
       e.playbackRate = e.wasPlaybackRate;
     } else {
@@ -95,11 +99,11 @@ function injectScript(filePath) {
 }
 
 function onPlay(src) {
-	if (src.paused || src.playbackRate === 0 || src.wasPlaying) return
+    if (isPaused(src)) return;
     if (src.muted) {
-      chrome.runtime.sendMessage('playMuted');
+        chrome.runtime.sendMessage('playMuted');
     } else {
-      chrome.runtime.sendMessage('play');
+        chrome.runtime.sendMessage('play');
     }
 }
 
@@ -116,7 +120,7 @@ window.addEventListener('play', function(event) {
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    onPlay(src);
+	onPlay(src);
   }
 }, { capture: true, passive: true });
 
@@ -133,6 +137,7 @@ window.addEventListener('abort', event => {
 function onPause(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement && src.paused) {
+	// Check if all elements have paused.
     Elements.delete(src);
     const audibleElements = [...Elements].filter(e => !e.muted);
     if (audibleElements.length === 0) chrome.runtime.sendMessage('pause');
@@ -163,8 +168,8 @@ function pauseElement(e) {
 async function pause() {
   tabPause = true;
   Elements.forEach(e => {
-    if (e.paused || e.playbackRate === 0) return;
-    pauseElement(e);
+      if (isPaused(e)) return;
+      pauseElement(e);
   });
 }
 

@@ -95,6 +95,7 @@ function injectScript(filePath) {
 }
 
 function onPlay(src) {
+	if (src.paused || src.playbackRate === 0 || src.wasPlaying) return
     if (src.muted) {
       chrome.runtime.sendMessage('playMuted');
     } else {
@@ -115,7 +116,7 @@ window.addEventListener('play', function(event) {
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-      onPlay(src);
+    onPlay(src);
   }
 }, { capture: true, passive: true });
 
@@ -154,8 +155,8 @@ function pauseElement(e) {
     e.wasVolume = e.volume;
     e.wasPlaybackRate = e.playbackRate;
   }
-  e.volume = 0;
   e.playbackRate = 0;
+  e.volume = 0;
   e.wasPlaying = true;
 }
 

@@ -50,7 +50,7 @@ function togglePlayback() {
 }
 
 function isPaused(e) {
-	return (e.paused || e.playbackRate === 0);
+    return (e.paused || e.playbackRate === 0);
 }
 
 function next() {

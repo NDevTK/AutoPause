@@ -1,11 +1,13 @@
 'use strict';
 /* global chrome */
 
+(() => {
+
 // Script should only run once
-if (tabPause === undefined) {
-  var tabPause = false;
-  var Elements = new Set();
-}
+if (hasProperty(window, "tabPause")) return
+
+var tabPause = false;
+var Elements = new Set();
 
 chrome.runtime.onMessage.addListener(message => {
   switch (message) {
@@ -28,10 +30,16 @@ chrome.runtime.onMessage.addListener(message => {
       pause();
       break
     case 'play':
+	  // When there media already playing tell the background script.
+	  if (isPlaying()) chrome.runtime.sendMessage('play');
       resume(true);
       break
   }
 });
+
+function hasProperty(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
 
 function togglePlayback() {
     Elements.forEach(e => {
@@ -39,7 +47,6 @@ function togglePlayback() {
     if (e.togglePause) {
 	  e.togglePause = false;
       e.playbackRate = e.wasPlaybackRate;
-      onPlay(e);
     } else {
       e.togglePause = true;
 	  e.wasPlaying = false;
@@ -49,8 +56,13 @@ function togglePlayback() {
   });
 }
 
+function isPlaying() {
+	const audibleElements = [...Elements].filter(e => !e.muted);
+    return (audibleElements.length !== 0);
+}
+
 function isPaused(e) {
-    return (e.paused || e.playbackRate === 0);
+	return (e.paused || e.playbackRate === 0);
 }
 
 function next() {
@@ -67,15 +79,6 @@ function previous() {
     e.currentTime = 0;
   });
 }
-
-window.addEventListener('pagehide', () => {
-  chrome.runtime.sendMessage('pause');
-}, { passive: true });
-
-window.addEventListener('DOMContentLoaded', () => {
-  // Adds content to DOM needed because of isolation
-  injectScript('WindowScript.js');
-}, { passive: true });
 
 // Controlled by global fast forward shortcut
 function toggleRate() {
@@ -98,14 +101,23 @@ function injectScript(filePath) {
   document.head.appendChild(script);
 }
 
-function onPlay(src) {
-    if (isPaused(src)) return;
-    if (src.muted) {
-        chrome.runtime.sendMessage('playMuted');
+function onPlay(e) {
+	if (isPaused(e)) return;
+    if (e.muted) {
+      chrome.runtime.sendMessage('playMuted');
     } else {
-        chrome.runtime.sendMessage('play');
+      chrome.runtime.sendMessage('play');
     }
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Adds content to DOM needed because of isolation
+  injectScript('WindowScript.js');
+}, { passive: true });
+
+window.addEventListener('pagehide', () => {
+  chrome.runtime.sendMessage('pause');
+}, { passive: true });
 
 // On media play event
 window.addEventListener('play', function(event) {
@@ -127,7 +139,7 @@ window.addEventListener('volumechange', function(event) {
 window.addEventListener('pause', event => {
   setTimeout(() => {
     onPause(event);
-  }, 100);
+  }, 200);
 }, { capture: true, passive: true });
 
 window.addEventListener('abort', event => {
@@ -139,8 +151,7 @@ function onPause(event) {
   if (src instanceof HTMLMediaElement && src.paused) {
 	// Check if all elements have paused.
     Elements.delete(src);
-    const audibleElements = [...Elements].filter(e => !e.muted);
-    if (audibleElements.length === 0) chrome.runtime.sendMessage('pause');
+    if (!isPlaying()) chrome.runtime.sendMessage('pause');
   }
 }
 
@@ -151,6 +162,9 @@ window.addEventListener('ratechange', function(event) {
     if (src.playbackRate === 0 && tabPause && src.wasPlaying) {
       event.stopPropagation();
     }
+	if (src.playbackRate !== 0) {
+		onPlay(src);
+	}
   }
 }, { capture: true });
 
@@ -168,8 +182,8 @@ function pauseElement(e) {
 async function pause() {
   tabPause = true;
   Elements.forEach(e => {
-      if (isPaused(e)) return;
-      pauseElement(e);
+	if (isPaused(e)) return;
+    pauseElement(e);
   });
 }
 
@@ -188,3 +202,6 @@ async function resume(shouldPlay) {
     e.wasPlaying = false;
   });
 }
+
+// End of code
+})();

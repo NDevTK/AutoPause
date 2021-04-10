@@ -46,8 +46,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
-	// Dont pause the active tab.
-	if (media.has(activeTab) && tab.id !== activeTab) return;
+	if (media.has(activeTab) && tab.id !== activeTab) {
+		return Broadcast("pause", activeTab)
+	};
 	mediaPlaying = tab.id;
 	if (media.has(tab.id)) {
 	mutedTabs.delete(tab.id);

@@ -98,7 +98,11 @@ function injectScript(filePath) {
   script.setAttribute('type', 'text/javascript');
   script.setAttribute('crossorigin', 'anonymous');
   script.setAttribute('src', chrome.runtime.getURL(filePath));
+  try {
   document.head.appendChild(script);
+  } catch (e) {
+	  // May be blocked by CSP.
+  }
 }
 
 function onPlay(e) {

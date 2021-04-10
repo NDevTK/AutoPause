@@ -4,9 +4,8 @@
 (() => {
 
 // Script should only run once
-if (hasProperty(window, "tabPause")) return
+if (hasProperty(window, "Elements")) return
 
-var tabPause = false;
 var Elements = new Set();
 
 chrome.runtime.onMessage.addListener(message => {
@@ -128,7 +127,6 @@ window.addEventListener('play', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
     onPlay(src);
-    if (tabPause) pauseElement(src);
     Elements.add(src);
   }
 }, { capture: true, passive: true });
@@ -163,7 +161,7 @@ function onPause(event) {
 window.addEventListener('ratechange', function(event) {
   const src = event.srcElement;
   if (src instanceof HTMLMediaElement) {
-    if (src.playbackRate === 0 && tabPause && src.wasPlaying) {
+    if (src.playbackRate === 0 && src.wasPlaying) {
       event.stopPropagation();
     }
 	if (src.playbackRate !== 0) {
@@ -184,7 +182,6 @@ function pauseElement(e) {
 }
 
 async function pause() {
-  tabPause = true;
   Elements.forEach(e => {
 	if (isPaused(e)) return;
     pauseElement(e);
@@ -192,7 +189,6 @@ async function pause() {
 }
 
 async function resume(shouldPlay) {
-  tabPause = false;
   Elements.forEach(e => {
     if (!document.contains(e)) {
       Elements.delete(e);

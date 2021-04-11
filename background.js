@@ -47,7 +47,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
 function onPlay(tab) {
 	if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
-	// Dont allow a diffrent a tab to hijack active media.
+	// Dont allow a diffrent tab to hijack active media.
 	if (media.has(activeTab) && tab.id !== activeTab) {
 		return Broadcast('pause', activeTab);
 	};

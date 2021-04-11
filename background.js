@@ -46,8 +46,10 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
+	if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
+	// Dont allow a diffrent a tab to hijack active media.
 	if (media.has(activeTab) && tab.id !== activeTab) {
-		return Broadcast("pause", activeTab)
+		return Broadcast('pause', activeTab);
 	};
 	mediaPlaying = tab.id;
 	if (media.has(tab.id)) {
@@ -80,6 +82,8 @@ function tabChange(tab) {
 	
 	if (media.has(tab.id) || mutedTabs.has(tab.id)) {
 		play(tab.id);
+	} else if (otherTabs.has(tab.id)) {
+		onPlay(tab);
 	}
 	
 	if (hasProperty(options, 'multipletabs') && !media.has(tab.id)) {
@@ -212,7 +216,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	onPlay(tab);
   } else {
     otherTabs.delete(tabId);
-	onPause(tab);
+	onPause(tabId);
   }
 });
 

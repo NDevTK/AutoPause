@@ -176,9 +176,10 @@ function pauseElement(e) {
     e.wasVolume = e.volume;
     e.wasPlaybackRate = e.playbackRate;
   }
+  // Rate change event will stopPropagation.
+  e.wasPlaying = true;
   e.playbackRate = 0;
   e.volume = 0;
-  e.wasPlaying = true;
 }
 
 async function pause() {

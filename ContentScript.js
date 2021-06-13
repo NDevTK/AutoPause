@@ -2,8 +2,8 @@
 /* global chrome */
 
 (() => {
-
 // Script should only run once
+
 if (hasProperty(window, "Elements")) return
 
 var Elements = new Set();
@@ -29,8 +29,8 @@ chrome.runtime.onMessage.addListener(message => {
       pause();
       break
     case 'play':
-	  // When there media already playing tell the background script.
-	  if (isPlaying()) chrome.runtime.sendMessage('play');
+      // When there media already playing tell the background script.
+      if (isPlaying()) chrome.runtime.sendMessage('play');
       resume(true);
       break
   }
@@ -105,7 +105,6 @@ function injectScript(filePath) {
 }
 
 function onPlay(e) {
-	if (isPaused(e)) return;
     if (e.muted) {
       chrome.runtime.sendMessage('playMuted');
     } else {
@@ -133,7 +132,7 @@ window.addEventListener('play', function(event) {
 
 window.addEventListener('volumechange', function(event) {
   const src = event.srcElement;
-  if (src instanceof HTMLMediaElement) {
+  if (src instanceof HTMLMediaElement && !isPaused(src)) {
 	onPlay(src);
   }
 }, { capture: true, passive: true });
@@ -153,8 +152,17 @@ function onPause(event) {
   if (src instanceof HTMLMediaElement && src.paused) {
 	// Check if all elements have paused.
     Elements.delete(src);
+	normalPlayback(src);
     if (!isPlaying()) chrome.runtime.sendMessage('pause');
   }
+}
+
+function normalPlayback(src) {
+	if (src.wasPlaying) {
+		src.volume = src.wasVolume;
+        src.playbackRate = src.wasPlaybackRate;
+		src.wasPlaying = false;
+	}
 }
 
 // Dont tell the media please
@@ -164,7 +172,7 @@ window.addEventListener('ratechange', function(event) {
     if (src.playbackRate === 0 && src.wasPlaying) {
       event.stopPropagation();
     }
-	if (src.playbackRate !== 0) {
+	if (!isPaused(src)) {
 		onPlay(src);
 	}
   }
@@ -198,9 +206,7 @@ async function resume(shouldPlay) {
     if (!e.wasPlaying) return
     // Pause foreground media normaly
     if (shouldPlay === false) e.pause();
-    e.volume = e.wasVolume;
-    e.playbackRate = e.wasPlaybackRate;
-    e.wasPlaying = false;
+    normalPlayback(e);
   });
 }
 

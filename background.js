@@ -78,11 +78,13 @@ function onPause(id) {
 }
 
 function tabChange(tab) {
-    if (ignoredTabs.has(tab.id)) return
+    if (ignoredTabs.has(tab.id))
+        return
 
         activeTab = tab.id;
 
-    if (hasProperty(options, 'ignoretabchange')) return
+    if (hasProperty(options, 'ignoretabchange'))
+        return
 
         if (hasProperty(options, 'pauseoninactive')) {
             // Pause all except active tab

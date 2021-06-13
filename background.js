@@ -230,7 +230,7 @@ function remove(tabId) {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (ignoredTabs.has(sender.tab.id)) return
+  if (ignoredTabs.has(tabId)) return
   if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
   if (changeInfo.audible) {
 	// If has not got a play message from the content script assume theres no permission.

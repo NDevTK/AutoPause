@@ -68,16 +68,14 @@
 
     function next() {
         Elements.forEach(e => {
-            if (isPaused(e))
-                return;
+            if (isPaused(e)) return;
             e.currentTime = e.duration;
         });
     }
 
     function previous() {
         Elements.forEach(e => {
-            if (isPaused(e))
-                return;
+            if (isPaused(e)) return;
             // Unknown
             e.currentTime = 0;
         });

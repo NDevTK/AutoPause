@@ -43,6 +43,9 @@
     },
     "previous": {
         "description": "Go to start of media"
+    },
+	"ignoretab": {
+        "description": "Ignores a tab"
     }
   },
   "permissions": [

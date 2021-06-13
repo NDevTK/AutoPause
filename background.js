@@ -29,9 +29,8 @@ chrome.runtime.onInstalled.addListener(details => {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener((message, sender) => {
-    if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id))
-        return
-        switch (message) {
+    if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
+    switch (message) {
         case 'play':
             media.add(sender.tab.id);
             onPlay(sender.tab);
@@ -49,12 +48,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
-    if (hasProperty(options, 'multipletabs') && tab.id !== activeTab)
-        return
-        // Dont allow a diffrent tab to hijack active media.
-        if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
-            return Broadcast('pause', activeTab);
-        };
+    if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
+    // Dont allow a diffrent tab to hijack active media.
+    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
+        return Broadcast('pause', activeTab);
+    };
     mediaPlaying = tab.id;
     if (tab.id == activeTab)
         lastPlaying = null;
@@ -78,18 +76,16 @@ function onPause(id) {
 }
 
 function tabChange(tab) {
-    if (ignoredTabs.has(tab.id))
-        return
+    if (ignoredTabs.has(tab.id)) return
+    
+    activeTab = tab.id;
 
-        activeTab = tab.id;
-
-    if (hasProperty(options, 'ignoretabchange'))
-        return
-
-        if (hasProperty(options, 'pauseoninactive')) {
-            // Pause all except active tab
-            Broadcast('pause', tab.id);
-        }
+    if (hasProperty(options, 'ignoretabchange')) return
+    
+    if (hasProperty(options, 'pauseoninactive')) {
+        // Pause all except active tab
+        Broadcast('pause', tab.id);
+    }
 
     // Pause inactive muted tabs.
     Broadcast('pause', tab.id, mutedTabs);
@@ -116,16 +112,15 @@ function getResumeTab() {
 
 // User may have mutiple windows open.
 chrome.windows.onFocusChanged.addListener(id => {
-    if (id === chrome.windows.WINDOW_ID_NONE)
-        return
-        chrome.tabs.query({
-            active: true,
-            currentWindow: true
-        }, tabs => {
-            if (tabs.length === 1) {
-                tabChange(tabs[0]);
-            }
-        });
+    if (id === chrome.windows.WINDOW_ID_NONE) return
+    chrome.tabs.query({
+        active: true,
+        currentWindow: true
+    }, tabs => {
+        if (tabs.length === 1) {
+            tabChange(tabs[0]);
+        }
+    });
 });
 
 // Handle keyboard shortcuts.
@@ -180,10 +175,9 @@ chrome.commands.onCommand.addListener(async command => {
             active: true,
             currentWindow: true
         }, tabs => {
-            if (tabs.length === 0)
-                return
-                // Currently only has one tab
-                backgroundaudio.clear();
+            if (tabs.length === 0) return
+            // Currently only has one tab
+            backgroundaudio.clear();
             backgroundaudio.add(tabs[0].id);
         });
         break
@@ -192,9 +186,8 @@ chrome.commands.onCommand.addListener(async command => {
             active: true,
             currentWindow: true
         }, tabs => {
-            if (tabs.length === 0)
-                return
-                ignoredTabs.add(tabs[0].id);
+            if (tabs.length === 0) return
+            ignoredTabs.add(tabs[0].id);
             remove(tabs[0].id);
         });
         break
@@ -210,12 +203,11 @@ function play(id) {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0)
-        return
-        if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
-            // Resume all tabs when multipletabs is enabled.
-            return Broadcast('play');
-        }
+    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
+    if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
+        // Resume all tabs when multipletabs is enabled.
+        return Broadcast('play');
+    }
     // Make sure event is from the mediaPlaying tab.
     if (id === mediaPlaying) {
         const result = getResumeTab();
@@ -247,26 +239,22 @@ function remove(tabId) {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (ignoredTabs.has(tabId))
-        return
-        if (!hasProperty(changeInfo, 'audible'))
-            return // Bool that contains if audio is playing on tab.
-            if (changeInfo.audible) {
-                // If has not got a play message from the content script assume theres no permission.
-                if (!media.has(tabId))
-                    otherTabs.add(tabId);
-                onPlay(tab);
-            } else {
-                otherTabs.delete(tabId);
-                onPause(tabId);
-            }
+    if (ignoredTabs.has(tabId)) return
+    if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
+    if (changeInfo.audible) {
+        // If has not got a play message from the content script assume theres no permission.
+        if (!media.has(tabId)) otherTabs.add(tabId);
+        onPlay(tab);
+    } else {
+        otherTabs.delete(tabId);
+        onPause(tabId);
+    }
 });
 
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || id === lastPlaying)
-            return
-            chrome.tabs.sendMessage(id, message);
+        if (id === exclude || id === lastPlaying) return
+        chrome.tabs.sendMessage(id, message);
     });
 };
 

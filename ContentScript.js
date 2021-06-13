@@ -4,10 +4,9 @@
 (() => {
     // Script should only run once
 
-    if (hasProperty(window, "Elements"))
-        return
-
-        var Elements = new Set();
+    if (hasProperty(window, "Elements")) return
+    
+    var Elements = new Set();
 
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -217,8 +216,7 @@
 
     async function pause() {
         Elements.forEach(e => {
-            if (isPaused(e))
-                return;
+            if (isPaused(e)) return;
             pauseElement(e);
         });
     }
@@ -229,11 +227,10 @@
                 Elements.delete(e);
                 return
             }
-            if (!e.wasPlaying)
-                return
-                // Pause foreground media normaly
-                if (shouldPlay === false)
-                    e.pause();
+            if (!e.wasPlaying) return
+            // Pause foreground media normaly
+            if (shouldPlay === false)
+                e.pause();
             normalPlayback(e);
         });
     }

@@ -43,8 +43,7 @@
 
     function togglePlayback() {
         Elements.forEach(e => {
-            if (e.paused)
-                return;
+            if (e.paused) return;
             if (e.togglePause) {
                 e.togglePause = false;
                 e.playbackRate = e.wasPlaybackRate;

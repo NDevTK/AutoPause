@@ -233,6 +233,7 @@ chrome.tabs.onActivated.addListener(info => {
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
+    ignoredTabs.delete(tabId);
     remove(tabId);
 });
 
@@ -241,7 +242,6 @@ function remove(tabId) {
     otherTabs.delete(tabId);
     backgroundaudio.delete(tabId);
     mutedTabs.delete(tabId);
-    ignoredTabs.delete(tabId);
     onPause(tabId);
 }
 

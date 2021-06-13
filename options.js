@@ -22,14 +22,15 @@ chrome.permissions.onRemoved.addListener(getPermissions);
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null) {
         options = result.options;
-        
+	applyChanges();
     }
 });
 
 chrome.storage.onChanged.addListener(result => {
-    if (typeof result.options === 'object' && result.options !== null)
-        options = result.options.newValue
-	    applyChanges();
+    if (typeof result.options === 'object' && result.options !== null) {
+        options = result.options.newValue;
+	applyChanges();
+    }
 });
 
 function applyChanges() {

@@ -5,17 +5,17 @@ var options = {};
 var backgroundaudio = new Set();
 var mediaPlaying = null; // Tab ID of active media.
 var activeTab = null;
+var lastPlaying = null;
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access.
 var mutedTabs = new Set(); // Tab IDs of muted tabs.
+var ignoredTabs = new Set();
 
 chrome.storage.sync.get('options', result => {
   if (typeof result.options === 'object' && result.options !== null) options = result.options;
 });
 
-chrome.storage.onChanged.addListener(changes => {
-  if (hasProperty(changes, 'options')) {
-    options = changes.options.newValue;
-  }
+chrome.storage.onChanged.addListener(result => {
+	if (typeof result.options === 'object' && result.options !== null) options = result.options.newValue
 });
 
 // On install display the options page so the user can give permissions.
@@ -27,7 +27,7 @@ chrome.runtime.onInstalled.addListener(details => {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener((message, sender) => {
-  if (!hasProperty(sender, 'tab')) return
+  if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
   switch (message) {
     case 'play':
       media.add(sender.tab.id);
@@ -48,13 +48,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 function onPlay(tab) {
 	if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
 	// Dont allow a diffrent tab to hijack active media.
-	if (media.has(activeTab) && tab.id !== activeTab) {
+	if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
 		return Broadcast('pause', activeTab);
 	};
 	mediaPlaying = tab.id;
+	if (tab.id == activeTab) lastPlaying = null;
 	if (media.has(tab.id)) {
 	mutedTabs.delete(tab.id);
-    // Make tab top priority and keep metadata.
+    // Make tab top priority.
     otherTabs.delete(tab.id);
     media.delete(tab.id);
     media.add(tab.id);
@@ -66,12 +67,18 @@ function onPlay(tab) {
 function onPause(id) {
 	// Ignore event from other tabs.
 	if (id === mediaPlaying) {
+		lastPlaying = id;
 		autoResume(id);
 	}
 }
 
 function tabChange(tab) {
+	if (ignoredTabs.has(tab.id)) return
+	
 	activeTab = tab.id;
+	
+	if (hasProperty(options, 'ignoretabchange')) return
+	
 	if (hasProperty(options, 'pauseoninactive')) {
 		// Pause all except active tab
 		Broadcast('pause', tab.id);
@@ -108,7 +115,6 @@ chrome.windows.onFocusChanged.addListener(id => {
     currentWindow: true
   }, tabs => {	
     if (tabs.length === 1) {
-        if (hasProperty(options, 'ignoretabchange')) return
         tabChange(tabs[0]);
 	}
   });
@@ -167,6 +173,16 @@ chrome.commands.onCommand.addListener(async command => {
         backgroundaudio.add(tabs[0].id);
       });
       break
+	case 'ignoretab':
+      chrome.tabs.query({
+        active: true,
+        currentWindow: true
+      }, tabs => {
+        if (tabs.length === 0) return
+        ignoredTabs.add(tabs[0].id);
+		remove(tabs[0].id);
+      });
+      break
   }
 });
 
@@ -187,28 +203,34 @@ function autoResume(id) {
 	  // Make sure event is from the mediaPlaying tab.
 	  if (id === mediaPlaying) {
 		 const result = getResumeTab();
+		 mediaPlaying = result;
 		 if (result !== false) chrome.tabs.sendMessage(result, 'play');
 	  }
 }
 
 // On tab change
 chrome.tabs.onActivated.addListener(info => {
-  if (hasProperty(options, 'ignoretabchange')) return
   chrome.tabs.get(info.tabId, tab => {
     tabChange(tab);
   });
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
+	remove(tabId);
+});
+
+function remove(tabId) {
   media.delete(tabId);
   otherTabs.delete(tabId);
   backgroundaudio.delete(tabId);
   mutedTabs.delete(tabId);
-  onPause(tabId);
-});
+  ignoredTabs.delete(tabId);
+  onPause(tabId);	
+}
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (ignoredTabs.has(sender.tab.id)) return
   if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
   if (changeInfo.audible) {
 	// If has not got a play message from the content script assume theres no permission.
@@ -222,7 +244,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 async function Broadcast(message, exclude = false, tabs = media) {
   tabs.forEach(id => { // Only for tabs that have had media.
-    if (id === exclude) return
+    if (id === exclude || id === lastPlaying) return
     chrome.tabs.sendMessage(id, message);
   });
 };

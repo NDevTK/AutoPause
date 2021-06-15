@@ -176,25 +176,13 @@ chrome.commands.onCommand.addListener(async command => {
         toggleOption('pauseoninactive');
         break
     case 'backgroundaudio':
-        chrome.tabs.query({
-            active: true,
-            currentWindow: true
-        }, tabs => {
-            if (tabs.length === 0) return
             // Currently only has one tab
             backgroundaudio.clear();
-            backgroundaudio.add(tabs[0].id);
-        });
+            backgroundaudio.add(activeTab);
         break
     case 'ignoretab':
-        chrome.tabs.query({
-            active: true,
-            currentWindow: true
-        }, tabs => {
-            if (tabs.length === 0) return
-            ignoredTabs.add(tabs[0].id);
-            remove(tabs[0].id);
-        });
+            ignoredTabs.add(activeTab);
+            remove(activeTab);
         break
     }
 });

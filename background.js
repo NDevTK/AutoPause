@@ -67,9 +67,9 @@ function onPlay(tab, trusted = false) {
         media.delete(tab.id);
         media.add(tab.id);
     }
-    if (tab.audible) return
     // Pause all other media.
-    Broadcast('pause', tab.id);
+    if (tab.audible)
+        Broadcast('pause', tab.id);   
 }
 
 function onPause(id) {

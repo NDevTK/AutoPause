@@ -40,6 +40,10 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             media.delete(sender.tab.id);
             onPause(sender.tab.id);
             break
+        case 'playTrusted':
+            media.add(sender.tab.id);
+            onPlay(sender.tab, true);
+            break
         case 'pause':
             media.delete(sender.tab.id);
             onPause(sender.tab.id);
@@ -47,14 +51,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
         }
 });
 
-function onPlay(tab) {
+function onPlay(tab, trusted = false) {
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
+    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id && !trusted) {
         return Broadcast('pause', activeTab);
     };
     mediaPlaying = tab.id;
-    if (tab.id == activeTab)
+    if (tab.id == activeTab || trusted)
         lastPlaying = null;
     if (media.has(tab.id)) {
         mutedTabs.delete(tab.id);

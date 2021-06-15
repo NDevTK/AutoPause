@@ -7,7 +7,8 @@
     if (hasProperty(window, "Elements")) return
     
     var Elements = new Set();
-
+    var State = null;
+    
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
         case 'toggleFastPlayback':
@@ -107,6 +108,7 @@
     }
 
     function onPlay(e, trusted = false) {
+        if (State === "playing") return
         if (e.muted) {
             chrome.runtime.sendMessage('playMuted');
         } else if (trusted) {
@@ -114,6 +116,7 @@
         } else {
             chrome.runtime.sendMessage('play');
         }
+        State = "playing";
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -173,8 +176,10 @@
             // Check if all elements have paused.
             Elements.delete(src);
             normalPlayback(src);
-            if (!isPlaying())
+            if (!isPlaying() && State === "playing") {
                 chrome.runtime.sendMessage('pause');
+                State = "paused";
+            }
         }
     }
 

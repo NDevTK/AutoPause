@@ -106,9 +106,11 @@
         }
     }
 
-    function onPlay(e) {
+    function onPlay(e, trusted = false) {
         if (e.muted) {
             chrome.runtime.sendMessage('playMuted');
+        } else if (trusted) {
+            chrome.runtime.sendMessage('playTrusted');
         } else {
             chrome.runtime.sendMessage('play');
         }
@@ -131,7 +133,7 @@
     window.addEventListener('play', function (event) {
         const src = event.srcElement;
         if (src instanceof HTMLMediaElement) {
-            onPlay(src);
+            onPlay(src, event.isTrusted);
             Elements.add(src);
         }
     }, {

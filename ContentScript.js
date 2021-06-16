@@ -182,7 +182,7 @@
             // Check if all elements have paused.
             Elements.delete(src);
             normalPlayback(src);
-            if (!isPlaying() && State === "playing") {
+            if (!isPlaying()) {
                 send('pause');
             }
         }

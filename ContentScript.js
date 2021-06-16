@@ -32,7 +32,7 @@
         case 'play':
             // When there media already playing tell the background script.
             if (isPlaying())
-                chrome.runtime.sendMessage('play');
+                send('play');
             resume(true);
             break
         }

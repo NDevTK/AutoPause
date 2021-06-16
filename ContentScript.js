@@ -107,18 +107,24 @@
         }
     }
 
+    
     function onPlay(e, trusted = false) {
-        if (State === "playing") return
         if (e.muted) {
-            chrome.runtime.sendMessage('playMuted');
+            send('playMuted');
         } else if (trusted) {
-            chrome.runtime.sendMessage('playTrusted');
+            send('playTrusted');
         } else {
-            chrome.runtime.sendMessage('play');
+            send('play');
         }
-        State = "playing";
     }
 
+    function send(message) {
+        if (State !== message) {
+            chrome.runtime.sendMessage(message);
+            State = message;
+        }
+    }
+    
     window.addEventListener('DOMContentLoaded', () => {
         // Adds content to DOM needed because of isolation
         injectScript('WindowScript.js');
@@ -127,7 +133,7 @@
     });
 
     window.addEventListener('pagehide', () => {
-        chrome.runtime.sendMessage('pause');
+        send('pause');
     }, {
         passive: true
     });
@@ -177,8 +183,7 @@
             Elements.delete(src);
             normalPlayback(src);
             if (!isPlaying() && State === "playing") {
-                chrome.runtime.sendMessage('pause');
-                State = "paused";
+                send('pause');
             }
         }
     }

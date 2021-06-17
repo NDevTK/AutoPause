@@ -159,6 +159,27 @@
         capture: true,
         passive: true
     });
+    
+    window.addEventListener('leavepictureinpicture', function (event) {
+        const src = event.srcElement;
+        if (src instanceof HTMLMediaElement && !isPaused(src)) {
+            onPlay(src, event.isTrusted);
+        }
+    }, {
+        capture: true,
+        passive: true
+    });
+    
+    window.addEventListener('enterpictureinpicture', function (event) {
+        const src = event.srcElement;
+        // Even if the media is muted and tab is inactive dont pause it if its visable.
+        if (src instanceof HTMLMediaElement && !isPaused(src) && event.isTrusted) {
+            send("playTrusted");
+        }
+    }, {
+        capture: true,
+        passive: true
+    });
 
     window.addEventListener('pause', event => {
         setTimeout(() => {

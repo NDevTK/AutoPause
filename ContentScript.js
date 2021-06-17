@@ -8,6 +8,7 @@
     
     var Elements = new Set();
     var State = null;
+    var Visibility = null;
     
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -160,23 +161,30 @@
         passive: true
     });
     
-    window.addEventListener('leavepictureinpicture', function (event) {
-        const src = event.srcElement;
-        if (src instanceof HTMLMediaElement && !isPaused(src)) {
-            onPlay(src, event.isTrusted);
+    function checkVisibility() {
+        let result;
+        if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
+            result = "hidden";
+        } else {
+            result = "shown";
         }
-    }, {
+        if (result !== Visibility) {
+            Visibility = result;
+            chrome.runtime.sendMessage(Visibility);
+        }
+    }
+    
+    window.addEventListener('visibilitychange', checkVisibility, {
         capture: true,
         passive: true
     });
     
-    window.addEventListener('enterpictureinpicture', function (event) {
-        const src = event.srcElement;
-        // Even if the media is muted and tab is inactive dont pause it if its visable.
-        if (src instanceof HTMLMediaElement && !isPaused(src) && event.isTrusted) {
-            send("playTrusted");
-        }
-    }, {
+    window.addEventListener('leavepictureinpicture', checkVisibility, {
+        capture: true,
+        passive: true
+    });
+    
+    window.addEventListener('enterpictureinpicture', checkVisibility, {
         capture: true,
         passive: true
     });

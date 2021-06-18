@@ -9,6 +9,7 @@ var lastPlaying = null;
 var otherTabs = new Set(); // Tab IDs of audible tabs with no permission to access.
 var mutedTabs = new Set(); // Tab IDs of muted tabs.
 var ignoredTabs = new Set();
+var visableTabs = new Set(); // Tab IDs of tabs that are visable.
 
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null)
@@ -31,6 +32,10 @@ chrome.runtime.onInstalled.addListener(details => {
 chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
+        case 'hidden':
+            visableTabs.delete(sender.tab.id);
+        case 'shown':
+            visableTabs.add(sender.tab.id);
         case 'play':
             media.add(sender.tab.id);
             onPlay(sender.tab);
@@ -227,6 +232,7 @@ function remove(tabId) {
     otherTabs.delete(tabId);
     backgroundaudio.delete(tabId);
     mutedTabs.delete(tabId);
+    visableTabs.delete(tabId);
     onPause(tabId);
 }
 
@@ -247,6 +253,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach(id => { // Only for tabs that have had media.
         if (id === exclude || id === lastPlaying) return
+        // Dont pause muted media thats visible.
+        if (message === "pause" && mutedTabs.has(id) && visableTabs.has(id)) return
         chrome.tabs.sendMessage(id, message);
     });
 };

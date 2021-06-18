@@ -146,18 +146,18 @@
         if (src instanceof HTMLMediaElement) {
             onPlay(src, event.isTrusted);
             Elements.add(src);
-			src.addEventListener('enterpictureinpicture ', event => {
-				pictureinpicture = true;
-				checkVisibility();
-			}, {
-				passive: true
-			});
-			src.addEventListener('leavepictureinpicture', event => {
-				pictureinpicture = false;
-				checkVisibility();
-			}, {
-				passive: true
-			});
+	    src.addEventListener('enterpictureinpicture', event => {
+	        pictureinpicture = true;
+	        checkVisibility();
+	    }, {
+                passive: true
+	    });
+	    src.addEventListener('leavepictureinpicture', event => {
+	        pictureinpicture = false;
+		checkVisibility();
+            }, {
+                passive: true
+            });
         }
     }, {
         capture: true,

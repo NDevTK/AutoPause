@@ -9,6 +9,7 @@
     var Elements = new Set();
     var State = null;
     var Visibility = null;
+    var pictureinpicture = false;
     
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -163,7 +164,7 @@
     
     function checkVisibility() {
         let result;
-        if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
+        if (document.visibilityState == 'hidden' && !pictureinpicture) {
             result = "hidden";
         } else {
             result = "shown";
@@ -179,12 +180,18 @@
         passive: true
     });
     
-    window.addEventListener('leavepictureinpicture', checkVisibility, {
+    window.addEventListener('leavepictureinpicture', event => {
+        pictureinpicture = false;
+        checkVisibility();
+    }, {
         capture: true,
         passive: true
     });
     
-    window.addEventListener('enterpictureinpicture', checkVisibility, {
+    window.addEventListener('enterpictureinpicture', event => {
+        pictureinpicture = true;
+        checkVisibility();
+    }, {
         capture: true,
         passive: true
     });

@@ -34,8 +34,10 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     switch (message) {
         case 'hidden':
             visableTabs.delete(sender.tab.id);
+            break
         case 'shown':
             visableTabs.add(sender.tab.id);
+            break
         case 'play':
             media.add(sender.tab.id);
             onPlay(sender.tab);

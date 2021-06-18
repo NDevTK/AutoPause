@@ -34,6 +34,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     switch (message) {
         case 'hidden':
             visableTabs.delete(sender.tab.id);
+            // Pause inactive muted tabs.
+            chrome.tabs.sendMessage(sender.tab.id, "pause");
             break
         case 'shown':
             visableTabs.add(sender.tab.id);
@@ -98,9 +100,6 @@ function tabChange(tab) {
         // Pause all except active tab
         Broadcast('pause', tab.id);
     }
-
-    // Pause inactive muted tabs.
-    Broadcast('pause', tab.id, mutedTabs);
 
     if (media.has(tab.id) || mutedTabs.has(tab.id)) {
         play(tab.id);
@@ -255,8 +254,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach(id => { // Only for tabs that have had media.
         if (id === exclude || id === lastPlaying) return
-        // Dont pause muted media thats visible.
-        if (message === "pause" && mutedTabs.has(id) && visableTabs.has(id)) return
         chrome.tabs.sendMessage(id, message);
     });
 };

@@ -8,7 +8,6 @@ async function test() {
   result.innerText = "";
   media.playbackRate = 1;
   media.play();
-  await sleep();
   let w = open();
   
   for (var i=1;i<=5; i++) {

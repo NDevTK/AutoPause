@@ -27,6 +27,7 @@ async function test() {
 
 function onError(error) {
   console.error(error);
+  result.innerText += "\n"+error;
 }
 
 function sleep(ms = 1000) {

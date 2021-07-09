@@ -9,9 +9,10 @@ async function test() {
   media.playbackRate = 1;
   media.play();
   await sleep();
-  let w = open(videoTest);
+  let w = open();
   
   for (var i=1;i<=10; i++) {
+  w.location = videoTest;
   await sleep();
   media.playbackRate = 1;
   await sleep();

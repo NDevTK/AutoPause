@@ -10,6 +10,8 @@ async function test() {
   media.play();
   await sleep();
   let w = open(videoTest);
+  
+  for (var i=1;i<=10; i++) {
   await sleep();
   media.playbackRate = 1;
   await sleep();
@@ -26,8 +28,10 @@ async function test() {
   w.location = "https://example.org";
   await sleep();
   if (media.playbackRate !== 2) onError("Failed to set playbackRate of 2"); 
+  }
+  
   w.close();
-  media.pause();
+  media.pause();  
 }
 
 function onError(error) {

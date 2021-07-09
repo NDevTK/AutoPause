@@ -11,7 +11,7 @@ async function test() {
   await sleep();
   let w = open();
   
-  for (var i=1;i<=10; i++) {
+  for (var i=1;i<=5; i++) {
   w.location = videoTest;
   await sleep();
   media.playbackRate = 1;

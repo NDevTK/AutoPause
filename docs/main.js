@@ -5,6 +5,7 @@ var media = new Audio(audioTest);
 media.loop = true;
 
 async function test() {
+  result.innerText = "";
   media.play();
   await sleep();
   let w = open(rickrollTest);
@@ -23,6 +24,7 @@ async function test() {
   await sleep();
   if (media.playbackRate !== 2) onError("Failed to set playbackRate of 2"); 
   w.close();
+  media.pause();
 }
 
 function onError(error) {

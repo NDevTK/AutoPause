@@ -4,6 +4,8 @@ const audioTest = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/
 var media = new Audio(audioTest);
 media.loop = true;
 
+test();
+
 async function test() {
   let w = open(rickrollTest);
   await sleep();

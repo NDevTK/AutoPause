@@ -1,18 +1,21 @@
-const rickrollTest = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-const audioTest = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
+const videoTest = "https://www.w3schools.com/html/mov_bbb.mp4";
+const audioTest = "https://www.w3schools.com/html/horse.ogg";
 
 var media = new Audio(audioTest);
 media.loop = true;
 
 async function test() {
   result.innerText = "";
+  media.playbackRate = 1;
   media.play();
   await sleep();
-  let w = open(rickrollTest);
+  let w = open(videoTest);
   await sleep();
   media.playbackRate = 1;
   await sleep();
   if (media.playbackRate !== 0) onError("Failed to pause for video");
+  await sleep(11000);
+  if (media.playbackRate === 0) onError("Failed to resume after video");
   w.location = "https://example.com";
   await sleep();
   if (media.playbackRate === 0) onError("Failed to play"); 

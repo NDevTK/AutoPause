@@ -14,3 +14,6 @@ Features:
 - Global Fast forward
 - Mark tab for automatic resume
 - Custom media controls for play, pause, next, previous
+
+# Testing
+https://ndevtk.github.io/AutoPause/

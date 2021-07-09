@@ -40,6 +40,6 @@ function onError(error) {
   result.innerText += "\n"+error;
 }
 
-function sleep(ms = 2000) {
+function sleep(ms = 1000) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

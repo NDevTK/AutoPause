@@ -18,9 +18,6 @@ async function test() {
   if (media.playbackRate !== 0) onError("Failed to pause for video");
   await sleep(11000);
   if (media.playbackRate === 0) onError("Failed to resume after video");
-  w.location = "https://example.com";
-  await sleep();
-  if (media.playbackRate === 0) onError("Failed to play"); 
   media.playbackRate = 2;
   w.location = audioTest;
   await sleep();

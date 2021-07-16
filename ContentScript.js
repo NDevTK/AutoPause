@@ -8,8 +8,6 @@
     
     var Elements = new Set();
     var State = null;
-    var Visibility = null;
-    var pictureinpicture = false;
     
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -146,18 +144,6 @@
         if (src instanceof HTMLMediaElement) {
             onPlay(src, event.isTrusted);
             Elements.add(src);
-	    src.addEventListener('enterpictureinpicture', event => {
-	        pictureinpicture = true;
-	        checkVisibility();
-	    }, {
-                passive: true
-	    });
-	    src.addEventListener('leavepictureinpicture', event => {
-	        pictureinpicture = false;
-		checkVisibility();
-            }, {
-                passive: true
-            });
         }
     }, {
         capture: true,
@@ -173,25 +159,6 @@
         capture: true,
         passive: true
     });
-    
-    function checkVisibility() {
-        let result;
-        if (document.visibilityState == 'hidden' && !pictureinpicture) {
-            result = "hidden";
-        } else {
-            result = "shown";
-        }
-        if (result !== Visibility) {
-            Visibility = result;
-            chrome.runtime.sendMessage(Visibility);
-        }
-    }
-    
-    window.addEventListener('visibilitychange', checkVisibility, {
-        capture: true,
-        passive: true
-    });
-    
 
     window.addEventListener('pause', event => {
         setTimeout(() => {

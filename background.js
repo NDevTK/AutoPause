@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
         case 'hidden':
-            if (mutedTabs.has(sender.tab.id)) {
+            if (mutedTabs.has(sender.tab.id) && hasProperty(options, 'pausemuted')) {
                 // Pause hidden muted tabs.
                 chrome.tabs.sendMessage(sender.tab.id, "pause");
             }

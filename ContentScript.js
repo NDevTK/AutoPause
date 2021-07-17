@@ -112,6 +112,7 @@
         if (e.muted) {
             send('playMuted');
         } else if (trusted) {
+	    normalPlayback(e);
             send('playTrusted');
         } else {
             send('play');

@@ -21,6 +21,9 @@
         },
         "description": "Toggle fast playback"
     },
+    "toggleFastRewind": {
+        "description": "Toggle fast rewind"
+    },
     "pauseoninactive": {
         "suggested_key": {
             "default": "Alt+I",
@@ -44,7 +47,7 @@
     "previous": {
         "description": "Go to start of media"
     },
-	"ignoretab": {
+    "ignoretab": {
         "description": "Ignore a tab"
     }
   },

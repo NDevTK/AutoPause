@@ -245,8 +245,9 @@
     }
     
     function checkVisibility() {
-        let state = (document.visibilityState == 'hidden') ? 'hidden' : "visible";
-	chrome.runtime.sendMessage(state);
+        if (document.visibilityState == 'hidden') {
+		chrome.runtime.sendMessage('hidden');
+	}	
     }
 
     window.addEventListener('visibilitychange', checkVisibility, {

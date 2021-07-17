@@ -245,9 +245,9 @@
     }
     
     function checkVisibility() {
-        if (document.visibilityState == 'hidden') {
+        if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
 		chrome.runtime.sendMessage('hidden');
-	}	
+	}
     }
 
     window.addEventListener('visibilitychange', checkVisibility, {

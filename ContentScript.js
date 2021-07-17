@@ -112,8 +112,7 @@
         if (e.muted) {
             send('playMuted');
         } else if (trusted) {
-	    normalPlayback(e);
-            send('playTrusted');
+            chrome.runtime.sendMessage('playTrusted');
         } else {
             send('play');
         }

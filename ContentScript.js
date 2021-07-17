@@ -7,7 +7,6 @@
     if (hasProperty(window, "Elements")) return
     
     var Elements = new Set();
-    var State = null;
     
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -112,17 +111,14 @@
         if (e.muted) {
             send('playMuted');
         } else if (trusted) {
-            chrome.runtime.sendMessage('playTrusted');
+            send('playTrusted');
         } else {
             send('play');
         }
     }
 
     function send(message) {
-        if (State !== message) {
-            chrome.runtime.sendMessage(message);
-            State = message;
-        }
+	    chrome.runtime.sendMessage(message);
     }
     
     window.addEventListener('DOMContentLoaded', () => {

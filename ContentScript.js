@@ -162,7 +162,7 @@
     window.addEventListener('volumechange', function (event) {
         const src = event.srcElement;
         if (src instanceof HTMLMediaElement && !isPaused(src)) {
-            onPlay(src, event.isTrusted);
+            onPlay(src);
         }
     }, {
         capture: true,
@@ -213,7 +213,7 @@
                 event.stopPropagation();
             }
             if (!isPaused(src)) {
-                onPlay(src, event.isTrusted);
+                onPlay(src);
             }
         }
     }, {

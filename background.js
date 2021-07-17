@@ -162,6 +162,9 @@ chrome.commands.onCommand.addListener(async command => {
     case 'toggleFastPlayback':
         Broadcast('toggleFastPlayback');
         break
+    case 'toggleFastRewind':
+        Broadcast('toggleFastRewind');
+        break
     case 'togglePlayback':
         var result = getResumeTab();
         if (result !== false) {

@@ -104,10 +104,6 @@ function tabChange(tab) {
     } else if (otherTabs.has(tab.id)) {
         onPlay(tab);
     }
-
-    if (hasProperty(options, 'multipletabs') && !media.has(tab.id)) {
-        autoResume(tab.id);
-    }
 }
 
 function getResumeTab() {

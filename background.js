@@ -37,8 +37,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
                 chrome.tabs.sendMessage(sender.tab.id, "pause");
             }
             break
-        case 'shown':
-            break
         case 'play':
             media.add(sender.tab.id);
             onPlay(sender.tab);

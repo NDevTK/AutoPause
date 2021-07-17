@@ -60,13 +60,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab, trusted = false) {
+    if (trusted) activeTab = tab.id;
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id && !trusted) {
+    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
         return Broadcast('pause', tab.id);
     };
     mediaPlaying = tab.id;
-    if (tab.id == activeTab || trusted)
+    if (tab.id == activeTab)
         lastPlaying = null;
     if (media.has(tab.id)) {
         mutedTabs.delete(tab.id);

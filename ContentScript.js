@@ -13,6 +13,9 @@
         case 'toggleFastPlayback':
             toggleRate();
             break
+	case 'Rewind':
+            Rewind();
+            break
         case 'togglePlayback':
             togglePlayback();
             break
@@ -91,6 +94,15 @@
                 e.wasPlaybackRate = e.playbackRate;
                 e.playbackRate = 2;
             }
+        });
+    }
+
+    // Controlled by global rewind shortcut
+    function Rewind() {
+        Elements.forEach(e => {
+            if (isPaused(e))
+                return;
+	    e.currentTime -= 30;
         });
     }
 

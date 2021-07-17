@@ -8,7 +8,6 @@
     
     var Elements = new Set();
     var State = null;
-    var Visibility = null;
     
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
@@ -246,15 +245,8 @@
     }
     
     function checkVisibility() {
-        if (document.visibilityState == 'hidden') {
-            result = "hidden";
-        } else {
-            result = "shown";
-        }
-        if (result !== Visibility) {
-            Visibility = result;
-            chrome.runtime.sendMessage(Visibility);
-        }
+        let state = (document.visibilityState == 'hidden') ? 'hidden' : "visible";
+		chrome.runtime.sendMessage(state);
     }
 
     window.addEventListener('visibilitychange', checkVisibility, {

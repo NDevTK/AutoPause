@@ -27,12 +27,6 @@ chrome.runtime.onInstalled.addListener(details => {
     }
 });
 
-function onMute(tabId) {
-    mutedTabs.add(tabId);
-    media.delete(tabId);
-    onPause(tabId);
-}
-
 // For when the media is silent.
 chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
@@ -44,15 +38,13 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             }
             break
         case 'play':
-            if (sender.tab.muted) {
-                onMute(sender.tab.id);
-            } else {
-                media.add(sender.tab.id);
-                onPlay(sender.tab);
-            }
+            media.add(sender.tab.id);
+            onPlay(sender.tab);
             break
         case 'playMuted':
-            onMute(sender.tab.id);
+            mutedTabs.add(sender.tab.id);
+            media.delete(sender.tab.id);
+            onPause(sender.tab.id);
             break
         case 'playTrusted':
             media.add(sender.tab.id);
@@ -245,7 +237,8 @@ function remove(tabId) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (ignoredTabs.has(tabId)) return
     if (hasProperty(changeInfo, 'mutedInfo')) {
-        if (changeInfo.mutedInfo.muted) onMute(tabId);
+        let muteState =  (changeInfo.mutedInfo.muted) ? 'mute' : "unmute";
+        chrome.tabs.sendMessage(tabId, muteState);
     }
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
     if (changeInfo.audible) {

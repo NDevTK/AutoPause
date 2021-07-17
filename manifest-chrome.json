@@ -21,8 +21,8 @@
         },
         "description": "Toggle fast playback"
     },
-    "toggleFastRewind": {
-        "description": "Toggle fast rewind"
+    "Rewind": {
+        "description": "Rewind"
     },
     "pauseoninactive": {
         "suggested_key": {

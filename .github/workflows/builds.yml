@@ -34,11 +34,3 @@ jobs:
       with:
         name: firefox
         path: firefox
-        
-    - name: Setup node.js
-      uses: actions/setup-node@v2
-
-    - name: Run tests
-      run: |
-        npm i puppeteer
-        node docs/ci.js

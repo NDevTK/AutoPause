@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             }
             break
         case 'play':
-            if (sender.tab.muted) {
+            if (sender.tab.mutedInfo.muted) {
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);

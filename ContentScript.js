@@ -7,25 +7,16 @@
     if (hasProperty(window, "Elements")) return
     
     var Elements = new Set();
-    var tabMuted;
 	
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
-	case 'mute':
-            tabMuted = true;
-            checkVisibility();
-            if (isPlaying())
-                send('playMuted');
-            break
-        case 'unmute':
-            tabMuted = false;
-            if (isPlaying())
-                send('play');
-            break
+		case 'pausemuted':
+			checkVisibility();
+			break
         case 'toggleFastPlayback':
             toggleRate();
             break
-	case 'Rewind':
+        case 'Rewind':
             Rewind();
             break
         case 'togglePlayback':
@@ -132,7 +123,7 @@
 
     
     function onPlay(e, trusted = false) {
-        if (e.muted || tabMuted) {
+        if (e.muted) {
             send('playMuted');
         } else if (trusted) {   
             send('playTrusted');

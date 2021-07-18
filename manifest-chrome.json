@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "2.6",
+  "version": "2.7",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "commands": {
@@ -20,6 +20,9 @@
             "mac": "Alt+Q"
         },
         "description": "Toggle fast playback"
+    },
+    "Rewind": {
+        "description": "Rewind"
     },
     "pauseoninactive": {
         "suggested_key": {
@@ -43,6 +46,9 @@
     },
     "previous": {
         "description": "Go to start of media"
+    },
+    "ignoretab": {
+        "description": "Ignore a tab"
     }
   },
   "permissions": [

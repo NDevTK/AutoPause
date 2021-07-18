@@ -16,6 +16,7 @@ jobs:
         rm -f chrome/*-firefox.* chrome/icon.png
         mv chrome/manifest-chrome.json chrome/manifest.json
         mv chrome/options-chrome.js chrome/options-browser.js
+
     - uses: actions/upload-artifact@v2
       with:
         name: chrome
@@ -28,6 +29,7 @@ jobs:
         rm -f firefox/*-chrome.* firefox/icon.png
         mv firefox/manifest-firefox.json firefox/manifest.json
         mv firefox/options-firefox.js firefox/options-browser.js
+
     - uses: actions/upload-artifact@v2
       with:
         name: firefox

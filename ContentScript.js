@@ -10,9 +10,9 @@
 	
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
-		case 'pausemuted':
-			checkVisibility();
-			break
+	case 'pausemuted':
+            checkVisibility();
+            break
         case 'toggleFastPlayback':
             toggleRate();
             break

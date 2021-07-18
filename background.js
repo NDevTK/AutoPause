@@ -70,7 +70,7 @@ function onPlay(tab, trusted = false) {
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
     if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
-        return Broadcast('pause', tab.id);
+        return chrome.tabs.sendMessage(tab.id, 'pause');
     };
     mediaPlaying = tab.id;
     if (tab.id == activeTab)

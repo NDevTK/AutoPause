@@ -248,8 +248,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
             if (hasProperty(options, 'pausemuted')) chrome.tabs.sendMessage(tabId, 'pausemuted');
             onMute(tabId);
-		}
-		// If tab gets unmuted resume it.
+        }
+	// If tab gets unmuted resume it.
         else if (!changeInfo.mutedInfo.muted && mutedTabs.has(tabId)) {
             mediaPlaying = tabId;
             chrome.tabs.sendMessage(tabId, 'play');

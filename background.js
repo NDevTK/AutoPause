@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
-				if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
+                if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);
@@ -74,6 +74,7 @@ function onPlay(tab, trusted = false) {
         return chrome.tabs.sendMessage(tab.id, 'pause');
     };
     mediaPlaying = tab.id;
+    if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
     if (tab.id == activeTab)
         lastPlaying = null;
     if (media.has(tab.id)) {
@@ -206,7 +207,6 @@ function pause(id) {
 }
 
 function play(id, force) {
-	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
     if (hasProperty(options, 'disableresume') && !force) {
         chrome.tabs.sendMessage(id, 'allowplayback');
     } else {

@@ -115,8 +115,9 @@ function tabChange(tab) {
     }
 }
 
-function getResumeTab() {
+function getResumeTab(exclude) {
     const tabs = (backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? backgroundaudio : media;
+    tabs.delete(exclude);
     const resumableMedia = Array.from(tabs);
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();
@@ -221,7 +222,8 @@ function autoResume(id) {
     }
     // Make sure event is from the mediaPlaying tab.
     if (id === mediaPlaying) {
-        const result = getResumeTab();
+        // If muteonpause exclude activeTab
+        const result = getResumeTab(id);
         mediaPlaying = result;
         if (result !== false)
             play(result);

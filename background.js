@@ -29,7 +29,7 @@ chrome.runtime.onInstalled.addListener(details => {
 
 function onMute(tabId) {
     mutedTabs.add(tabId);
-    media.delete(tabId);
+    if (!hasProperty(options, 'muteonpause')) media.delete(tabId);
     onPause(tabId);
 }
 
@@ -40,11 +40,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id) && hasProperty(options, 'pausemuted')) {
                 // Pause hidden muted tabs.
-                chrome.tabs.sendMessage(sender.tab.id, "pause");
+                pause(sender.tab.id);
             }
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
+				if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);
@@ -198,8 +199,14 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-function play(id) {
-    if (hasProperty(options, 'disableresume')) {
+function pause(id) {
+	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
+	chrome.tabs.sendMessage(id, 'pause');
+}
+
+function play(id, force) {
+	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
+    if (hasProperty(options, 'disableresume') && !force) {
         chrome.tabs.sendMessage(id, 'allowplayback');
     } else {
         chrome.tabs.sendMessage(id, 'play');
@@ -217,7 +224,7 @@ function autoResume(id) {
         const result = getResumeTab();
         mediaPlaying = result;
         if (result !== false)
-            chrome.tabs.sendMessage(result, 'play');
+            play(result);
     }
 }
 
@@ -249,10 +256,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             if (hasProperty(options, 'pausemuted')) chrome.tabs.sendMessage(tabId, 'pausemuted');
             onMute(tabId);
         }
-	// If tab gets unmuted resume it.
+	    // If tab gets unmuted resume it.
         else if (!changeInfo.mutedInfo.muted && mutedTabs.has(tabId)) {
             mediaPlaying = tabId;
-            chrome.tabs.sendMessage(tabId, 'play');
+            play(tabId, true);
         }
     }
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
@@ -269,6 +276,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 async function Broadcast(message, exclude = false, tabs = media) {
     tabs.forEach(id => { // Only for tabs that have had media.
         if (id === exclude || id === lastPlaying) return
+		if (message === 'pause') {
+			return pause(id);
+		}
         chrome.tabs.sendMessage(id, message);
     });
 };

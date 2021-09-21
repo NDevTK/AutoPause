@@ -27,7 +27,6 @@ jobs:
             p/jwt
             p/xss
             p/insecure-transport
-            #p/nodejsscan
             p/nginx
             p/ci
         # Upload findings to GitHub Advanced Security Dashboard [step 1/2]

@@ -29,7 +29,6 @@ jobs:
             p/xss
             p/insecure-transport
             p/nginx
-            p/ci
         # Upload findings to GitHub Advanced Security Dashboard [step 1/2]
         # See also the next step.
           generateSarif: "1"

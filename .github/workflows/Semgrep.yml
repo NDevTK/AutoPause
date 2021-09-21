@@ -21,7 +21,6 @@ jobs:
           config: >- # more at semgrep.dev/explore
             p/security-audit
             p/secrets
-            p/owasp-top-ten
             p/r2c-security-audit
             p/command-injection
             p/jwt

@@ -25,6 +25,7 @@ jobs:
             p/r2c-security-audit
             p/command-injection
             p/jwt
+            p/nodejsscan
             p/xss
             p/insecure-transport
             p/nginx
@@ -34,7 +35,8 @@ jobs:
           generateSarif: "1"
           
         # Upload findings to GitHub Advanced Security Dashboard [step 2/2]
-      - uses: github/codeql-action/upload-sarif@v1
+      - name: Upload SARIF file for GitHub Advanced Security Dashboard
+        uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: semgrep.sarif
           if: always()

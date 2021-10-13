@@ -67,7 +67,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab, trusted = false) {
-    // if (trusted) activeTab = tab.id;
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
     if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id && media.has(tab.id)) {
@@ -86,7 +85,7 @@ function onPlay(tab, trusted = false) {
     }
     // Pause all other media.
     if (tab.audible)
-        Broadcast('pause', tab.id);   
+        Broadcast('pause', tab.id);
 }
 
 function onPause(id) {
@@ -207,6 +206,7 @@ function pause(id) {
 }
 
 function play(id, force) {
+    if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
     if (hasProperty(options, 'disableresume') && !force) {
         chrome.tabs.sendMessage(id, 'allowplayback');
     } else {

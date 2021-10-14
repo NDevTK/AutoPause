@@ -35,7 +35,7 @@ function onMute(tabId) {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener((message, sender) => {
-	otherTabs.delete(sender.tab.id);
+    otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
         case 'hidden':
@@ -70,12 +70,12 @@ function onPlay(tab, trusted = false) {
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
     if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id && media.has(tab.id)) {
-		return pause(tab.id);
+	    return pause(tab.id);
     };
     mediaPlaying = tab.id;
-	
-	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
-	
+
+    if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
+
     if (tab.id == activeTab)
         lastPlaying = null;
     if (media.has(tab.id)) {
@@ -206,7 +206,7 @@ function pause(id) {
 }
 
 function play(id, force) {
-	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
+    if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
     if (hasProperty(options, 'disableresume') && !force) {
         send(id, 'allowplayback');
     } else {
@@ -215,7 +215,7 @@ function play(id, force) {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0 && !hasProperty(options, 'muteonpause')) return
+    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
     if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');
@@ -271,11 +271,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 		media.add(tabId);
         onPlay(tab);
     } else {
-        if (otherTabs.has(tabId) && !hasProperty(options, 'muteonpause') || otherTabs.has(tabId) && hasProperty(options, 'muteonpause') && !mutedTabs.has(tabId)) {
-			remove(tabId);
-		} else {
-			onPause(tabId);
-		}
+        onPause(tabId);
     }
 });
 

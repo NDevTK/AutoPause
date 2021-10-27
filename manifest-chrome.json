@@ -3,6 +3,8 @@
   "version": "2.7",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
+  "cross_origin_embedder_policy": "require-corp",
+  "cross_origin_opener_policy": "same-origin",
   "commands": {
     "gotoaudible": {
         "suggested_key": {

@@ -10,7 +10,7 @@ chrome.runtime.onInstalled.addListener(() => {
       })],
       actions: [new chrome.declarativeContent.RequestContentScript({
         allFrames: true,
-        js: ['ContentScript.js']
+        js: ['ContentScript.js', 'utils-chrome.js']
       })]
     }]);
   });

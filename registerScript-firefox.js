@@ -13,6 +13,8 @@ function registerScriptFirefox() {
     contentscript = await browser.contentScripts.register({
       js: [{
         file: 'ContentScript.js'
+      },{
+        file: 'utils-firefox.js'
       }],
       matches: p.origins,
       allFrames: true,

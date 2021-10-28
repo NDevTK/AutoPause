@@ -15,3 +15,7 @@ chrome.runtime.onInstalled.addListener(() => {
     }]);
   });
 });
+
+function shadow(e) {
+  return chrome.dom.openOrClosedShadowRoot(e);
+}

@@ -16,8 +16,8 @@
     
     var Elements = new Set();
 	
-    chrome.runtime.onMessage.addListener(message => {
-        switch (message) {
+    document.addEventListener("autopause_action", message => {
+        switch (message.detail) {
         case 'toggleFastPlayback':
             toggleRate();
             break

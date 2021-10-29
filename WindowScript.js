@@ -1,5 +1,4 @@
 // Code here is exposed to the website.
-// Automaticly add media elements to DOM.
 (function() {
   'use strict';
   const play = window.HTMLMediaElement.prototype.play;

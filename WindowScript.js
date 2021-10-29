@@ -221,10 +221,6 @@
 
     async function resume(shouldPlay) {
         Elements.forEach(e => {
-            if (!document.contains(e)) {
-                Elements.delete(e);
-                return
-            }
             if (!e.wasPlaying) return
             // Pause foreground media normaly
             if (shouldPlay === false)

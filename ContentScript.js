@@ -45,7 +45,20 @@
     });
 
     document.addEventListener("autopause_result", e => {
-	    
+	    switch(e.detail) {
+            case 'play':
+                send('play');
+                break
+            case 'playMuted':
+                send('playMuted')
+                break
+            case 'playTrusted':
+                send('playTrusted');
+                break
+            case 'pause':
+                send('pause');
+                break
+	    }
     });
 	
     function hasProperty(value, key) {

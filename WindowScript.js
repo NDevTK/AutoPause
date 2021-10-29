@@ -9,10 +9,6 @@
     return play.apply(this, arguments);
   }
   
-  // Script should only run once
-
-    if (hasProperty(window, "Elements")) return
-    
     var Elements = new Set();
 	
     document.addEventListener("autopause_action", message => {

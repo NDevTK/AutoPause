@@ -3,7 +3,6 @@
 (function() {
   'use strict';
   const play = window.HTMLMediaElement.prototype.play;
-  let div = null;
   window.HTMLMediaElement.prototype.play = function() {
     if (this instanceof HTMLMediaElement) {
       addListener(this);

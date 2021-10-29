@@ -21,7 +21,7 @@
             API('toggleFastPlayback');
             break
         case 'Rewind':
-            API('Rewind')'
+            API('Rewind');
             break
         case 'togglePlayback':
             API('togglePlayback');

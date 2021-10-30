@@ -10,7 +10,7 @@
   }
   
     var Elements = new Set();
-	
+
     document.addEventListener("autopause_action", message => {
         switch (message.detail) {
         case 'toggleFastPlayback':
@@ -126,7 +126,7 @@
     }
     
     function addListener(target) {
-    Elements.add(target);
+    let controller = new AbortController();
     // On media play event
     target.addEventListener('play', function (event) {
         const src = event.srcElement;
@@ -135,6 +135,7 @@
             Elements.add(src);
         }
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -145,6 +146,7 @@
             onPlay(src);
         }
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -154,6 +156,7 @@
             onPause(event);
         }, 200);
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -161,6 +164,7 @@
     target.addEventListener('abort', event => {
         onPause(event);
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -177,6 +181,7 @@
             }
         }
     }, {
+        signal: controller.signal,
         capture: true
     });
     }

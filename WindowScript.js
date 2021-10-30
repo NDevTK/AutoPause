@@ -109,12 +109,9 @@
     }
 
     
-    function onPlay(e, trusted = false) {
+    function onPlay(e) {
         if (e.muted) {
             send('playMuted');
-        } else if (trusted) {   
-            send('play');
-            normalPlayback(e);
         } else {
             send('play');
         }

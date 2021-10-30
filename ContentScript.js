@@ -52,18 +52,11 @@
             case 'playMuted':
                 send('playMuted')
                 break
-            case 'playTrusted':
-                send('playTrusted');
-                break
             case 'pause':
                 send('pause');
                 break
 	    }
     });
-	
-    function hasProperty(value, key) {
-        return Object.prototype.hasOwnProperty.call(value, key);
-    }
 
     function injectScript(filePath) {
         var script = document.createElement('script');

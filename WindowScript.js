@@ -128,11 +128,10 @@
 	    document.dispatchEvent(new CustomEvent("autopause_result", {detail: message}));
     }
     
-    function addListener(target) {
+    function addListener(src) {
     let controller = new AbortController();
     // On media play event
-    target.addEventListener('play', function (event) {
-        const src = event.srcElement;
+    src.addEventListener('play', function (event) {
         if (src instanceof HTMLMediaElement) {
             Elements.set(src, {});
             onPlay(src, event.isTrusted);
@@ -143,8 +142,7 @@
         passive: true
     });
 
-    target.addEventListener('volumechange', function (event) {
-        const src = event.srcElement;
+    src.addEventListener('volumechange', function (event) {
         if (src instanceof HTMLMediaElement && !isPaused(src)) {
             onPlay(src);
         }
@@ -154,9 +152,9 @@
         passive: true
     });
 
-    target.addEventListener('pause', event => {
+    src.addEventListener('pause', event => {
         setTimeout(() => {
-            onPause(event);
+            onPause(src);
         }, 200);
     }, {
         signal: controller.signal,
@@ -164,8 +162,8 @@
         passive: true
     });
 
-    target.addEventListener('abort', event => {
-        onPause(event);
+    src.addEventListener('abort', event => {
+        onPause(src);
     }, {
         signal: controller.signal,
         capture: true,
@@ -173,8 +171,7 @@
     });
 
     // Dont tell the media please
-    target.addEventListener('ratechange', function (event) {
-        const src = event.srcElement;
+    src.addEventListener('ratechange', function (event) {
         if (src instanceof HTMLMediaElement) {
             let data = Elements.has(src) ? Elements.get(src) : {};
             if (src.playbackRate === 0 && data.wasPlaying) {
@@ -189,8 +186,7 @@
         capture: true
     });
     }
-    function onPause(event) {
-        const src = event.srcElement;
+    function onPause(src) {
         if (src instanceof HTMLMediaElement && src.paused) {
             // Check if all elements have paused.
             Elements.delete(src);

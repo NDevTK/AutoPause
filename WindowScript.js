@@ -8,9 +8,9 @@
     }
     return play.apply(this, arguments);
   }
-  
-    var Elements = new Set();
-	
+
+    var Elements = new Map();
+
     document.addEventListener("autopause_action", message => {
         switch (message.detail) {
         case 'toggleFastPlayback':
@@ -48,22 +48,23 @@
     }
 
     function togglePlayback() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (e.paused) return;
-            if (e.togglePause) {
-                e.togglePause = false;
-                e.playbackRate = e.wasPlaybackRate;
+            if (data.togglePause) {
+                data.togglePause = false;
+                e.playbackRate = data.wasPlaybackRate;
             } else {
-                e.togglePause = true;
-                e.wasPlaying = false;
-                e.wasPlaybackRate = e.playbackRate;
+                data.togglePause = true;
+                data.wasPlaying = false;
+                data.wasPlaybackRate = e.playbackRate;
                 e.playbackRate = 0;
             }
+            Elements.set(e, data);
         });
     }
 
     function isPlaying() {
-        const audibleElements = [...Elements].filter(e => !e.muted);
+        const audibleElements = [...Elements].filter((data, e) => !e.muted);
         return (audibleElements.length !== 0);
     }
 
@@ -72,14 +73,14 @@
     }
 
     function next() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (isPaused(e)) return;
             e.currentTime = e.duration;
         });
     }
 
     function previous() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (isPaused(e)) return;
             // Unknown
             e.currentTime = 0;
@@ -88,13 +89,14 @@
 
     // Controlled by global fast forward shortcut
     function toggleRate() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;
-            if (e.wasPlaybackRate && e.playbackRate > 1) {
-                e.playbackRate = e.wasPlaybackRate;
+            if (data.wasPlaybackRate && e.playbackRate > 1) {
+                e.playbackRate = data.wasPlaybackRate;
             } else {
-                e.wasPlaybackRate = e.playbackRate;
+                data.wasPlaybackRate = e.playbackRate;
+                Elements.set(e, data);
                 e.playbackRate = 2;
             }
         });
@@ -102,7 +104,7 @@
 
     // Controlled by global rewind shortcut
     function Rewind() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;
 	    e.currentTime -= 30;
@@ -126,15 +128,16 @@
     }
     
     function addListener(target) {
-    Elements.add(target);
+    let controller = new AbortController();
     // On media play event
     target.addEventListener('play', function (event) {
         const src = event.srcElement;
         if (src instanceof HTMLMediaElement) {
+            Elements.set(src, {});
             onPlay(src, event.isTrusted);
-            Elements.add(src);
         }
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -145,6 +148,7 @@
             onPlay(src);
         }
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -154,6 +158,7 @@
             onPause(event);
         }, 200);
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -161,6 +166,7 @@
     target.addEventListener('abort', event => {
         onPause(event);
     }, {
+        signal: controller.signal,
         capture: true,
         passive: true
     });
@@ -169,7 +175,8 @@
     target.addEventListener('ratechange', function (event) {
         const src = event.srcElement;
         if (src instanceof HTMLMediaElement) {
-            if (src.playbackRate === 0 && src.wasPlaying) {
+            let data = Elements.has(src) ? Elements.get(src) : {};
+            if (src.playbackRate === 0 && data.wasPlaying) {
                 event.stopPropagation();
             }
             if (!isPaused(src)) {
@@ -177,6 +184,7 @@
             }
         }
     }, {
+        signal: controller.signal,
         capture: true
     });
     }
@@ -193,35 +201,37 @@
     }
 
     function normalPlayback(src) {
-        if (src.wasPlaying) {
-            src.volume = src.wasVolume;
-            src.playbackRate = src.wasPlaybackRate;
-            src.wasPlaying = false;
+        let data = Elements.has(src) ? Elements.get(src) : {};
+        if (data.wasPlaying) {
+            src.volume = data.wasVolume;
+            src.playbackRate = data.wasPlaybackRate;
+            data.wasPlaying = false;
         }
     }
 
-    function pauseElement(e) {
+    function pauseElement(e, data) {
         // If media attempts to play when it should be paused dont change its old values.
-        if (!e.wasPlaying) {
-            e.wasVolume = e.volume;
-            e.wasPlaybackRate = e.playbackRate;
+        if (!data.wasPlaying) {
+            data.wasVolume = e.volume;
+            data.wasPlaybackRate = e.playbackRate;
         }
         // Rate change event will stopPropagation.
-        e.wasPlaying = true;
+        data.wasPlaying = true;
         e.playbackRate = 0;
         e.volume = 0;
+        Elements.set(e, data);
     }
 
     async function pause() {
-        Elements.forEach(e => {
+        Elements.forEach((data, e) => {
             if (isPaused(e)) return;
-            pauseElement(e);
+            pauseElement(e, data);
         });
     }
 
     async function resume(shouldPlay) {
-        Elements.forEach(e => {
-            if (!e.wasPlaying) return
+        Elements.forEach((data, e) => {
+            if (!data.wasPlaying) return
             // Pause foreground media normaly
             if (shouldPlay === false)
                 e.pause();

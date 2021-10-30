@@ -56,17 +56,13 @@ chrome.runtime.onMessage.addListener((message, sender) => {
         case 'playMuted':
             onMute(sender.tab.id);
             break
-        case 'playTrusted':
-            media.add(sender.tab.id);
-            onPlay(sender.tab, true);
-            break
         case 'pause':
             remove(sender.tab.id);
             break
         }
 });
 
-function onPlay(tab, trusted = false) {
+function onPlay(tab) {
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
     if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {

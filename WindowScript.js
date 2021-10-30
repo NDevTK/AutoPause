@@ -175,7 +175,7 @@
     target.addEventListener('ratechange', function (event) {
         const src = event.srcElement;
         if (src instanceof HTMLMediaElement) {
-	    let data = Elements.has(src) ? Elements.get(src) : {};
+            let data = Elements.has(src) ? Elements.get(src) : {};
             if (src.playbackRate === 0 && data.wasPlaying) {
                 event.stopPropagation();
             }
@@ -201,7 +201,7 @@
     }
 
     function normalPlayback(src) {
-	let data = Elements.has(src) ? Elements.get(src) : {};
+        let data = Elements.has(src) ? Elements.get(src) : {};
         if (data.wasPlaying) {
             src.volume = data.wasVolume;
             src.playbackRate = data.wasPlaybackRate;

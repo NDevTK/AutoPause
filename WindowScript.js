@@ -44,10 +44,6 @@
         }
     });
 
-    function hasProperty(value, key) {
-        return Object.prototype.hasOwnProperty.call(value, key);
-    }
-
     function togglePlayback() {
         Elements.forEach((data, e) => {
             if (e.paused) return;
@@ -117,7 +113,7 @@
         if (e.muted) {
             send('playMuted');
         } else if (trusted) {   
-            send('playTrusted');
+            send('play');
             normalPlayback(e);
         } else {
             send('play');

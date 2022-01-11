@@ -309,5 +309,8 @@
         passive: true
     });
     
+    function hasProperty(value, key) {
+        return Object.prototype.hasOwnProperty.call(value, key);
+    }
     // End of code
 })();

@@ -7,13 +7,15 @@
     if (hasProperty(window, 'loaded')) return
     
     var loaded = 'yep';
-    var shadows = [];
+    
+    var shadows = new Set();
     
     function API(e) {
     	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
     }
     
     var Elements = new Map();
+    var mediaCount = 0;
     addListener(document);
 
     chrome.runtime.onMessage.addListener(message => {
@@ -73,6 +75,7 @@
     }
 
     function isPlaying() {
+        if (mediaCount > 0) return true;
         const audibleElements = [...Elements].filter((data, e) => !e.muted);
         return (audibleElements.length !== 0);
     }
@@ -237,25 +240,31 @@
     }
     
     function checkShadow() {
-        shadows = [];
 	    [...document.all].filter(e => {
 		    if (e instanceof HTMLElement) {
 			    if (shadow(e) !== null) {
-			        shadows.push(e);
+                    if (shadows.has(e)) return
+			        shadows.add(e);
+                    addListener(e);
 			    }
 		    }
-    });
+        });
+    }
 
     document.addEventListener("autopause_result", e => {
 	    switch(e.detail) {
             case 'play':
+                mediaCount += 1;
                 send('play');
                 break
             case 'playMuted':
-                send('playMuted')
+                send('playMuted');
                 break
             case 'pause':
-                send('pause');
+                mediaCount -= 1;
+                if (!isPlaying()) {
+                    send('pause');
+                }
                 break
 	    }
     });

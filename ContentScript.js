@@ -15,7 +15,10 @@
     }
     
     var Elements = new Map();
+    
     var jsPlaying = false;
+    var domPlaying = false;
+
     addListener(document);
 
     chrome.runtime.onMessage.addListener(message => {
@@ -58,6 +61,11 @@
         }
     });
 
+    function checkSession() {
+        if (jsPlaying || domPlaying) return
+        send('pause');
+    }
+    
     function togglePlayback() {
         Elements.forEach((data, e) => {
             if (e.paused) return;
@@ -75,7 +83,6 @@
     }
 
     function isPlaying() {
-        if (jsPlaying) return true;
         const audibleElements = [...Elements].filter((data, e) => !e.muted);
         return (audibleElements.length !== 0);
     }
@@ -127,6 +134,7 @@
         if (e.muted) {
             send('playMuted');
         } else {
+            domPlaying = true;
             send('play');
         }
     }
@@ -195,7 +203,8 @@
             Elements.delete(src);
             normalPlayback(src);
             if (!isPlaying()) {
-                send('pause');
+                domPlaying = false;
+                checkSession();
             }
         }
     }
@@ -262,9 +271,7 @@
                 break
             case 'pause':
                 jsPlaying = false;
-                if (!isPlaying()) {
-                    send('pause');
-                }
+                checkSession();
                 break
 	    }
     });

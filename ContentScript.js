@@ -19,7 +19,7 @@
     addListener(document);
 
     chrome.runtime.onMessage.addListener(message => {
-        switch (message.detail) {
+        switch (message) {
         case 'toggleFastPlayback':
             API('toggleFastPlayback')
             toggleRate();

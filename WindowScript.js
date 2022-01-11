@@ -10,7 +10,6 @@
   }
 
     var Elements = new Map();
-    addListener(document);
 
     document.addEventListener("autopause_action", message => {
         switch (message.detail) {

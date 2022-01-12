@@ -15,44 +15,33 @@
     }
     
     var Elements = new Map();
-    
-    var jsPlaying = false;
-    var domPlaying = false;
 
     addListener(document);
 
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
         case 'toggleFastPlayback':
-            API('toggleFastPlayback')
             toggleRate();
             break
         case 'Rewind':
-            API('Rewind');
             Rewind();
             break
         case 'togglePlayback':
-            API('togglePlayback');
             togglePlayback();
             break
         case 'allowplayback':
-            API('allowplayback');
             resume(false);
             break
         case 'next':
-            API('next');
             next();
             break
         case 'previous':
-            API('previous');
             previous();
             break
         case 'pause':
-            API('pause');
             pause();
             break
         case 'play':
-            API('play');
             // When there media already playing tell the background script.
             if (isPlaying())
                 send('play');
@@ -60,11 +49,6 @@
             break
         }
     });
-
-    function checkSession() {
-        if (jsPlaying || domPlaying) return
-        send('pause');
-    }
     
     function togglePlayback() {
         Elements.forEach((data, e) => {
@@ -134,7 +118,6 @@
         if (e.muted) {
             send('playMuted');
         } else {
-            domPlaying = true;
             send('play');
         }
     }
@@ -203,8 +186,7 @@
             Elements.delete(src);
             normalPlayback(src);
             if (!isPlaying()) {
-                domPlaying = false;
-                checkSession();
+                send('pause');
             }
         }
     }
@@ -249,29 +231,27 @@
     }
     
     function checkShadow() {
-	    [...document.all].filter(e => {
-		    if (e instanceof HTMLElement) {
-			    if (shadow(e) !== null) {
-            if (shadows.has(e)) return
-            shadows.add(e);
-            addListener(e);
-			    }
-		    }
+        [...document.all].filter(e => {
+            if (e instanceof HTMLElement) {
+                if (shadow(e) !== null) {
+                    if (shadows.has(e)) return
+                    shadows.add(e);
+                    addListener(e);
+                }
+            }
         });
     }
 
     document.addEventListener("autopause_result", e => {
 	    switch(e.detail) {
             case 'play':
-                jsPlaying = true;
                 send('play');
                 break
             case 'playMuted':
                 send('playMuted');
                 break
             case 'pause':
-                jsPlaying = false;
-                checkSession();
+                send('pause');
                 break
 	    }
     });

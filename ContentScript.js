@@ -4,40 +4,51 @@
 (() => {
     // Script should only run once
 
-    if (hasProperty(window, 'loaded')) return
-    
-    var loaded = 'yep';
+    if (hasProperty(window, 'Elements')) return
     
     var shadows = new Set();
     
+    function API(e) {
+    	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
+    }
+    
     var Elements = new Map();
-
-    addListener(document);
+    
+    var jsPlaying = false;
+    var domPlaying = false;
 
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
         case 'toggleFastPlayback':
+            API('toggleFastPlayback')
             toggleRate();
             break
         case 'Rewind':
+            API('Rewind');
             Rewind();
             break
         case 'togglePlayback':
+            API('togglePlayback');
             togglePlayback();
             break
         case 'allowplayback':
+            API('allowplayback');
             resume(false);
             break
         case 'next':
+            API('next');
             next();
             break
         case 'previous':
+            API('previous');
             previous();
             break
         case 'pause':
+            API('pause');
             pause();
             break
         case 'play':
+            API('play');
             // When there media already playing tell the background script.
             if (isPlaying())
                 send('play');
@@ -45,6 +56,11 @@
             break
         }
     });
+
+    function checkSession() {
+        if (jsPlaying || domPlaying) return
+        send('pause');
+    }
     
     function togglePlayback() {
         Elements.forEach((data, e) => {
@@ -114,6 +130,7 @@
         if (e.muted) {
             send('playMuted');
         } else {
+            domPlaying = true;
             send('play');
         }
     }
@@ -176,13 +193,17 @@
         capture: true
     });
     }
+    
+    addListener(document);
+
     function onPause(src) {
         if (src instanceof HTMLMediaElement && src.paused) {
             // Check if all elements have paused.
             Elements.delete(src);
             normalPlayback(src);
             if (!isPlaying()) {
-                send('pause');
+                domPlaying = false;
+                checkSession();
             }
         }
     }
@@ -227,27 +248,29 @@
     }
     
     function checkShadow() {
-        [...document.all].filter(e => {
-            if (e instanceof HTMLElement) {
-                if (shadow(e) !== null) {
-                    if (shadows.has(e)) return
-                    shadows.add(e);
-                    addListener(e);
-                }
-            }
+	    [...document.all].filter(e => {
+		    if (e instanceof HTMLElement) {
+			    if (shadow(e) !== null) {
+            if (shadows.has(e)) return
+            shadows.add(e);
+            addListener(e);
+			    }
+		    }
         });
     }
 
     document.addEventListener("autopause_result", e => {
 	    switch(e.detail) {
             case 'play':
+                jsPlaying = true;
                 send('play');
                 break
             case 'playMuted':
                 send('playMuted');
                 break
             case 'pause':
-                send('pause');
+                jsPlaying = false;
+                checkSession();
                 break
 	    }
     });

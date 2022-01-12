@@ -10,10 +10,6 @@
     
     var shadows = new Set();
     
-    function API(e) {
-    	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
-    }
-    
     var Elements = new Map();
 
     addListener(document);

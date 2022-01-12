@@ -136,62 +136,63 @@
     }
     
     function addListener(src) {
-    let controller = new AbortController();
-    // On media play event
-    src.addEventListener('play', function (event) {
-        if (src instanceof HTMLMediaElement) {
-            Elements.set(src, {});
-            onPlay(src, event.isTrusted);
-        }
-    }, {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-    });
-
-    src.addEventListener('volumechange', function (event) {
-        if (src instanceof HTMLMediaElement && !isPaused(src)) {
-            onPlay(src);
-        }
-    }, {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-    });
-
-    src.addEventListener('pause', event => {
-        setTimeout(() => {
-            onPause(src);
-        }, 200);
-    }, {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-    });
-
-    src.addEventListener('abort', event => {
-        onPause(src);
-    }, {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-    });
-
-    // Dont tell the media please
-    src.addEventListener('ratechange', function (event) {
-        if (src instanceof HTMLMediaElement) {
-            let data = Elements.has(src) ? Elements.get(src) : {};
-            if (src.playbackRate === 0 && data.wasPlaying) {
-                event.stopPropagation();
+        let controller = new AbortController();
+        // On media play event
+        
+        src.addEventListener('play', function (event) {
+            if (event.srcElement instanceof HTMLMediaElement) {
+                Elements.set(event.srcElement, {});
+                onPlay(event.srcElement, event.isTrusted);
             }
-            if (!isPaused(src)) {
-                onPlay(src);
+        }, {
+            signal: controller.signal,
+            capture: true,
+            passive: true
+        });
+        
+        src.addEventListener('volumechange', function (event) {
+            if (event.srcElement instanceof HTMLMediaElement && !isPaused(src)) {
+                onPlay(event.srcElement);
             }
-        }
-    }, {
-        signal: controller.signal,
-        capture: true
-    });
+        }, {
+            signal: controller.signal,
+            capture: true,
+            passive: true
+        });
+        
+        src.addEventListener('pause', event => {
+            setTimeout(() => {
+                onPause(event.srcElement);
+            }, 200);
+        }, {
+            signal: controller.signal,
+            capture: true,
+            passive: true
+        });
+        
+        src.addEventListener('abort', event => {
+            onPause(event.srcElement);
+        }, {
+            signal: controller.signal,
+            capture: true,
+            passive: true
+        });
+        
+        // Dont tell the media please
+        src.addEventListener('ratechange', function (event) {
+            if (event.srcElement instanceof HTMLMediaElement) {
+                let data = Elements.has(event.srcElement) ? Elements.get(event.srcElement) : {};
+                if (event.srcElement.playbackRate === 0 && data.wasPlaying) {
+                    event.stopPropagation();
+                }
+                if (!isPaused(event.srcElement)) {
+                    onPlay(event.srcElement);
+                }
+            }
+        }, {
+            signal: controller.signal,
+            capture: true
+        });
     }
     
     addListener(document);

@@ -1,4 +1,11 @@
-<script>
-let shadow = document.body.attachShadow({mode: 'closed'});
-shadow.innerHTML = '<video width="320" height="240" controls loop><source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4"></video>';
-</script>
+<html>
+  <head>
+    <title>ShadowDOM</title>
+  </head>
+  <body>
+    <script>
+      let shadow = document.body.attachShadow({mode: 'closed'});
+      shadow.innerHTML = '<video width="320" height="240" controls loop><source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4"></video>';
+    </script>
+  </body>
+</html>

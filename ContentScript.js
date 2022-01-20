@@ -48,7 +48,6 @@
             pause();
             break
         case 'play':
-            checkShadow();
             API('play');
             // When there media already playing tell the background script.
             if (isPlaying())
@@ -56,6 +55,9 @@
             resume(true);
             break
         }
+        case 'audible':
+            checkShadow();
+            break
     });
 
     function checkSession() {

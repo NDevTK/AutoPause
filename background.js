@@ -266,7 +266,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.audible) {
         // If has not got a play message from the content script assume theres no permission.
         if (!media.has(tabId)) otherTabs.add(tabId);
-		media.add(tabId);
+	media.add(tabId);
+	send(tabId, 'audible');
         onPlay(tab);
     } else {
         onPause(tabId);

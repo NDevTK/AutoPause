@@ -166,10 +166,9 @@
             passive: true
         });
         
-        src.addEventListener('pause', event => {
-            setTimeout(() => {
-                onPause(event.srcElement);
-            }, 200);
+        src.addEventListener('pause', async event => {
+            await sleep(200);
+            onPause(event.srcElement);
         }, {
             signal: controller.signal,
             capture: true,
@@ -270,7 +269,7 @@
                         }
                     });
                 }
-		    }
+            }
         });
     }
 
@@ -341,6 +340,10 @@
         } else {
             return chrome.dom.openOrClosedShadowRoot(e);
         }
+    }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
     // End of code
 })();

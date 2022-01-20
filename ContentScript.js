@@ -6,7 +6,7 @@
 
     if (hasProperty(window, 'Elements')) return
     
-    var shadows = new Set();
+    var Targets = new Set();
     
     function API(e) {
     	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
@@ -53,6 +53,9 @@
             if (isPlaying())
                 send('play');
             resume(true);
+            break
+        case 'audible':
+            checkShadow();
             break
         }
     });
@@ -136,6 +139,8 @@
     }
     
     function addListener(src) {
+        if (Targets.has(src)) return
+        Targets.add(src);
         let controller = new AbortController();
         // On media play event
         
@@ -248,14 +253,22 @@
         });
     }
     
-    function checkShadow() {
-	    [...document.all].filter(e => {
-		    if (e instanceof HTMLElement) {
-			    if (shadow(e) !== null) {
-            if (shadows.has(e)) return
-            shadows.add(e);
-            addListener(e);
-			    }
+    function checkShadow(DOM = document) {
+        [...DOM.querySelectorAll('*')].map(e => {
+            if (e instanceof HTMLElement) {
+                let shadowDOM = shadow(e);
+                if (shadowDOM !== null) {
+                    checkShadow(shadowDOM);
+                    addListener(shadowDOM);
+                    [...shadowDOM.querySelectorAll('*')].map(e => {
+                        if (!isPaused(e)) {
+                            if (e instanceof HTMLMediaElement) {
+                                Elements.set(e, {});
+                                onPlay(e);
+                            }
+                        }
+                    });
+                }
 		    }
         });
     }
@@ -307,7 +320,8 @@
 
     function checkVisibility() {
         if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
-          send('hidden');
+          checkShadow();
+          send('hidden');	
         }
     }
 
@@ -318,6 +332,14 @@
     
     function hasProperty(value, key) {
         return Object.prototype.hasOwnProperty.call(value, key);
+    }
+
+    function shadow(e) {
+        if ('openOrClosedShadowRoot' in e) {
+            return e.openOrClosedShadowRoot();
+        } else {
+            return chrome.dom.openOrClosedShadowRoot(e);
+        }
     }
     // End of code
 })();

@@ -313,3 +313,9 @@ function toggleOption(o) {
         });
     });
 }
+
+chrome.webNavigation.onCommitted.addListener(navigation => {
+    // Remove media on a top level navigation.
+    if (navigation.frameId !== 0) return
+    remove(navigation.tabId);
+});

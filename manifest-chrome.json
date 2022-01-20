@@ -59,7 +59,8 @@
   },
   "permissions": [
     "storage",
-    "declarativeContent"
+    "declarativeContent",
+    "webNavigation"
   ],
   "background": {
     "scripts":["registerScript-chrome.js", "background.js"]

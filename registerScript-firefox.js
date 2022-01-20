@@ -24,7 +24,3 @@ function registerScriptFirefox() {
 browser.permissions.onAdded.addListener(registerScriptFirefox);
 browser.permissions.onRemoved.addListener(registerScriptFirefox);
 registerScriptFirefox();
-
-function shadow(e) {
-  return e.openOrClosedShadowRoot();
-}

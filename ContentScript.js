@@ -54,10 +54,10 @@
                 send('play');
             resume(true);
             break
-        }
         case 'audible':
             checkShadow();
             break
+        }
     });
 
     function checkSession() {

@@ -6,7 +6,7 @@
 
     if (hasProperty(window, 'Elements')) return
     
-    var shadows = new Set();
+    var Targets = new Set();
     
     function API(e) {
     	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
@@ -139,6 +139,8 @@
     }
     
     function addListener(src) {
+        if (Targets.has(src)) return
+        Targets.add(src);
         let controller = new AbortController();
         // On media play event
         
@@ -251,15 +253,14 @@
         });
     }
     
-    function checkShadow() {
-        [...document.all].map(e => {
+    function checkShadow(DOM = document) {
+        [...DOM.querySelectorAll('*')].map(e => {
             if (e instanceof HTMLElement) {
                 let shadowDOM = shadow(e);
                 if (shadowDOM !== null) {
-                    if (shadows.has(shadowDOM)) return
-                    shadows.add(shadowDOM);
+                    checkShadow(shadowDOM);
                     addListener(shadowDOM);
-                    [...shadowDOM].map(e => {
+                    [...shadowDOM.querySelectorAll('*')].map(e => {
                         if (!isPaused(e)) {
                             if (e instanceof HTMLMediaElement) {
                                 Elements.set(e, {});

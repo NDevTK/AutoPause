@@ -48,6 +48,7 @@
             pause();
             break
         case 'play':
+            checkShadow();
             API('play');
             // When there media already playing tell the background script.
             if (isPlaying())
@@ -249,13 +250,22 @@
     }
     
     function checkShadow() {
-	    [...document.all].filter(e => {
-		    if (e instanceof HTMLElement) {
-			    if (shadow(e) !== null) {
-            if (shadows.has(e)) return
-            shadows.add(e);
-            addListener(e);
-			    }
+        [...document.all].map(e => {
+            if (e instanceof HTMLElement) {
+                let shadowDOM = shadow(e);
+                if (shadowDOM !== null) {
+                    if (shadows.has(shadowDOM)) return
+                    shadows.add(shadowDOM);
+                    addListener(shadowDOM);
+                    [...shadowDOM].map(e => {
+                        if (!isPaused(e)) {
+                            if (e instanceof HTMLMediaElement) {
+                                Elements.set(e, {});
+                                onPlay(e);
+                            }
+                        }
+                    });
+                }
 		    }
         });
     }
@@ -307,7 +317,8 @@
 
     function checkVisibility() {
         if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
-          send('hidden');
+          checkShadow();
+          send('hidden');	
         }
     }
 

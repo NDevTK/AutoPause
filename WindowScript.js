@@ -145,10 +145,10 @@
             passive: true
         });
         
-        src.addEventListener('pause', event => {
-            setTimeout(() => {
-                onPause(event.srcElement);
-            }, 200);
+        src.addEventListener('pause', async event => {
+            let src = event.srcElement;
+            await sleep(200);
+            onPause(src);
         }, {
             signal: controller.signal,
             capture: true,
@@ -229,4 +229,9 @@
             normalPlayback(e);
         });
     }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+	
 })();

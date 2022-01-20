@@ -310,3 +310,7 @@ function toggleOption(o) {
         });
     });
 }
+
+chrome.webNavigation.onCommitted.addListener(navigation => {
+    remove(navigation.tabId);
+});

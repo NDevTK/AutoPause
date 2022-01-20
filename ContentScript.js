@@ -167,8 +167,9 @@
         });
         
         src.addEventListener('pause', async event => {
+            let src = event.srcElement;
             await sleep(200);
-            onPause(event.srcElement);
+            onPause(src);
         }, {
             signal: controller.signal,
             capture: true,

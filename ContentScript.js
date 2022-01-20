@@ -332,5 +332,13 @@
     function hasProperty(value, key) {
         return Object.prototype.hasOwnProperty.call(value, key);
     }
+
+    function shadow(e) {
+        if ('openOrClosedShadowRoot' in e) {
+            return e.openOrClosedShadowRoot();
+        } else {
+            return chrome.dom.openOrClosedShadowRoot(e);
+        }
+    }
     // End of code
 })();

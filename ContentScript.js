@@ -82,6 +82,7 @@
     }
 
     function isPlaying() {
+        checkShadow();
         const audibleElements = [...Elements].filter((data, e) => !e.muted);
         return (audibleElements.length !== 0);
     }

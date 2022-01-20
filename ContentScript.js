@@ -337,7 +337,7 @@
 
     function shadow(e) {
         if ('openOrClosedShadowRoot' in e) {
-            return e.openOrClosedShadowRoot();
+            return e.openOrClosedShadowRoot;
         } else {
             return chrome.dom.openOrClosedShadowRoot(e);
         }

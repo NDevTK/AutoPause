@@ -267,7 +267,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         // If has not got a play message from the content script assume theres no permission.
         if (!media.has(tabId)) {
             // Allow the media to check its shadow dom.
-            send(tabId, 'audible');
+            send(tabId, 'audible', true);
             otherTabs.add(tabId);
         }
         media.add(tabId);
@@ -287,8 +287,8 @@ async function Broadcast(message, exclude = false, tabs = media) {
     });
 };
 
-function send(id, message) {
-	if (otherTabs.has(id)) return;
+function send(id, message, force) {
+	if (otherTabs.has(id) && !force) return;
 	chrome.tabs.sendMessage(id, message, r => {
 		var lastError = chrome.runtime.lastError;
 	});

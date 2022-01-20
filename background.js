@@ -312,5 +312,6 @@ function toggleOption(o) {
 }
 
 chrome.webNavigation.onCommitted.addListener(navigation => {
+    if (navigation.frameId !== 0) return
     remove(navigation.tabId);
 });

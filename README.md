@@ -12,10 +12,12 @@ Features:
 - Automatic pause (per tab or new media)
 - Optional automatic resume
 - Global Fast forward
+- DOM events for website integration
+- ShadowDOM support
 - Mark tab for automatic resume
 - Custom media controls for play, pause, next, previous
-- Shortcut to mark a tab as ignored.
-- Shortcut to rewind media in 30 second increments.
+- Shortcut to mark a tab as ignored
+- Shortcut to rewind media in 30 second increments
 - Option to pause media when muted and not visible (Also supports tab mute, Not PiP due to lack of API on firefox)
 - Option to mute a tab when media is paused (Allows media switching without tab change using the unmute button)
 

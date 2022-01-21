@@ -70,7 +70,6 @@
 
     function next() {
         Elements.forEach((data, e) => {
-	    if (e.isConnected) return;
             if (isPaused(e)) return;
             e.currentTime = e.duration;
         });
@@ -78,7 +77,6 @@
 
     function previous() {
         Elements.forEach((data, e) => {
-	    if (e.isConnected) return;
             if (isPaused(e)) return;
             // Unknown
             e.currentTime = 0;
@@ -88,7 +86,6 @@
     // Controlled by global fast forward shortcut
     function toggleRate() {
         Elements.forEach((data, e) => {
-	    if (e.isConnected) return;
             if (isPaused(e))
                 return;
             if (data.wasPlaybackRate && e.playbackRate > 1) {
@@ -104,7 +101,6 @@
     // Controlled by global rewind shortcut
     function Rewind() {
         Elements.forEach((data, e) => {
-	    if (e.isConnected) return;
             if (isPaused(e))
                 return;
 	    e.currentTime -= 30;

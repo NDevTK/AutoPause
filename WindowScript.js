@@ -152,7 +152,7 @@
         src.addEventListener('pause', async event => {
             let src = event.srcElement;
             await sleep(200);
-            onPause(src);
+            onPause(src, controller);
         }, {
             signal: controller.signal,
             capture: true,
@@ -160,7 +160,7 @@
         });
         
         src.addEventListener('abort', event => {
-            onPause(event.srcElement);
+            onPause(event.srcElement, controller);
         }, {
             signal: controller.signal,
             capture: true,
@@ -184,9 +184,10 @@
         });
     }
     
-    function onPause(src) {
+    function onPause(src, controller) {
         if (src instanceof HTMLMediaElement && src.paused) {
             // Check if all elements have paused.
+	    controller.abort();
             Elements.delete(src);
             normalPlayback(src);
             if (!isPlaying()) {

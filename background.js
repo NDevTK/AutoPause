@@ -63,6 +63,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
+    if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
+    
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
     // Dont allow a diffrent tab to hijack active media.
     if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
@@ -171,7 +173,7 @@ chrome.commands.onCommand.addListener(async command => {
         var result = getResumeTab();
         if (result !== false) {
             Broadcast('pause', result);
-            send(result, 'togglePlayback');
+            if (otherTabs.size === 0) send(result, 'togglePlayback');
         }
         break
     case 'next':
@@ -196,10 +198,8 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 function pause(id) {
+	if (hasProperty(options, 'ignoreother') && otherTabs.has(id)) return
 	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
-	if (hasProperty(options, 'disableresume') || otherTabs.has(id)) {
-        chrome.tabs.discard(id);
-	}
 	send(id, 'pause');
 }
 
@@ -213,7 +213,7 @@ function play(id, force) {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || media.size === 0) return
+    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
     if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');
@@ -313,9 +313,3 @@ function toggleOption(o) {
         });
     });
 }
-
-chrome.webNavigation.onCommitted.addListener(navigation => {
-    // Remove media on a top level navigation.
-    if (navigation.frameId !== 0) return
-    remove(navigation.tabId);
-});

@@ -8,47 +8,34 @@
     
     var Targets = new Set();
     
-    function API(e) {
-    	document.dispatchEvent(new CustomEvent('autopause_action', {detail: e}));
-    }
-    
     var Elements = new Map();
-    
-    var jsPlaying = false;
+
     var domPlaying = false;
 
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
         case 'toggleFastPlayback':
-            API('toggleFastPlayback')
             toggleRate();
             break
         case 'Rewind':
-            API('Rewind');
             Rewind();
             break
         case 'togglePlayback':
-            API('togglePlayback');
             togglePlayback();
             break
         case 'allowplayback':
-            API('allowplayback');
             resume(false);
             break
         case 'next':
-            API('next');
             next();
             break
         case 'previous':
-            API('previous');
             previous();
             break
         case 'pause':
-            API('pause');
             pause();
             break
         case 'play':
-            API('play');
             // When there media already playing tell the background script.
             if (isPlaying())
                 send('play');
@@ -61,7 +48,7 @@
     });
 
     function checkSession() {
-        if (jsPlaying || domPlaying) return
+        if (domPlaying) return
         send('pause');
     }
     

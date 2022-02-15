@@ -56,8 +56,7 @@
     }
   },
   "permissions": [
-    "storage",
-    "webNavigation"
+    "storage"
   ],
   "background": {
     "scripts":["registerScript-firefox.js", "background.js"]

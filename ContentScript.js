@@ -98,11 +98,9 @@
         Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;
-            if (data.wasPlaybackRate && e.playbackRate > 1) {
-                e.playbackRate = data.wasPlaybackRate;
+            if (e.playbackRate > 1) {
+                e.playbackRate = 1;
             } else {
-                data.wasPlaybackRate = e.playbackRate;
-                Elements.set(e, data);
                 e.playbackRate = 2;
             }
         });

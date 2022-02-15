@@ -259,22 +259,6 @@
         });
     }
 
-    document.addEventListener("autopause_result", e => {
-	    switch(e.detail) {
-            case 'play':
-                jsPlaying = true;
-                send('play');
-                break
-            case 'playMuted':
-                send('playMuted');
-                break
-            case 'pause':
-                jsPlaying = false;
-                checkSession();
-                break
-	    }
-    });
-
     function injectScript(filePath) {
         var script = document.createElement('script');
         script.setAttribute('type', 'text/javascript');

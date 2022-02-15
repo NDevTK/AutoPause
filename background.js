@@ -273,6 +273,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         media.add(tabId);
         onPlay(tab);
     } else {
+	otherTabs.delete(tabId);
         onPause(tabId);
     }
 });

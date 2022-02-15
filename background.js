@@ -270,7 +270,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             send(tabId, 'audible');
             otherTabs.add(tabId);
         }
-        media.add(tabId);
         onPlay(tab);
     } else {
 	otherTabs.delete(tabId);

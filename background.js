@@ -212,7 +212,7 @@ function play(id, force) {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0) return
+    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
     if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');

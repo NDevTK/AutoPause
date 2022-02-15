@@ -9,6 +9,8 @@
     return play.apply(this, arguments);
   }
 
+    send('init');
+
     var Elements = new Map();
 
     document.addEventListener("autopause_action", message => {

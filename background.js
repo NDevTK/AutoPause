@@ -195,7 +195,7 @@ chrome.commands.onCommand.addListener(async command => {
             remove(activeTab);
         break
     case 'previoustab':
-            pause(mediaPlaying);
+            switchMedia();
         break
     }
 });
@@ -215,6 +215,13 @@ function play(id, force) {
     }
 }
 
+function switchMedia() {
+    const result = getResumeTab(mediaPlaying);
+    mediaPlaying = result;
+    if (result !== false)
+        play(result);
+}
+
 function autoResume(id) {
     if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
     if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
@@ -223,10 +230,7 @@ function autoResume(id) {
     }
     // Make sure event is from the mediaPlaying tab.
     if (id === mediaPlaying) {
-        const result = getResumeTab(mediaPlaying);
-        mediaPlaying = result;
-        if (result !== false)
-            play(result);
+        switchMedia();
     }
 }
 

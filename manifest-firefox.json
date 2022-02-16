@@ -53,6 +53,9 @@
     },
     "ignoretab": {
         "description": "Ignore a tab"
+    },
+    "previoustab": {
+        "description": "Play media from previous tab"
     }
   },
   "permissions": [

@@ -194,10 +194,10 @@ chrome.commands.onCommand.addListener(async command => {
             ignoredTabs.add(activeTab);
             remove(activeTab);
         break
-    }
     case 'previoustab':
 	pause(mediaPlaying);
 	break
+    }
 });
 
 function pause(id) {

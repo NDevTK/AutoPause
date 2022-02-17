@@ -265,7 +265,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
 	    // If tab gets unmuted resume it.
         else if (!changeInfo.mutedInfo.muted && mutedTabs.has(tabId)) {
-            lastPlaying = null;
             mediaPlaying = tabId;
             play(tabId, true);
         }

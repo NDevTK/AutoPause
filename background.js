@@ -213,6 +213,7 @@ chrome.commands.onCommand.addListener(async command => {
         break
     case 'autopausewindow':
             chrome.windows.getCurrent(w => {
+                if (w.id === chrome.windows.WINDOW_ID_NONE) return
                 autoPauseWindow = w.id;
             });
        break

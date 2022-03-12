@@ -143,8 +143,8 @@ chrome.windows.onFocusChanged.addListener(id => {
     });
 });
 
-chrome.tabs.onDetached.addListener(id => {
-    if (autoPauseWindow !== null  && autoPauseWindow !== id) return
+chrome.tabs.onDetached.addListener(() => {
+    if (autoPauseWindow !== null) return
     remove(id);
 });
 

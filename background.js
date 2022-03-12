@@ -65,7 +65,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
-    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
+    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     
     if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
     
@@ -92,8 +92,6 @@ function onPlay(tab) {
 }
 
 function onPause(id) {
-    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
-    
     // Ignore event from other tabs.
     if (id === mediaPlaying) {
         lastPlaying = id;

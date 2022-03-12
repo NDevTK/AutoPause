@@ -143,8 +143,9 @@ chrome.windows.onFocusChanged.addListener(id => {
     });
 });
 
+// Dont track unrelated windows
 chrome.tabs.onDetached.addListener(() => {
-    if (autoPauseWindow !== null) return
+    if (autoPauseWindow === null) return
     remove(id);
 });
 

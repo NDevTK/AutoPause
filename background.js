@@ -143,6 +143,11 @@ chrome.windows.onFocusChanged.addListener(id => {
     });
 });
 
+chrome.tabs.onDetached.addListener(id => {
+    if (autoPauseWindow !== null  && autoPauseWindow !== id) return
+    remove(id);
+});
+
 // Handle keyboard shortcuts.
 chrome.commands.onCommand.addListener(async command => {
     switch (command) {

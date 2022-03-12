@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
   "cross_origin_embedder_policy": {
@@ -58,6 +58,9 @@
     },
     "previoustab": {
         "description": "Play media from previous tab"
+    },
+    "autopausewindow": {
+        "description": "Limit autopause usage to a window"
     }
   },
   "permissions": [

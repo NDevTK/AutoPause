@@ -9,6 +9,7 @@ var lastPlaying = null;
 var otherTabs = new Set(); // Tab IDs of media with no permission to access.
 var mutedTabs = new Set(); // Tab IDs of muted media.
 var ignoredTabs = new Set();
+var autoPauseWindow = null;
 
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null)
@@ -35,6 +36,7 @@ function onMute(tabId) {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener((message, sender) => {
+    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
     otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
@@ -63,6 +65,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 });
 
 function onPlay(tab) {
+    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
+    
     if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
     
     if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
@@ -88,6 +92,8 @@ function onPlay(tab) {
 }
 
 function onPause(id) {
+    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
+    
     // Ignore event from other tabs.
     if (id === mediaPlaying) {
         lastPlaying = id;
@@ -97,6 +103,8 @@ function onPause(id) {
 
 function tabChange(tab) {
     if (ignoredTabs.has(tab.id)) return
+    
+    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     
     activeTab = tab.id;
 
@@ -126,6 +134,7 @@ function getResumeTab(exclude) {
 // User may have mutiple windows open.
 chrome.windows.onFocusChanged.addListener(id => {
     if (id === chrome.windows.WINDOW_ID_NONE) return
+    if (autoPauseWindow !== null  && autoPauseWindow !== id) return
     chrome.tabs.query({
         active: true,
         currentWindow: true
@@ -198,6 +207,11 @@ chrome.commands.onCommand.addListener(async command => {
             lastPlaying = null;
             switchMedia();
         break
+    case 'autopausewindow':
+            chrome.windows.getCurrent(w => {
+                autoPauseWindow = w.id;
+            });
+       break
     }
 });
 
@@ -257,6 +271,7 @@ function remove(tabId) {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     if (ignoredTabs.has(tabId)) return
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {

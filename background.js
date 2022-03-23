@@ -221,6 +221,10 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 function pause(id) {
+    if (hasProperty(options, 'nopermission')) {
+        chrome.tabs.discard(id);
+        return
+    }
 	if (otherTabs.has(id)) return
 	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 	send(id, 'pause');
@@ -312,6 +316,9 @@ async function Broadcast(message, exclude = false, tabs = media) {
 		}
         send(id, message);
     });
+    if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === media) {
+        Broadcast(message, exclude, otherTabs);
+    };
 };
 
 function send(id, message, force) {

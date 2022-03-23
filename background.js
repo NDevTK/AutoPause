@@ -221,10 +221,10 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 function pause(id) {
-    if (hasProperty(options, 'nopermission')) {
-        chrome.tabs.discard(id);
-        return
-    }
+	if (hasProperty(options, 'nopermission')) {
+		chrome.tabs.discard(id);
+		return
+	}
 	if (otherTabs.has(id)) return
 	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 	send(id, 'pause');

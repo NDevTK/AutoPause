@@ -40,7 +40,7 @@
             "default": "Alt+O",	
             "mac": "Alt+O"	
         },	
-        "description": "Set tab for resume overide"	
+        "description": "Set tab to play when nothing else is"	
     },
     "togglePlayback": {
         "description": "Toggle media playback"

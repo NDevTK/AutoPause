@@ -123,23 +123,26 @@
             send('play');
         }
     }
-    
     function addListener(src) {
         if (Targets.has(src)) return
         Targets.add(src);
-        let controller = new AbortController();
         // On media play event
-        
         src.addEventListener('play', function (event) {
             if (event.srcElement instanceof HTMLMediaElement) {
                 Elements.set(event.srcElement, {});
+                addMedia(event.srcElement);
                 onPlay(event.srcElement, event.isTrusted);
             }
         }, {
-            signal: controller.signal,
             capture: true,
             passive: true
         });
+    }
+	
+    function addMedia(src) {
+        if (Targets.has(src)) return
+        Targets.add(src);
+        let controller = new AbortController();
         
         src.addEventListener('volumechange', function (event) {
             if (event.srcElement instanceof HTMLMediaElement && !isPaused(src)) {
@@ -154,7 +157,7 @@
         src.addEventListener('pause', async event => {
             let src = event.srcElement;
             await sleep(200);
-            onPause(src);
+            onPause(src, controller);
         }, {
             signal: controller.signal,
             capture: true,
@@ -162,7 +165,7 @@
         });
         
         src.addEventListener('abort', event => {
-            onPause(event.srcElement);
+            onPause(event.srcElement, controller);
         }, {
             signal: controller.signal,
             capture: true,
@@ -188,8 +191,9 @@
     
     addListener(document);
 
-    function onPause(src) {
+    function onPause(src, controller) {
         if (src instanceof HTMLMediaElement && src.paused) {
+            controller.abort();
             // Check if all elements have paused.
             Elements.delete(src);
             normalPlayback(src);
@@ -250,6 +254,7 @@
                         if (!isPaused(e)) {
                             if (e instanceof HTMLMediaElement) {
                                 Elements.set(e, {});
+                                addMedia(e);
                                 onPlay(e);
                             }
                         }

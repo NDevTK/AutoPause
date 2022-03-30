@@ -316,13 +316,16 @@ async function Broadcast(message, exclude = false, tabs = media) {
 		}
         send(id, message);
     });
+    // User does not want otherTabs to be affected
+    if (hasProperty(options, 'ignoreother')) return
+    // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === media) {
         Broadcast(message, exclude, otherTabs);
     };
 };
 
 function send(id, message, force) {
-	if (otherTabs.has(id) && !force) return;
+	if (otherTabs.has(id) && !force) return
 	chrome.tabs.sendMessage(id, message, r => {
 		var lastError = chrome.runtime.lastError;
 	});

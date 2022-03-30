@@ -123,13 +123,10 @@
             send('play');
         }
     }
-    
     function addListener(src) {
         if (Targets.has(src)) return
         Targets.add(src);
-        let controller = new AbortController();
         // On media play event
-        
         src.addEventListener('play', function (event) {
             if (event.srcElement instanceof HTMLMediaElement) {
                 Elements.set(event.srcElement, {});
@@ -137,10 +134,15 @@
                 onPlay(event.srcElement, event.isTrusted);
             }
         }, {
-            signal: controller.signal,
             capture: true,
             passive: true
         });
+    }
+	
+    function addMedia(src) {
+        if (Targets.has(src)) return
+        Targets.add(src);
+        let controller = new AbortController();
         
         src.addEventListener('volumechange', function (event) {
             if (event.srcElement instanceof HTMLMediaElement && !isPaused(src)) {
@@ -252,6 +254,7 @@
                         if (!isPaused(e)) {
                             if (e instanceof HTMLMediaElement) {
                                 Elements.set(e, {});
+                                addMedia(e);
                                 onPlay(e);
                             }
                         }

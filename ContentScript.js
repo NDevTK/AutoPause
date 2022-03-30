@@ -130,7 +130,7 @@
         src.addEventListener('play', function (event) {
             if (event.srcElement instanceof HTMLMediaElement) {
                 Elements.set(event.srcElement, {});
-                addListener(event.srcElement);
+                addMedia(event.srcElement);
                 onPlay(event.srcElement, event.isTrusted);
             }
         }, {

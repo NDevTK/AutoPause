@@ -327,7 +327,7 @@ async function Broadcast(message, exclude = false, tabs = media) {
 function send(id, message, force) {
 	if (otherTabs.has(id) && !force) return
 	chrome.tabs.sendMessage(id, message, r => {
-		var lastError = chrome.runtime.lastError;
+		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
 }
 

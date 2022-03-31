@@ -123,6 +123,7 @@
             send('play');
         }
     }
+
     function addListener(src) {
         if (Targets.has(src)) return
         Targets.add(src);
@@ -131,7 +132,7 @@
             if (event.srcElement instanceof HTMLMediaElement) {
                 Elements.set(event.srcElement, {});
                 addMedia(event.srcElement);
-                onPlay(event.srcElement, event.isTrusted);
+                onPlay(event.srcElement);
             }
         }, {
             capture: true,

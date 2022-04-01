@@ -282,6 +282,9 @@ function remove(tabId) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     if (ignoredTabs.has(tabId)) return
+    if (changeInfo.discarded) {
+        return remove(tabId);
+    }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
             if (hasProperty(options, 'pausemuted')) send(tabId, 'pausemuted');

@@ -220,13 +220,13 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-function pause(id) {
+function pause(id, allowMute = true) {
 	if (hasProperty(options, 'nopermission')) {
 		chrome.tabs.discard(id);
 		return
 	}
 	if (otherTabs.has(id)) return
-	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
+	if (allowMute && hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 	send(id, 'pause');
 }
 
@@ -289,7 +289,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
             if (hasProperty(options, 'pausemuted')) {
                 // Pause hidden muted tabs.
-                pause(tabId);
+                pause(tabId, false);
             }
             onMute(tabId);
         }

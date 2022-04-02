@@ -287,7 +287,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
-            if (hasProperty(options, 'pausemuted')) send(tabId, 'pausemuted');
+            if (hasProperty(options, 'pausemuted')) {
+                // Pause hidden muted tabs.
+                pause(tabId);
+            }
             onMute(tabId);
         }
 	    // If tab gets unmuted resume it.

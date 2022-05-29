@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
         case 'hidden':
-            if (mutedTabs.has(sender.tab.id) && hasProperty(options, 'pausemuted')) {
+            if (mutedTabs.has(sender.tab.id)) {
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
             }
@@ -291,10 +291,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
-            if (hasProperty(options, 'pausemuted')) {
-                // Pause hidden muted tabs.
-                pause(tabId, true);
-            }
+            // Pause hidden muted tabs.
+            pause(tabId, true);
             onMute(tabId);
         }
 	    // If tab gets unmuted resume it.

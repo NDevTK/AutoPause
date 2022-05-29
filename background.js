@@ -220,14 +220,18 @@ chrome.commands.onCommand.addListener(async command => {
     }
 });
 
-function pause(id) {
+function pause(id, checkHidden) {
 	if (hasProperty(options, 'nopermission')) {
 		chrome.tabs.discard(id);
 		return
 	}
 	if (otherTabs.has(id)) return
 	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
-	send(id, 'pause');
+	if (checkHidden) {
+        send(id, 'hidden');
+	} else {
+        send(id, 'pause');
+    }
 }
 
 function play(id, force) {
@@ -287,9 +291,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
-            if (hasProperty(options, 'pausemuted') && (tab.active || tab.hidden)) {
+            if (hasProperty(options, 'pausemuted')) {
                 // Pause hidden muted tabs.
-                pause(tabId);
+                pause(tabId, true);
             }
             onMute(tabId);
         }

@@ -228,10 +228,10 @@ function pause(id, checkHidden) {
 	if (otherTabs.has(id)) return
 	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 	if (checkHidden) {
-        send(id, 'hidden');
+		send(id, 'hidden');
 	} else {
-        send(id, 'pause');
-    }
+		send(id, 'pause');
+	}
 }
 
 function play(id, force) {

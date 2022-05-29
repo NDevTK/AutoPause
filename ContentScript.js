@@ -44,6 +44,9 @@
         case 'audible':
             checkShadow();
             break
+        case 'hidden':
+            checkVisibility();
+            break
         }
     });
 

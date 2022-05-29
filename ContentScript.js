@@ -45,6 +45,10 @@
             checkShadow();
             break
         }
+        case 'hidden':
+            checkVisibility();
+            break
+        }
     });
 
     function checkSession() {

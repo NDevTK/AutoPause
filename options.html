@@ -9,13 +9,7 @@
 </head>
 <body>
     <h1>After changes press enter.</h1>
-    <label>Places to use this extension (space separated): <br><input list="origins" id="userinput" size="500" pattern="(<all_urls>|((https?|file|ftp|\*):\/\/(\*|\*\.[^* /]+|[^* /]+)\/[^ ]* ?)+)" placeholder="Examples: <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com" multiple></label>
-    <datalist id="origins">
-        <option value="https://www.youtube.com/*">YouTube</option>
-        <option value="https://soundcloud.com/*">SoundCloud</option>
-        <option value="https://www.twitch.tv/*">Twitch</option>
-        <option value="<all_urls>">All urls</option>
-    </datalist>
+    <label>Places to use this extension (space separated): <br><input id="userinput" size="500" pattern="(<all_urls>|((https?|file|ftp|\*):\/\/(\*|\*\.[^* /]+|[^* /]+)\/[^ ]* ?)+)" placeholder="Examples: <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com"></label>
     <p>This permission is needed to pause, resume and fast forward media its not needed to detect audio.</p><br>
     <div><label for="nopermission"> No permission mode, discards tabs when needed.</label><input type="checkbox" id="nopermission"></div>
     <div><label for="disableresume"> Disable automatic resume</label><input type="checkbox" id="disableresume"></div>

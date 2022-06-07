@@ -76,11 +76,11 @@ getPermissions();
 
 const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/']]);
 
-userinput.onchange = () => {
+userinput.oninput = () => {
 	let result = userinput.value.split(' ');
-	for (let [index, value] of result) {
+	for (let [index, value] of result.entries()) {
 		const key = value.toLowerCase();
-		if (common.has(key) {
+		if (common.has(key)) {
 		    result[index] = common.get(key);
 		}
 	}

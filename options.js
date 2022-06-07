@@ -74,6 +74,19 @@ function getPermissions() {
 
 getPermissions();
 
+const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/']);
+
+userinput.onchange = () => {
+	let result = userinput.value.split(' ');
+	for (let [index, value] of result) {
+		const key = value.toLowerCase();
+		if (common.has(key) {
+		    result[index] = common.get(key);
+		}
+	}
+	userinput.value = result.join(' ');
+}
+
 async function permissionUpdate() {
     const domains = userinput.value.split(' ');
     const regex = /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;

@@ -74,7 +74,7 @@ function getPermissions() {
 
 getPermissions();
 
-const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/']);
+const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/']]);
 
 userinput.onchange = () => {
 	let result = userinput.value.split(' ');

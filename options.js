@@ -74,7 +74,7 @@ function getPermissions() {
 
 getPermissions();
 
-const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/']]);
+const common = new Map([['youtube', 'https://www.youtube.com/*'], ['soundcloud', 'https://soundcloud.com/*'], ['twitch', 'https://www.twitch.tv/*'], ['pandora', 'https://*.pandora.com/*'], ['wrif', 'https://wrif.com/*'], ['ustvgo', 'https://ustvgo.tv/*'], ['picarto', 'https://picarto.tv/*']]);
 
 userinput.oninput = () => {
 	let result = userinput.value.split(' ');
@@ -85,7 +85,7 @@ userinput.oninput = () => {
 		}
 	}
 	userinput.value = result.join(' ');
-}
+};
 
 async function permissionUpdate() {
     const domains = userinput.value.split(' ');

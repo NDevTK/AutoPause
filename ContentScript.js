@@ -285,6 +285,7 @@
     }
     
     window.addEventListener('DOMContentLoaded', () => {
+	if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
         injectScript('WindowScript.js');
     }, {

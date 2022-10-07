@@ -304,6 +304,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
     }
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
+    
     if (changeInfo.audible) {
         // If has not got a play message from the content script assume theres no permission.
         if (!media.has(tabId)) {
@@ -313,6 +314,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
         onPlay(tab);
     } else {
+	send(tabId, 'update');
         otherTabs.delete(tabId);
         onPause(tabId);
     }

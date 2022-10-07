@@ -10,7 +10,7 @@
     
     var Elements = new Map();
 
-    chrome.runtime.onMessage.addListener(message => {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message) {
         case 'toggleFastPlayback':
             toggleRate();
@@ -44,6 +44,9 @@
             break
         case 'hidden':
             checkVisibility();
+            break
+        case 'isplaying':
+            sendResponse(isPlaying());
             break
         }
     });

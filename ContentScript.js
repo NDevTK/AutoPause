@@ -47,13 +47,6 @@
             break
         case 'isplaying':
             if (!isPlaying()) break
-            // Remind Firefox theres new media :)
-            Elements.forEach((data, e) => {
-                let real = e.volume;
-                if (real === 0) return;
-                e.volume = 0;
-                e.volume = real;
-            });
             sendResponse('true');
             break
         case 'update':

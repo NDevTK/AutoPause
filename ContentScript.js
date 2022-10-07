@@ -285,6 +285,8 @@
     }
     
     window.addEventListener('DOMContentLoaded', () => {
+	// https://github.com/NDevTK/AutoPause/issues/31
+	if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
         injectScript('WindowScript.js');
     }, {

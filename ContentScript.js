@@ -153,8 +153,9 @@
         Elements.set(src, {});
         let controller = new AbortController();
         
-        src.addEventListener('volumechange', function (event) {
+        src.addEventListener('volumechange', async  event => {
             if (event.srcElement instanceof HTMLMediaElement && !isPaused(src)) {
+                await sleep(200);
                 onPlay(event.srcElement);
             }
         }, {

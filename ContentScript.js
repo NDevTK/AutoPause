@@ -46,7 +46,8 @@
             checkVisibility();
             break
         case 'isplaying':
-            sendResponse(isPlaying());
+	    if (!isPlaying()) break
+            sendResponse('true');
             break
         }
     });

@@ -52,7 +52,7 @@
         case 'update':
             // Remind Firefox theres new media :)
             Elements.forEach((data, e) => {
-		if (isPaused(e) || e.muted) return;
+                if (isPaused(e) || isMuted(e)) return;
                 let real = e.volume;
                 if (real === 0) return;
                 e.volume = 0;
@@ -80,7 +80,7 @@
 
     function isPlaying() {
         checkShadow();
-        const audibleElements = [...Elements].filter((data, e) => !e.muted);
+        const audibleElements = [...Elements].filter((e, data) => !isMuted(e[0]));
         return (audibleElements.length !== 0);
     }
 
@@ -126,7 +126,7 @@
     }
     
     function onPlay(e) {
-        if (e.muted) {
+        if (isMuted(e)) {
             send('playMuted');
         } else {
             send('play');
@@ -148,14 +148,18 @@
         });
     }
 	
+    function isMuted(e) {
+        return (e.muted || e.volume === 0);
+    }
+	
     function addMedia(src) {
         if (Elements.has(src)) return
         Elements.set(src, {});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {
-            if (event.srcElement instanceof HTMLMediaElement && !isPaused(src)) {
-                await sleep(200);
+            if (event.srcElement instanceof HTMLMediaElement && !isPaused(event.srcElement)) {
+                if (isMuted(event.srcElement)) await sleep(200);
                 onPlay(event.srcElement);
             }
         }, {

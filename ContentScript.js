@@ -56,6 +56,16 @@
             });
             sendResponse('true');
             break
+        case 'update':
+            // Remind Firefox theres new media :)
+            Elements.forEach((data, e) => {
+		if (isPaused(e)) return;
+                let real = e.volume;
+                if (real === 0) return;
+                e.volume = 0;
+                e.volume = real;
+            });
+            break
         }
     });
     

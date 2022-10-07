@@ -52,7 +52,7 @@
         case 'update':
             // Remind Firefox theres new media :)
             Elements.forEach((data, e) => {
-		if (isPaused(e)) return;
+		if (isPaused(e) || e.muted) return;
                 let real = e.volume;
                 if (real === 0) return;
                 e.volume = 0;

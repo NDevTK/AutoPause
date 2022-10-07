@@ -247,7 +247,6 @@
                     [...shadowDOM.querySelectorAll('*')].map(e => {
                         if (!isPaused(e)) {
                             if (e instanceof HTMLMediaElement) {
-                                Elements.set(e, {});
                                 addMedia(e);
                                 onPlay(e);
                             }

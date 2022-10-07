@@ -10,8 +10,6 @@
     
     var Elements = new Map();
 
-    var domPlaying = false;
-
     chrome.runtime.onMessage.addListener(message => {
         switch (message) {
         case 'toggleFastPlayback':
@@ -49,11 +47,6 @@
             break
         }
     });
-
-    function checkSession() {
-        if (domPlaying) return
-        send('pause');
-    }
     
     function togglePlayback() {
         Elements.forEach((data, e) => {
@@ -122,7 +115,6 @@
         if (e.muted) {
             send('playMuted');
         } else {
-            domPlaying = true;
             send('play');
         }
     }
@@ -133,7 +125,6 @@
         // On media play event
         src.addEventListener('play', function (event) {
             if (event.srcElement instanceof HTMLMediaElement) {
-                Elements.set(event.srcElement, {});
                 addMedia(event.srcElement);
                 onPlay(event.srcElement);
             }
@@ -144,8 +135,8 @@
     }
 	
     function addMedia(src) {
-        if (Targets.has(src)) return
-        Targets.add(src);
+        if (Elements.has(src)) return
+        Elements.set(src, {});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', function (event) {
@@ -198,12 +189,11 @@
     function onPause(src, controller) {
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();
-            // Check if all elements have paused.
             Elements.delete(src);
             normalPlayback(src);
+            // Check if all elements have paused.
             if (!isPlaying()) {
-                domPlaying = false;
-                checkSession();
+                send('pause');
             }
         }
     }
@@ -285,8 +275,8 @@
     }
     
     window.addEventListener('DOMContentLoaded', () => {
-	// https://github.com/NDevTK/AutoPause/issues/31
-	if (location.origin.endsWith('.netflix.com')) return
+        // https://github.com/NDevTK/AutoPause/issues/31
+        if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
         injectScript('WindowScript.js');
     }, {

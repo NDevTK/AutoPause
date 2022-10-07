@@ -10,7 +10,7 @@
     
     var Elements = new Map();
 
-    chrome.runtime.onMessage.addListener(message => {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message) {
         case 'toggleFastPlayback':
             toggleRate();
@@ -44,6 +44,20 @@
             break
         case 'hidden':
             checkVisibility();
+            break
+        case 'isplaying':
+            if (!isPlaying()) break
+            sendResponse('true');
+            break
+        case 'update':
+            // Remind Firefox theres new media :)
+            Elements.forEach((data, e) => {
+		if (isPaused(e) || e.muted) return;
+                let real = e.volume;
+                if (real === 0) return;
+                e.volume = 0;
+                e.volume = real;
+            });
             break
         }
     });

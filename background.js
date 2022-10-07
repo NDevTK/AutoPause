@@ -35,13 +35,13 @@ function onMute(tabId) {
 }
 
 // For when the media is silent.
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
     otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
         case 'hidden':
-            if (mutedTabs.has(sender.tab.id)) {
+            if (sender.frameId === 0 && mutedTabs.has(sender.tab.id)) {
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
             }
@@ -56,9 +56,13 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             }
             break
         case 'playMuted':
+            let playing = await isPlaying(sender.tab.id);
+            if (playing) break
             onMute(sender.tab.id);
             break
         case 'pause':
+            let playing = await isPlaying(sender.tab.id);
+            if (playing) break
             remove(sender.tab.id);
             break
         }
@@ -302,6 +306,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
     }
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
+    
     if (changeInfo.audible) {
         // If has not got a play message from the content script assume theres no permission.
         if (!media.has(tabId)) {
@@ -311,6 +316,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
         onPlay(tab);
     } else {
+	send(tabId, 'update');
         otherTabs.delete(tabId);
         onPause(tabId);
     }
@@ -337,6 +343,16 @@ function send(id, message, force) {
 	chrome.tabs.sendMessage(id, message, r => {
 		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
+}
+
+function isPlaying(id) {
+    return new Promise(resolve => {
+        if (otherTabs.has(id)) return true
+        chrome.tabs.sendMessage(id, 'isplaying', r => {
+            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
+            resolve(r === 'true');
+        });
+    });
 }
 
 function hasProperty(value, key) {

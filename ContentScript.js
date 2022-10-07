@@ -121,7 +121,7 @@
         Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;
-	    e.currentTime -= 30;
+            e.currentTime -= 30;
         });
     }
     

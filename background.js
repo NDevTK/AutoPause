@@ -56,6 +56,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             }
             break
         case 'playMuted':
+            let playing = await isPlaying(sender.tab.id);
+            if (playing) break
             onMute(sender.tab.id);
             break
         case 'pause':

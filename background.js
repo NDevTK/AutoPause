@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message) {
         case 'hidden':
-            if (mutedTabs.has(sender.tab.id)) {
+            if (sender.frameId === 0 && mutedTabs.has(sender.tab.id)) {
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
             }
@@ -59,6 +59,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
             onMute(sender.tab.id);
             break
         case 'pause':
+            let playing = await isPlaying();
+            if (playing) break
             remove(sender.tab.id);
             break
         }
@@ -337,6 +339,16 @@ function send(id, message, force) {
 	chrome.tabs.sendMessage(id, message, r => {
 		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
+}
+
+function isPlaying(id) {
+    return new Promise(resolve => {
+        if (otherTabs.has(id)) return true
+        chrome.tabs.sendMessage(id, 'isplaying', r => {
+            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
+            resolve(r === 'true');
+        });
+    });
 }
 
 function hasProperty(value, key) {

@@ -35,7 +35,7 @@ function onMute(tabId) {
 }
 
 // For when the media is silent.
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
     otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return

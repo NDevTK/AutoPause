@@ -121,7 +121,7 @@
     function pauseOther(id) {
 	Elements.forEach((data, e) => {
 		if (e.paused || isMuted(e)) return;
-		if (data.id === id) e.pause();
+		if (data.id !== id) e.pause();
         });
     }
 

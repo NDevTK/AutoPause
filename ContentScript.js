@@ -151,10 +151,9 @@
     function isMuted(e) {
         if (Elements.get(e)) {
             let data = Elements.get(e);
-            return (e.muted || data.wasPlaying && data.wasVolume === 0);
-        } else {
-            return (e.muted || e.volume === 0);
+            if (e.muted || data.wasPlaying && data.wasVolume === 0) return true;
         }
+        return (e.muted || e.volume === 0);
     }
 	
     function addMedia(src) {

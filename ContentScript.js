@@ -11,7 +11,7 @@
     var Elements = new Map();
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        switch (message) {
+        switch (message.type) {
         case 'toggleFastPlayback':
             toggleRate();
             break
@@ -59,6 +59,8 @@
                 e.volume = real;
             });
             break
+        case 'pauseOther':
+            pauseOther(message.body);
         }
     });
     
@@ -115,6 +117,13 @@
             }
         });
     }
+	
+    function pauseOther(id) {
+	Elements.forEach((data, e) => {
+		if (e.paused || isMuted(e)) return;
+		if (data.id !== id) e.pause();
+        });
+    }
 
     // Controlled by global rewind shortcut
     function Rewind() {
@@ -126,10 +135,11 @@
     }
     
     function onPlay(e) {
+	let data = Elements.get(e);
         if (isMuted(e)) {
             send('playMuted');
         } else {
-            send('play');
+            send('play', data.id);
         }
     }
 
@@ -161,7 +171,7 @@
 	
     function addMedia(src) {
         if (Elements.has(src)) return
-        Elements.set(src, {});
+        Elements.set(src, {id: crypto.randomUUID()});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {
@@ -295,8 +305,8 @@
         }
     }
     
-    function send(message) {
-	    chrome.runtime.sendMessage(message);
+    function send(message, body = '') {
+	    chrome.runtime.sendMessage({type: message, body: body});
     }
     
     window.addEventListener('DOMContentLoaded', () => {

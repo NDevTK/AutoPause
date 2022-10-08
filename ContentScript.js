@@ -9,6 +9,8 @@
     var Targets = new Set();
     
     var Elements = new Map();
+	
+    var otherMedia = false;
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message) {
@@ -119,7 +121,8 @@
     }
 	
     function pauseOther() {
-	if (Elements.size < 2) return
+	if (!otherMedia) return
+	otherMedia = false;
 	Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;
@@ -174,6 +177,7 @@
     function addMedia(src) {
         if (Elements.has(src)) return
         Elements.set(src, {lastPlayed: Date.now()});
+        otherMedia = true;
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {

@@ -134,10 +134,11 @@
     }
     
     function onPlay(e) {
+	let data = Elements.get(e);
         if (isMuted(e)) {
             send('playMuted');
         } else {
-            send('play');
+            send('play', data.id);
         }
     }
 
@@ -303,8 +304,8 @@
         }
     }
     
-    function send(message) {
-	    chrome.runtime.sendMessage(message);
+    function send(message, body = '') {
+	    chrome.runtime.sendMessage({type: message, body: body});
     }
     
     window.addEventListener('DOMContentLoaded', () => {

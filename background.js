@@ -39,7 +39,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
     otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
-    switch (message) {
+    switch (message.type) {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
                 // Pause hidden muted tabs.
@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);
-                onPlay(sender.tab);
+                onPlay(sender.tab, message.body);
             }
             break
         case 'playMuted':
@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         }
 });
 
-function onPlay(tab) {
+function onPlay(tab, id) {
     if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     
     if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
@@ -82,7 +82,7 @@ function onPlay(tab) {
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
-    if (hasProperty(options, 'permediapause')) send(tab.id, 'pauseOther');
+    if (hasProperty(options, 'permediapause')) send(tab.id, 'pauseOther', false, id);
 
     if (tab.id == activeTab)
         lastPlaying = null;
@@ -340,9 +340,9 @@ async function Broadcast(message, exclude = false, tabs = media) {
     };
 };
 
-function send(id, message, force) {
+function send(id, message, force, body = "") {
 	if (otherTabs.has(id) && !force) return
-	chrome.tabs.sendMessage(id, message, r => {
+	chrome.tabs.sendMessage(id, {type: message, body: body}, r => {
 		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
 }

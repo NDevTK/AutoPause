@@ -149,7 +149,12 @@
     }
 	
     function isMuted(e) {
-        return (e.muted || e.volume === 0);
+        if (Elements.get(e)) {
+            let data = Elements.get(e);
+            return (e.muted || data.wasVolume === 0);
+        } else {
+            return (e.muted || e.volume === 0);
+        }
     }
 	
     function addMedia(src) {

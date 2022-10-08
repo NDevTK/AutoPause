@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         }
 });
 
-function onPlay(tab, id) {
+function onPlay(tab, id = '') {
     if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
     
     if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
@@ -82,7 +82,7 @@ function onPlay(tab, id) {
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
-    if (hasProperty(options, 'permediapause')) send(tab.id, 'pauseOther', false, id);
+    if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', false, id);
 
     if (tab.id == activeTab)
         lastPlaying = null;

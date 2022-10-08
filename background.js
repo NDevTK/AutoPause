@@ -47,7 +47,6 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             }
             break
         case 'play':
-	    if (hasProperty(options, 'permediapause')) send(sender.tab.id, 'pauseOther');
             if (sender.tab.mutedInfo.muted) {
                 if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
                 onMute(sender.tab.id);
@@ -82,6 +81,8 @@ function onPlay(tab) {
     mediaPlaying = tab.id;
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
+	
+    if (hasProperty(options, 'permediapause')) send(sender.tab.id, 'pauseOther');
 
     if (tab.id == activeTab)
         lastPlaying = null;

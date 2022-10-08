@@ -47,7 +47,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             }
             break
         case 'play':
-	    if (hasProperty(options, 'permediapause')) send(sender.tab.id, 'pauseother');
+	    if (hasProperty(options, 'permediapause')) send(sender.tab.id, 'pauseOther');
             if (sender.tab.mutedInfo.muted) {
                 if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
                 onMute(sender.tab.id);

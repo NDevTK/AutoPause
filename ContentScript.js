@@ -59,6 +59,8 @@
                 e.volume = real;
             });
             break
+        case 'pauseOther':
+            pauseOther();
         }
     });
     
@@ -115,6 +117,16 @@
             }
         });
     }
+	
+    function pauseOther() {
+	if (Elements.size === 0) return
+	Elements.forEach((data, e) => {
+            if (isPaused(e))
+                return;
+            if (Date.now() - data.lastPlayed < 200) return
+	    e.pause();
+        });
+    }
 
     // Controlled by global rewind shortcut
     function Rewind() {
@@ -161,7 +173,7 @@
 	
     function addMedia(src) {
         if (Elements.has(src)) return
-        Elements.set(src, {});
+        Elements.set(src, {lastPlayed: Date.now()});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {

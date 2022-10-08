@@ -119,7 +119,7 @@
     }
 	
     function pauseOther() {
-	if (Elements.size === 0) return
+	if (Elements.size < 2) return
 	Elements.forEach((data, e) => {
             if (isPaused(e))
                 return;

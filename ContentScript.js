@@ -9,11 +9,9 @@
     var Targets = new Set();
     
     var Elements = new Map();
-	
-    var otherMedia = false;
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        switch (message) {
+        switch (message.type) {
         case 'toggleFastPlayback':
             toggleRate();
             break
@@ -62,7 +60,7 @@
             });
             break
         case 'pauseOther':
-            pauseOther();
+            pauseOther(message.body);
         }
     });
     
@@ -120,14 +118,9 @@
         });
     }
 	
-    function pauseOther() {
-	if (!otherMedia) return
-	otherMedia = false;
+    function pauseOther(id) {
 	Elements.forEach((data, e) => {
-            if (isPaused(e))
-                return;
-            if (Date.now() - data.lastPlayed < 200) return
-	    e.pause();
+		if (data.id === id) e.pause();
         });
     }
 
@@ -176,8 +169,7 @@
 	
     function addMedia(src) {
         if (Elements.has(src)) return
-        Elements.set(src, {lastPlayed: Date.now()});
-        otherMedia = true;
+        Elements.set(src, {id: crypto.randomUUID()});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {

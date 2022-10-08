@@ -82,7 +82,7 @@ function onPlay(tab) {
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
-    if (hasProperty(options, 'permediapause')) send(sender.tab.id, 'pauseOther');
+    if (hasProperty(options, 'permediapause')) send(tab.id, 'pauseOther');
 
     if (tab.id == activeTab)
         lastPlaying = null;

@@ -258,7 +258,7 @@
 
     async function pause() {
         Elements.forEach((data, e) => {
-            if (isPaused(e) || isMuted(e) && document.visibilityState == 'visible') return;
+            if (isPaused(e)) return;
             pauseElement(e, data);
         });
     }

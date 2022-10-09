@@ -350,7 +350,7 @@ function send(id, message, force, body = "") {
 function isPlaying(id) {
     return new Promise(resolve => {
         if (otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, 'isplaying', r => {
+        chrome.tabs.sendMessage(id, {type: 'isplaying'}, r => {
             var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
             resolve(r === 'true');
         });

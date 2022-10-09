@@ -30,7 +30,6 @@ chrome.runtime.onInstalled.addListener(details => {
 
 function onMute(tabId) {
     mutedTabs.add(tabId);
-    if (!hasProperty(options, 'muteonpause')) media.delete(tabId);
     // Pause hidden muted tabs.
     pause(tabId, true);
     onPause(tabId);

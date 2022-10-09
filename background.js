@@ -30,7 +30,8 @@ chrome.runtime.onInstalled.addListener(details => {
 
 function onMute(tabId) {
     mutedTabs.add(tabId);
-    if (!hasProperty(options, 'muteonpause')) media.delete(tabId);
+    // Pause hidden muted tabs.
+    pause(tabId, true);
     onPause(tabId);
 }
 
@@ -42,13 +43,16 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     switch (message.type) {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
+		if (hasProperty(options, 'muteonpause')) {
+                    media.add(sender.tab.id);
+		    chrome.tabs.update(sender.tab.id, {"muted": true});
+		}
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
             }
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
-                if (hasProperty(options, 'muteonpause')) media.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);
@@ -58,6 +62,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'playMuted':
             let playing1 = await isPlaying(sender.tab.id);
             if (playing1) break
+            media.delete(sender.tab.id);
             onMute(sender.tab.id);
             break
         case 'pause':
@@ -232,7 +237,6 @@ function pause(id, checkHidden) {
 		return
 	}
 	if (otherTabs.has(id)) return
-	if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 	if (checkHidden) {
 		send(id, 'hidden');
 	} else {
@@ -297,12 +301,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
-            // Pause hidden muted tabs.
-            pause(tabId, true);
             onMute(tabId);
         }
 	    // If tab gets unmuted resume it.
-        else if (!changeInfo.mutedInfo.muted && mutedTabs.has(tabId)) {
+        else if (!changeInfo.mutedInfo.muted && media.has(tabId)) {
             mediaPlaying = tabId;
             play(tabId, true);
         }
@@ -350,7 +352,7 @@ function send(id, message, force, body = "") {
 function isPlaying(id) {
     return new Promise(resolve => {
         if (otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, 'isplaying', r => {
+        chrome.tabs.sendMessage(id, {type: 'isplaying'}, r => {
             var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
             resolve(r === 'true');
         });

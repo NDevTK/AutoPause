@@ -21,7 +21,7 @@ function registerScriptFirefox() {
   });
 }
 
-function onAdd() {
+async function onAdd() {
     registerScriptFirefox();
     const tabs = await browser.tabs.query({});
     tabs.forEach(tab => {

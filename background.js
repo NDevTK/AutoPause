@@ -393,9 +393,7 @@ chrome.permissions.onAdded.addListener(() => {
                 var lastError = chrome.runtime.lastError;
                 if (!lastError) return;
                 chrome.tabs.executeScript(tab.id, {
-                    js: [{
-                        file: 'ContentScript.js'
-                    }],
+                    file: 'ContentScript.js',
                     allFrames: true,
                     runAt: 'document_start'
                 }, () => {

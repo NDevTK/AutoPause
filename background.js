@@ -30,6 +30,7 @@ chrome.runtime.onInstalled.addListener(details => {
 
 function onMute(tabId) {
     mutedTabs.add(tabId);
+    media.delete(tabId);
     // Pause hidden muted tabs.
     pause(tabId, true);
     onPause(tabId);
@@ -44,7 +45,6 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
 		if (hasProperty(options, 'muteonpause')) {
-                    media.add(sender.tab.id);
 		    chrome.tabs.update(sender.tab.id, {"muted": true});
 		}
                 // Pause hidden muted tabs.
@@ -62,7 +62,6 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'playMuted':
             let playing1 = await isPlaying(sender.tab.id);
             if (playing1) break
-            media.delete(sender.tab.id);
             onMute(sender.tab.id);
             break
         case 'pause':

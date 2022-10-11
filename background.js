@@ -389,8 +389,9 @@ chrome.permissions.onAdded.addListener(e => {
 	chrome.tabs.query({}, tabs => {
         tabs.forEach(tab => {
             if (!tab.url || !tab.id) return;
-            const url = new URL(tab.url);
-            if (!e.origins.includes(url.origin)) return;
+            chrome.tabs.sendMessage(tab.id), {type: 'hi ya!'}, () => {
+		    var lastError = chrome.runtime.lastError;
+		    if (lastError) return;
             chrome.tabs.executeScript(tab.id, {
                 js: [{
                     file: 'ContentScript.js'
@@ -401,5 +402,5 @@ chrome.permissions.onAdded.addListener(e => {
                 send(tab.id, 'new', true);
             });
         });
-	})
+	});
 });

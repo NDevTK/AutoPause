@@ -58,6 +58,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
 		mutedMedia.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
+		mutedMedia.delete(sender.tab.id);
                 media.add(sender.tab.id);
                 onPlay(sender.tab, message.body);
             }

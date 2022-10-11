@@ -24,9 +24,9 @@ function registerScriptFirefox() {
 async function onAdd() {
     registerScriptFirefox();
     const tabs = await browser.tabs.query({});
-    tabs.forEach(tab => {
+    tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
-        browser.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(() => {
+        browser.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
             await browser.tabs.executeScript(tab.id, {
                 file: 'ContentScript.js',
                 allFrames: true,

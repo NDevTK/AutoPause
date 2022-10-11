@@ -386,12 +386,10 @@ function toggleOption(o) {
 }
 
 chrome.permissions.onAdded.addListener(() => {
-	chrome.tabs.query({}, tabs => {
+    chrome.tabs.query({}, tabs => {
         tabs.forEach(tab => {
             if (!tab.url || !tab.id) return;
-            chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}, () => {
-                var lastError = chrome.runtime.lastError;
-                if (!lastError) return;
+            chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(() => {
                 chrome.tabs.executeScript(tab.id, {
                     file: 'ContentScript.js',
                     allFrames: true,

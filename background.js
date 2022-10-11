@@ -7,8 +7,9 @@ var mediaPlaying = null; // Tab ID of active media.
 var activeTab = null;
 var lastPlaying = null;
 var otherTabs = new Set(); // Tab IDs of media with no permission to access.
-var mutedTabs = new Set(); // Tab IDs of muted media.
+var mutedTabs = new Set(); // Tab IDs of all muted media.
 var ignoredTabs = new Set();
+var mutedMedia = new Set(); // Tab IDs of resumable muted media.
 var autoPauseWindow = null;
 
 chrome.storage.sync.get('options', result => {
@@ -46,6 +47,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             if (mutedTabs.has(sender.tab.id)) {
 		if (hasProperty(options, 'muteonpause')) {
 		    chrome.tabs.update(sender.tab.id, {"muted": true});
+		    if (mutedMedia.has(sender.tab.id)) media.add(sender.tab.id);
 		}
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
@@ -53,6 +55,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
+		mutedMedia.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
                 media.add(sender.tab.id);
@@ -62,6 +65,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'playMuted':
             let playing1 = await isPlaying(sender.tab.id);
             if (playing1) break
+	    mutedMedia.delete(tabId);
             onMute(sender.tab.id);
             break
         case 'pause':
@@ -285,6 +289,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 function remove(tabId) {
     media.delete(tabId);
+    mutedMedia.delete(tabId);
     otherTabs.delete(tabId);
     backgroundaudio.delete(tabId);
     mutedTabs.delete(tabId);
@@ -300,10 +305,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
         if (changeInfo.mutedInfo.muted && media.has(tabId)) {
+	    mutedMedia.add(tabId);
             onMute(tabId);
         }
 	    // If tab gets unmuted resume it.
-        else if (!changeInfo.mutedInfo.muted && mutedTabs.has(tabId)) {
+        else if (!changeInfo.mutedInfo.muted && mutedMedia.has(tabId)) {
             mediaPlaying = tabId;
             play(tabId, true);
         }

@@ -45,20 +45,20 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     switch (message.type) {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
-		if (hasProperty(options, 'muteonpause')) {
-		    chrome.tabs.update(sender.tab.id, {"muted": true});
-		    if (mutedMedia.has(sender.tab.id)) media.add(sender.tab.id);
-		}
+                if (hasProperty(options, 'muteonpause')) {
+                    chrome.tabs.update(sender.tab.id, {"muted": true});
+                    if (mutedMedia.has(sender.tab.id)) media.add(sender.tab.id);
+                }
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
             }
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
-		mutedMedia.add(sender.tab.id);
+                mutedMedia.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
-		mutedMedia.delete(sender.tab.id);
+                mutedMedia.delete(sender.tab.id);
                 media.add(sender.tab.id);
                 onPlay(sender.tab, message.body);
             }
@@ -66,7 +66,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'playMuted':
             let playing1 = await isPlaying(sender.tab.id);
             if (playing1) break
-	    mutedMedia.delete(sender.tab.id);
+            mutedMedia.delete(sender.tab.id);
             onMute(sender.tab.id);
             break
         case 'pause':
@@ -326,7 +326,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }
         onPlay(tab);
     } else {
-	send(tabId, 'update');
+        send(tabId, 'update');
         otherTabs.delete(tabId);
         onPause(tabId);
     }

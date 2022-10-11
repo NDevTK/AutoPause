@@ -21,6 +21,22 @@ function registerScriptFirefox() {
   });
 }
 
-browser.permissions.onAdded.addListener(registerScriptFirefox);
+async function onAdd() {
+    registerScriptFirefox();
+    const tabs = await browser.tabs.query({});
+    tabs.forEach(async tab => {
+        if (!tab.url || !tab.id) return;
+        browser.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
+            await browser.tabs.executeScript(tab.id, {
+                file: 'ContentScript.js',
+                allFrames: true,
+                runAt: 'document_start'
+            });
+            send(tab.id, 'new', true);
+        });
+    });
+}
+
+browser.permissions.onAdded.addListener(onAdd);
 browser.permissions.onRemoved.addListener(registerScriptFirefox);
 registerScriptFirefox();

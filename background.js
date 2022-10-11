@@ -384,20 +384,3 @@ function toggleOption(o) {
         });
     });
 }
-
-chrome.permissions.onAdded.addListener(() => {
-    chrome.tabs.query({}, tabs => {
-        tabs.forEach(tab => {
-            if (!tab.url || !tab.id) return;
-            chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(() => {
-                chrome.tabs.executeScript(tab.id, {
-                    file: 'ContentScript.js',
-                    allFrames: true,
-                    runAt: 'document_start'
-                }, () => {
-                    send(tab.id, 'new', true);
-                });
-            });
-        });
-    });
-});

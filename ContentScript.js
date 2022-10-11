@@ -61,6 +61,12 @@
             break
         case 'pauseOther':
             pauseOther(message.body);
+            break
+        case 'new':
+            pageScript();
+            checkShadow();
+            checkDOM();
+            break
         }
     });
     
@@ -292,6 +298,17 @@
             }
         });
     }
+	
+    function checkDOM() {
+        [...document.querySelectorAll('*')].map(e => {
+            if (!isPaused(e)) {
+                if (e instanceof HTMLMediaElement) {
+                    addMedia(e);
+                    onPlay(e);
+                }
+            }
+        });
+    }
 
     function injectScript(filePath) {
         var script = document.createElement('script');
@@ -308,12 +325,20 @@
     function send(message, body = '') {
 	    chrome.runtime.sendMessage({type: message, body: body});
     }
-    
-    window.addEventListener('DOMContentLoaded', () => {
+  
+    let injected = false;
+  
+    function pageScript() {
+        if (injected) return
+        injected = true;
         // https://github.com/NDevTK/AutoPause/issues/31
         if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
         injectScript('WindowScript.js');
+    }
+  
+    window.addEventListener('DOMContentLoaded', () => {
+      pageScript();
     }, {
         passive: true
     });

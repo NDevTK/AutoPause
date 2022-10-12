@@ -245,7 +245,7 @@ function pause(id, checkHidden) {
 	if (checkHidden) {
 		send(id, 'hidden');
 	} else {
-		if (hasProperty(options, 'muteonpause')) chrome.tabs.update(sender.tab.id, {"muted": true});
+		if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": true});
 		send(id, 'pause');
 	}
 }

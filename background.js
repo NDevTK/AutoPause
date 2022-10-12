@@ -156,7 +156,7 @@ chrome.windows.onFocusChanged.addListener(id => {
             if (tabs.length === 1) {
                 tabChange(tabs[0]);
             }
-        };
+        });
      }, 200);
 });
 

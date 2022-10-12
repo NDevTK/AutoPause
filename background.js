@@ -45,9 +45,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     switch (message.type) {
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
-                if (hasProperty(options, 'muteonpause')) {
-                    chrome.tabs.update(sender.tab.id, {"muted": true});
-                    if (mutedMedia.has(sender.tab.id)) media.add(sender.tab.id);
+                if (hasProperty(options, 'muteonpause') && mutedMedia.has(sender.tab.id)) {
+		    media.add(sender.tab.id);
                 }
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
@@ -246,6 +245,7 @@ function pause(id, checkHidden) {
 	if (checkHidden) {
 		send(id, 'hidden');
 	} else {
+		if (hasProperty(options, 'muteonpause')) chrome.tabs.update(sender.tab.id, {"muted": true});
 		send(id, 'pause');
 	}
 }

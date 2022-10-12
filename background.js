@@ -313,10 +313,15 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	    mutedMedia.add(tabId);
             onMute(tabId);
         }
-	    // If tab gets unmuted resume it.
+	// If tab gets unmuted resume it.
         else if (!changeInfo.mutedInfo.muted && mutedMedia.has(tabId)) {
             mediaPlaying = tabId;
             play(tabId, true);
+        }
+ 
+        else if (changeInfo.mutedInfo.muted && otherTabs.has(tabId)) {
+	    otherTabs.delete(tabId);
+            onPause(tabId);
         }
     }
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.

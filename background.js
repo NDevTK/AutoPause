@@ -148,14 +148,16 @@ function getResumeTab(exclude) {
 chrome.windows.onFocusChanged.addListener(id => {
     if (id === chrome.windows.WINDOW_ID_NONE) return
     if (autoPauseWindow !== null  && autoPauseWindow !== id) return
-    chrome.tabs.query({
-        active: true,
-        currentWindow: true
-    }, tabs => {
-        if (tabs.length === 1) {
-            tabChange(tabs[0]);
-        }
-    });
+    setTimeout(() => {
+        chrome.tabs.query({
+            active: true,
+            currentWindow: true
+        }, tabs => {
+            if (tabs.length === 1) {
+                tabChange(tabs[0]);
+            }
+        };
+     }, 200);
 });
 
 // Dont track unrelated windows

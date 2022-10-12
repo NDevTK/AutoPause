@@ -287,7 +287,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
     setTimeout(() => {
         ignoredTabs.delete(tabId);
 	remove(tabId);
-    }, 10);
+    }, 200);
 });
 
 function remove(tabId) {

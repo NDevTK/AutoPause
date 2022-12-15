@@ -231,8 +231,8 @@
     function onPause(src, controller) {
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();
-            Elements.delete(src);
             normalPlayback(src);
+            Elements.delete(src);
             // Check if all elements have paused.
             if (!isPlaying()) {
                 send('pause');

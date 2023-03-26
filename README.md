@@ -5,7 +5,6 @@
 [![Firefox version](https://img.shields.io/amo/v/autopause)](https://addons.mozilla.org/en-US/firefox/addon/autopause/)
 [![Issues](https://img.shields.io/github/issues/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/issues)
 [![Forks](https://img.shields.io/github/forks/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/network/members)
-[![LGTM](https://img.shields.io/lgtm/alerts/github/NDevTK/AutoPause)](https://lgtm.com/projects/g/NDevTK/AutoPause/alerts/?mode=list)
 
 
 Browser extension to pause other audio and video sources if audio is playing on the active tab with automatic resume, fast forward and media controls.  

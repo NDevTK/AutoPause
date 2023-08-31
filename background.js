@@ -79,6 +79,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             });
             break   
         case 'hidden':
+            let visablePopup1 = await visablePopup(sender.tab.id);
+            if (visablePopup1) break
             if (state.mutedTabs.has(sender.tab.id)) {
                 if (hasProperty(options, 'muteonpause') && state.mutedMedia.has(sender.tab.id)) {
 		    state.media.add(sender.tab.id);
@@ -405,6 +407,16 @@ function send(id, message, force, body = "") {
 	chrome.tabs.sendMessage(id, {type: message, body: body}, r => {
 		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
+}
+
+function visablePopup(id) {
+    return new Promise(resolve => {
+        if (state.otherTabs.has(id)) return true
+        chrome.tabs.sendMessage(id, {type: 'visablePopup'}, r => {
+            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
+            resolve(r === 'true');
+        });
+    });
 }
 
 function isPlaying(id) {

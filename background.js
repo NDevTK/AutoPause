@@ -311,8 +311,8 @@ function switchMedia() {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || media.size === 0 || otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
-    if (hasProperty(options, 'multipletabs') && backgroundaudio.size === 0) {
+    if (hasProperty(options, 'disableresume') || state.media.size === 0 || state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
+    if (hasProperty(options, 'multipletabs') && state.backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');
     }
@@ -323,8 +323,9 @@ function autoResume(id) {
 }
 
 // On tab change
-chrome.tabs.onActivated.addListener(info => {
-    chrome.tabs.get(info.tabId, tab => {
+chrome.tabs.onActivated.addListener(async info => {
+    chrome.tabs.get(info.tabId, async tab => {
+	await restore();
         tabChange(tab);
         save();
     });
@@ -349,7 +350,8 @@ function remove(tabId) {
 }
 
 // Detect changes to audible status of tabs
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    await restore();
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     if (state.ignoredTabs.has(tabId)) return
     if (changeInfo.discarded) {

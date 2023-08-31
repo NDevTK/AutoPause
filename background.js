@@ -7,7 +7,8 @@ const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredT
 async function save() {
  let temp = state;
  for (let value of setItems) {
-  temp[value] = [...temp[value]];
+  let data = temp[value];
+  temp[value] = [...data];
  }
  let result = await chrome.storage.session.set({state: temp});
 }

@@ -24,9 +24,8 @@ async function restore() {
 }
 
 
-
+var options = {};
 state.media = new Set(); // List of tabs with media.
-state.options = {};
 state.backgroundaudio = new Set();
 state.mediaPlaying = null; // Tab ID of active media.
 state.activeTab = null;

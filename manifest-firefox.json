@@ -84,6 +84,12 @@
       "name": "NDevTK",
       "url": "https://github.com/NDevTK/AutoPause"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["WindowScript.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "optional_permissions": ["<all_urls>"],
   "manifest_version": 3
 }

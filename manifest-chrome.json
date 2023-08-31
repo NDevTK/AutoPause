@@ -70,13 +70,13 @@
     "scripting"
   ],
   "background": {
-    "service_worker":"background.js"
+    "service_worker": "background.js"
   },
   "icons": {"48": "icon48.png"},
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
-  "optional_hosts": ["<all_urls>"],
+  "optional_host_permissions": ["<all_urls>"],
   "manifest_version": 3
 }

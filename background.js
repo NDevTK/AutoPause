@@ -304,7 +304,7 @@ function play(id, force) {
 }
 
 function switchMedia() {
-    const result = getResumeTab(mediaPlaying);
+    const result = getResumeTab(state.mediaPlaying);
     state.mediaPlaying = result;
     if (result !== false)
         play(result);

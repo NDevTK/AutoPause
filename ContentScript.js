@@ -329,8 +329,6 @@
     function pageScript(unknownWorld = false) {
         if (injected) return
         injected = true;
-        // https://github.com/NDevTK/AutoPause/issues/31
-        if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
 	send('injectScript');     
     }

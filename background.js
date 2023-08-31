@@ -8,8 +8,13 @@ async function save() {
 
 async function restore() {
  let result = await chrome.storage.session.get('state');
- if (typeof result.state === 'object' && result.state !== null)
- state = result.state;
+ if (typeof result.state === 'object' && result.state !== null) {
+  // Support Set();
+  for (let value of ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia']) {
+   result.state[value] = new Set(value);
+  }
+  state = result.state;
+ }
 }
 
 state.media = new Set(); // List of tabs with media.

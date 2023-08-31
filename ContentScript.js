@@ -13,7 +13,6 @@
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
 	case 'UnknownWorld':
-            if (window.top !== window) break
             pageScript(true);
             break
 	case 'visablePopup':

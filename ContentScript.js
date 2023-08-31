@@ -12,6 +12,9 @@
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
+	case 'visablePopup':
+            if (!visablePopup()) break
+            sendResponse('true');
         case 'toggleFastPlayback':
             toggleRate();
             break
@@ -337,8 +340,12 @@
         passive: true
     });
 
+    function visablePopup() {
+        return (document.visibilityState !== 'hidden' || document.pictureInPictureElement || documentPictureInPicture.window !== null);
+    }
+
     function checkVisibility() {
-        if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
+        if (!visablePopup()) {
           checkShadow();
           send('hidden');	
         }

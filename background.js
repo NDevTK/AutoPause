@@ -43,6 +43,15 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
+        case 'injectScript':
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: sender.tab.id
+                },
+                files: ['WindowScript.js'],
+                world: 'MAIN'
+            });
+            break   
         case 'hidden':
             if (mutedTabs.has(sender.tab.id)) {
                 if (hasProperty(options, 'muteonpause') && mutedMedia.has(sender.tab.id)) {

@@ -64,7 +64,8 @@
     }
   },
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "background": {
     "scripts": ["background.js"],

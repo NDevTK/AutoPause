@@ -479,7 +479,7 @@ async function onScriptAdd() {
         chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
             chrome.scripting.executeScript({
                 target: {
-                    tabId: sender.tab.id,
+                    tabId: tab.id,
                     allFrames: true
                 },
                 files: ['ContentScript.js']

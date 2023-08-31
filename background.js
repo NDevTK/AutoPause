@@ -403,10 +403,18 @@ function toggleOption(o) {
     });
 }
 
-async function registerScript() {
+async function registerScript(madeChange = false) {
+  if (madeChange) {
+    // A change was made to the content script so unregister it.
+    await chrome.scripting.unregisterContentScripts(); 
+  } else {
+    for (let script of await chrome.scripting.getRegisteredContentScripts()) {
+     // No changes made and already added.
+     if (script.id === 'ContentScript') return;
+    }
+  }
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
-     await chrome.scripting.unregisterContentScripts();
      chrome.scripting.registerContentScripts([{
       id: 'ContentScript',
       js: ['ContentScript.js'],
@@ -416,8 +424,9 @@ async function registerScript() {
     }]);
   });
 }
-async function onAdd() {
-    registerScript();
+
+async function onScriptAdd() {
+    registerScript(true);
     const tabs = await chrome.tabs.query({});
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
@@ -432,6 +441,10 @@ async function onAdd() {
     });
 }
 
-chrome.permissions.onAdded.addListener(onAdd);
-chrome.permissions.onRemoved.addListener(registerScript);
-registerScript();
+async function onScriptRemove() {
+    registerScript(true);
+}
+
+chrome.permissions.onAdded.addListener(onScriptAdd);
+chrome.permissions.onRemoved.addListener(onScriptRemove);
+registerScript(false);

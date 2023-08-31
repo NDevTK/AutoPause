@@ -2,7 +2,9 @@
   "name": "AutoPause",
   "version": "2.8.0",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
-  "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content"
+  },
   "commands": {
     "gotoaudible": {
         "suggested_key": {
@@ -65,10 +67,9 @@
     "storage"
   ],
   "background": {
-    "service_worker":["registerScript-firefox.js", "background.js"]
+    "service_worker":["registerScript.js", "background.js"]
   },
   "icons": {"48": "icon48.png"},
-  "web_accessible_resources": ["WindowScript.js"],
   "browser_specific_settings":{
       "gecko":{
          "id":"automute@ndevtk"

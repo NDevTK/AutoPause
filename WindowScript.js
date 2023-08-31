@@ -2,6 +2,10 @@
 // Automaticly add media elements to DOM.
 (function() {
   'use strict';
+
+  if (window.autoPauseExtensionInjected) return;
+  window.autoPauseExtensionInjected = true;
+  
   const play = window.HTMLMediaElement.prototype.play;
   let div = null;
   window.HTMLMediaElement.prototype.play = function() {

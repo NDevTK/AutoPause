@@ -403,9 +403,10 @@ function toggleOption(o) {
     });
 }
 
-function registerScript() {
+async function registerScript() {
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
+     chrome.scripting.unregisterContentScripts();
      chrome.scripting.registerContentScripts([{
       id: 'ContentScript',
       js: ['ContentScript.js'],
@@ -415,7 +416,6 @@ function registerScript() {
     }]);
   });
 }
-
 async function onAdd() {
     registerScript();
     const tabs = await chrome.tabs.query({});

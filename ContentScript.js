@@ -326,7 +326,12 @@
         // https://github.com/NDevTK/AutoPause/issues/31
         if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
-        send('injectScript');
+	if (chrome.scripting.ExecutionWorld.MAIN) {
+	      send('injectScript');
+	} else {
+	      injectScript('WindowScript.js');
+	};
+        
     }
   
     window.addEventListener('DOMContentLoaded', () => {
@@ -341,8 +346,23 @@
         passive: true
     });
 
+    function injectScript(filePath) {
+        var script = document.createElement('script');
+        script.setAttribute('type', 'text/javascript');
+        script.setAttribute('crossorigin', 'anonymous');
+        script.setAttribute('src', chrome.runtime.getURL(filePath));
+        try {
+            document.head.appendChild(script);
+        } catch (e) {
+            // May be blocked by CSP.
+        }
+    }
+
     function visablePopup() {
-        return (document.visibilityState !== 'hidden' || document.pictureInPictureElement || documentPictureInPicture.window !== null);
+        if (window.documentPictureInPicture) {
+         return (documentPictureInPicture.window !== null);
+        }
+        return (document.visibilityState !== 'hidden' || document.pictureInPictureElement);
     }
 
     function checkVisibility() {

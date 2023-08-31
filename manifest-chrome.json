@@ -69,14 +69,14 @@
     "storage",
     "scripting"
   ],
-  "service_worker": {
-    "scripts":["registerScript.js", "background.js"]
+  "background": {
+    "service_worker":["background.js"]
   },
   "icons": {"48": "icon48.png"},
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
-  "optional_permissions": ["<all_urls>"],
+  "optional_hosts": ["<all_urls>"],
   "manifest_version": 3
 }

@@ -75,7 +75,7 @@
   "icons": {"48": "icon48.png"},
   "options_ui": {
     "page": "options.html",
-    "open_in_tab": true
+    "open_in_tab": false
   },
   "optional_host_permissions": ["<all_urls>"],
   "manifest_version": 3

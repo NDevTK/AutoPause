@@ -406,7 +406,7 @@ function toggleOption(o) {
 async function registerScript() {
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
-     chrome.scripting.unregisterContentScripts();
+     await chrome.scripting.unregisterContentScripts();
      chrome.scripting.registerContentScripts([{
       id: 'ContentScript',
       js: ['ContentScript.js'],

@@ -70,18 +70,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
         case 'injectScript':
-	    if (!chrome.scripting.ExecutionWorld.MAIN) {
-                send(sender.tab.id, 'UnknownWorld');
-                break
-	    }
-            chrome.scripting.executeScript({
-                target: {
-                    tabId: sender.tab.id,
-                    allFrames: true
-                },
-                files: ['WindowScript.js'],
-                world: 'MAIN'
-            });
+            if (chrome.scripting.ExecutionWorld.MAIN) return
+            send(sender.tab.id, 'UnknownWorld');
             break
         case 'hidden':
             let visablePopup1 = await visablePopup(sender.tab.id);
@@ -479,7 +469,8 @@ async function registerScript(madeChange = false) {
       js: ['WindowScript.js'],
       matches: p.origins,
       allFrames: true,
-      runAt: 'document_start'
+      runAt: 'document_start',
+      world: 'MAIN'
     }]);
   });
 }
@@ -497,6 +488,16 @@ async function onScriptAdd() {
                 },
                 files: ['ContentScript.js']
             });
+            if (chrome.scripting.ExecutionWorld.MAIN) {
+                chrome.scripting.executeScript({
+                    target: {
+                        tabId: tab.id,
+                        allFrames: true
+                    },
+                    files: ['WindowScript.js'],
+                    world: 'MAIN'
+                });
+            }
             send(tab.id, 'new', true);
         });
     });

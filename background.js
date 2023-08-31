@@ -406,14 +406,13 @@ function toggleOption(o) {
 function registerScript() {
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
-     chrome.scripting.registerContentScripts({
-      js: [{
-        file: 'ContentScript.js'
-      }],
+     chrome.scripting.registerContentScripts([{
+      id: 'ContentScript',
+      js: ['ContentScript.js'],
       matches: p.origins,
       allFrames: true,
       runAt: 'document_start'
-    });
+    }]);
   });
 }
 

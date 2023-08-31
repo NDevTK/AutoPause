@@ -12,6 +12,10 @@
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
+	case 'UnknownWorld':
+            if (window.top !== window) break
+            pageScript(true);
+            break
 	case 'visablePopup':
             if (!visablePopup()) break
             sendResponse('true');
@@ -320,13 +324,13 @@
   
     let injected = false;
   
-    function pageScript() {
+    function pageScript(unknownWorld = false) {
         if (injected) return
         injected = true;
         // https://github.com/NDevTK/AutoPause/issues/31
         if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
-	if (chrome.scripting.ExecutionWorld.MAIN) {
+	if (unknownWorld) {
 	      send('injectScript');
 	} else {
 	      injectScript('WindowScript.js');

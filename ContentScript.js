@@ -15,6 +15,7 @@
 	case 'visablePopup':
             if (!visablePopup()) break
             sendResponse('true');
+            break
         case 'toggleFastPlayback':
             toggleRate();
             break

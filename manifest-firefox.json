@@ -65,7 +65,7 @@
     "storage"
   ],
   "background": {
-    "scripts":["registerScript-firefox.js", "background.js"]
+    "service_worker":["registerScript-firefox.js", "background.js"]
   },
   "icons": {"48": "icon48.png"},
   "web_accessible_resources": ["WindowScript.js"],
@@ -83,5 +83,5 @@
       "url": "https://github.com/NDevTK/AutoPause"
   },
   "optional_permissions": ["<all_urls>"],
-  "manifest_version": 2
+  "manifest_version": 3
 }

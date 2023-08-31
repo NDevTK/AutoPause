@@ -3,6 +3,8 @@
 (function() {
   'use strict';
 
+  // This is okay because the HTMLMediaElement prototype makes the extension usage obv.
+  // Note to self: DO NOT CHANGE NAME
   if (window.autoPauseExtensionInjected) return;
   window.autoPauseExtensionInjected = true;
   

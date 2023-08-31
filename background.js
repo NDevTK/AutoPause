@@ -477,10 +477,12 @@ async function onScriptAdd() {
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
         chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
-            await chrome.tabs.executeScript(tab.id, {
-                file: 'ContentScript.js',
-                allFrames: true,
-                runAt: 'document_start'
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: sender.tab.id,
+                    allFrames: true
+                },
+                files: ['ContentScript.js']
             });
             send(tab.id, 'new', true);
         });

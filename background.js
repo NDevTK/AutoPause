@@ -76,7 +76,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
 	    }
             chrome.scripting.executeScript({
                 target: {
-                    tabId: sender.tab.id
+                    tabId: sender.tab.id,
+                    allFrames: true
                 },
                 files: ['WindowScript.js'],
                 world: 'MAIN'

@@ -73,7 +73,6 @@
     "scripts":["registerScript.js", "background.js"]
   },
   "icons": {"48": "icon48.png"},
-  "web_accessible_resources": ["WindowScript.js"],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true

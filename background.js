@@ -18,6 +18,8 @@ async function restore() {
   // Support Set();
   for (let value of setItems) {
    result.state[value] = new Set(result.state[value]);
+   // Random code to prevent errors
+   result.state[value].toString();
   }
   state = result.state;
  }

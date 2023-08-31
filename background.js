@@ -7,8 +7,7 @@ const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredT
 async function save() {
  let temp = state;
  for (let value of setItems) {
-  let data = temp[value];
-  temp[value] = [...data];
+  temp[value] = [...temp[value]];
  }
  let result = await chrome.storage.session.set({state: temp});
 }
@@ -18,12 +17,11 @@ async function restore() {
  if (typeof result.state === 'object' && result.state !== null) {
   // Support Set();
   for (let value of setItems) {
-   result.state[value] = new Set(value);
+   result.state[value] = new Set(result.state[value]);
   }
   state = result.state;
  }
 }
-
 
 var options = {};
 state.media = new Set(); // List of tabs with media.

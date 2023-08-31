@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "2.8.0-mv3",
+  "version": "2.8.0",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": {
     "extension_pages": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content"
@@ -85,6 +85,6 @@
       "name": "NDevTK",
       "url": "https://github.com/NDevTK/AutoPause"
   },
-  "optional_host_permissions": ["<all_urls>"],
+  "optional_permissions": ["<all_urls>"],
   "manifest_version": 3
 }

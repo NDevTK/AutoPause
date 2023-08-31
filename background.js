@@ -404,7 +404,7 @@ function toggleOption(o) {
 }
 
 function registerScript() {
-  browser.permissions.getAll(async p => {
+  chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
      chrome.scripting.registerContentScript({
       js: [{

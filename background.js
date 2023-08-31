@@ -473,6 +473,14 @@ async function registerScript(madeChange = false) {
       allFrames: true,
       runAt: 'document_start'
     }]);
+     if (!chrome.scripting.ExecutionWorld.MAIN) return
+     chrome.scripting.registerContentScripts([{
+      id: 'WindowScript',
+      js: ['WindowScript.js'],
+      matches: p.origins,
+      allFrames: true,
+      runAt: 'document_start'
+    }]);
   });
 }
 

@@ -5,7 +5,7 @@ var state = {};
 const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia'];
 
 async function save() {
- let temp = state;
+ let temp = Object.assign({}, state);
  for (let value of setItems) {
   temp[value] = [...temp[value]];
  }
@@ -18,8 +18,6 @@ async function restore() {
   // Support Set();
   for (let value of setItems) {
    result.state[value] = new Set(result.state[value]);
-   // Random code to prevent errors
-   result.state[value].toString();
   }
   state = result.state;
  }
@@ -38,6 +36,7 @@ state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.autoPauseWindow = null;
 
 restore();
+
 
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null)
@@ -66,7 +65,6 @@ function onMute(tabId) {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener(async (message, sender) => {
-    await restore();
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== sender.tab.windowId) return
     state.otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
@@ -152,7 +150,6 @@ function onPause(id) {
 }
 
 async function tabChange(tab) {
-    await restore();
     if (state.ignoredTabs.has(tab.id)) return
     
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
@@ -184,7 +181,6 @@ function getResumeTab(exclude) {
 
 // User may have mutiple windows open.
 chrome.windows.onFocusChanged.addListener(async id => {
-    await restore();
     if (id === chrome.windows.WINDOW_ID_NONE) return
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== id) return
     setTimeout(() => {
@@ -201,8 +197,7 @@ chrome.windows.onFocusChanged.addListener(async id => {
 });
 
 // Dont track unrelated windows
-chrome.tabs.onDetached.addListener(async id => {
-    await restore();    
+chrome.tabs.onDetached.addListener(async id => { 
     if (state.autoPauseWindow === null) return
     remove(id);
     save();
@@ -210,7 +205,6 @@ chrome.tabs.onDetached.addListener(async id => {
 
 // Handle keyboard shortcuts.
 chrome.commands.onCommand.addListener(async command => {
-    await restore();
     switch (command) {
     case 'gotoaudible':
         // Go to audible tab thats not active.
@@ -327,14 +321,12 @@ function autoResume(id) {
 // On tab change
 chrome.tabs.onActivated.addListener(async info => {
     chrome.tabs.get(info.tabId, async tab => {
-	await restore();
         tabChange(tab);
         save();
     });
 });
 
 chrome.tabs.onRemoved.addListener(async tabId => {
-    await restore();
     setTimeout(() => {
         state.ignoredTabs.delete(tabId);
 	remove(tabId);
@@ -353,7 +345,6 @@ function remove(tabId) {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    await restore();
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     if (state.ignoredTabs.has(tabId)) return
     if (changeInfo.discarded) {

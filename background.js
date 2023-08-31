@@ -70,6 +70,10 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
         case 'injectScript':
+	    if (!chrome.scripting.ExecutionWorld.MAIN) {
+                send(sender.tab.id, 'UnknownWorld');
+                break
+	    }
             chrome.scripting.executeScript({
                 target: {
                     tabId: sender.tab.id
@@ -77,7 +81,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
                 files: ['WindowScript.js'],
                 world: 'MAIN'
             });
-            break   
+            break
         case 'hidden':
             let visablePopup1 = await visablePopup(sender.tab.id);
             if (visablePopup1) break

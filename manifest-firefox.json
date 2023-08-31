@@ -68,8 +68,7 @@
     "scripting"
   ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "scripts": ["background.js"]
   },
   "icons": {"48": "icon48.png"},
   "browser_specific_settings":{

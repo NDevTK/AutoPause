@@ -1,16 +1,30 @@
 'use strict';
 /* global chrome */
-var media = new Set(); // List of tabs with media.
-var options = {};
-var backgroundaudio = new Set();
-var mediaPlaying = null; // Tab ID of active media.
-var activeTab = null;
-var lastPlaying = null;
-var otherTabs = new Set(); // Tab IDs of media with no permission to access.
-var mutedTabs = new Set(); // Tab IDs of all muted media.
-var ignoredTabs = new Set();
-var mutedMedia = new Set(); // Tab IDs of resumable muted media.
-var autoPauseWindow = null;
+var state = {};
+
+async function save() {
+ let result = await chrome.storage.session.set({state: state});
+}
+
+async function restore() {
+ let result = await chrome.storage.session.get('state');
+ if (typeof result.state === 'object' && result.state !== null)
+ state = result.state;
+}
+
+var state.media = new Set(); // List of tabs with media.
+var state.options = {};
+var state.backgroundaudio = new Set();
+var state.mediaPlaying = null; // Tab ID of active media.
+var state.activeTab = null;
+var state.lastPlaying = null;
+var state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
+var state.mutedTabs = new Set(); // Tab IDs of all muted media.
+var state.ignoredTabs = new Set();
+var state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
+var state.autoPauseWindow = null;
+
+restore();
 
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null)
@@ -30,8 +44,8 @@ chrome.runtime.onInstalled.addListener(details => {
 });
 
 function onMute(tabId) {
-    mutedTabs.add(tabId);
-    media.delete(tabId);
+    state.mutedTabs.add(tabId);
+    state.media.delete(tabId);
     // Pause hidden muted tabs.
     pause(tabId, true);
     onPause(tabId);
@@ -39,9 +53,10 @@ function onMute(tabId) {
 
 // For when the media is silent.
 chrome.runtime.onMessage.addListener(async (message, sender) => {
-    if (autoPauseWindow !== null  && autoPauseWindow !== sender.tab.windowId) return
-    otherTabs.delete(sender.tab.id);
-    if (!hasProperty(sender, 'tab') || ignoredTabs.has(sender.tab.id)) return
+    await restore();
+    if (state.autoPauseWindow !== null  && state.autoPauseWindow !== sender.tab.windowId) return
+    state.otherTabs.delete(sender.tab.id);
+    if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
         case 'injectScript':
             chrome.scripting.executeScript({
@@ -53,9 +68,9 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             });
             break   
         case 'hidden':
-            if (mutedTabs.has(sender.tab.id)) {
-                if (hasProperty(options, 'muteonpause') && mutedMedia.has(sender.tab.id)) {
-		    media.add(sender.tab.id);
+            if (state.mutedTabs.has(sender.tab.id)) {
+                if (hasProperty(options, 'muteonpause') && state.mutedMedia.has(sender.tab.id)) {
+		    state.media.add(sender.tab.id);
                 }
                 // Pause hidden muted tabs.
                 pause(sender.tab.id);
@@ -63,18 +78,18 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             break
         case 'play':
             if (sender.tab.mutedInfo.muted) {
-                mutedMedia.add(sender.tab.id);
+                state.mutedMedia.add(sender.tab.id);
                 onMute(sender.tab.id);
             } else {
-                mutedMedia.delete(sender.tab.id);
-                media.add(sender.tab.id);
+                state.mutedMedia.delete(sender.tab.id);
+                state.media.add(sender.tab.id);
                 onPlay(sender.tab, message.body);
             }
             break
         case 'playMuted':
             let playing1 = await isPlaying(sender.tab.id);
             if (playing1) break
-            mutedMedia.delete(sender.tab.id);
+            state.mutedMedia.delete(sender.tab.id);
             onMute(sender.tab.id);
             break
         case 'pause':
@@ -83,31 +98,32 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             remove(sender.tab.id);
             break
         }
+	save();
 });
 
 function onPlay(tab, id = '') {
-    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
+    if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     
-    if (hasProperty(options, 'ignoreother') && otherTabs.has(tab.id)) return
+    if (hasProperty(options, 'ignoreother') && state.otherTabs.has(tab.id)) return
     
-    if (hasProperty(options, 'multipletabs') && tab.id !== activeTab) return
+    if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (tab.id !== activeTab && tab.id !== lastPlaying && mediaPlaying !== tab.id) {
+    if (tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
 	    return pause(tab.id);
     };
-    mediaPlaying = tab.id;
+    state.mediaPlaying = tab.id;
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
     if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', false, id);
 
-    if (tab.id == activeTab)
-        lastPlaying = null;
-    if (media.has(tab.id)) {
-        mutedTabs.delete(tab.id);
+    if (tab.id == state.activeTab)
+        state.lastPlaying = null;
+    if (state.media.has(tab.id)) {
+        state.mutedTabs.delete(tab.id);
         // Make tab top priority.
-        media.delete(tab.id);
-        media.add(tab.id);
+        state.media.delete(tab.id);
+        state.media.add(tab.id);
     }
     // Pause all other media.
     if (tab.audible)
@@ -116,18 +132,19 @@ function onPlay(tab, id = '') {
 
 function onPause(id) {
     // Ignore event from other tabs.
-    if (id === mediaPlaying) {
-        lastPlaying = id;
+    if (id === state.mediaPlaying) {
+        state.lastPlaying = id;
         autoResume(id);
     }
 }
 
-function tabChange(tab) {
-    if (ignoredTabs.has(tab.id)) return
+async function tabChange(tab) {
+    await restore();
+    if (state.ignoredTabs.has(tab.id)) return
     
-    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
+    if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     
-    activeTab = tab.id;
+    state.activeTab = tab.id;
 
     if (hasProperty(options, 'ignoretabchange')) return
     
@@ -136,15 +153,15 @@ function tabChange(tab) {
         Broadcast('pause', tab.id);
     }
 	
-    if (media.has(tab.id) || mutedTabs.has(tab.id)) {
+    if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
         play(tab.id);
-    } else if (otherTabs.has(tab.id)) {
+    } else if (state.otherTabs.has(tab.id)) {
         onPlay(tab);
     }
 }
 
 function getResumeTab(exclude) {
-    const tabs = (backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? backgroundaudio : media;
+    const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? state.backgroundaudio : state.media;
     const resumableMedia = Array.from(tabs).filter(id => id !== exclude);
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();
@@ -153,9 +170,10 @@ function getResumeTab(exclude) {
 }
 
 // User may have mutiple windows open.
-chrome.windows.onFocusChanged.addListener(id => {
+chrome.windows.onFocusChanged.addListener(async id => {
+    await restore();
     if (id === chrome.windows.WINDOW_ID_NONE) return
-    if (autoPauseWindow !== null  && autoPauseWindow !== id) return
+    if (state.autoPauseWindow !== null  && state.autoPauseWindow !== id) return
     setTimeout(() => {
         chrome.tabs.query({
             active: true,
@@ -163,19 +181,23 @@ chrome.windows.onFocusChanged.addListener(id => {
         }, tabs => {
             if (tabs.length === 1) {
                 tabChange(tabs[0]);
+                save();
             }
         });
      }, 200);
 });
 
 // Dont track unrelated windows
-chrome.tabs.onDetached.addListener(id => {
-    if (autoPauseWindow === null) return
+chrome.tabs.onDetached.addListener(async id => {
+    await restore();    
+    if (state.autoPauseWindow === null) return
     remove(id);
+    save();
 });
 
 // Handle keyboard shortcuts.
 chrome.commands.onCommand.addListener(async command => {
+    await restore();
     switch (command) {
     case 'gotoaudible':
         // Go to audible tab thats not active.
@@ -211,7 +233,7 @@ chrome.commands.onCommand.addListener(async command => {
         var result = getResumeTab();
         if (result !== false) {
             Broadcast('pause', result);
-            if (otherTabs.size === 0) send(result, 'togglePlayback');
+            if (state.otherTabs.size === 0) send(result, 'togglePlayback');
         }
         break
     case 'next':
@@ -225,12 +247,12 @@ chrome.commands.onCommand.addListener(async command => {
         break
     case 'backgroundaudio':
             // Currently only has one tab
-            backgroundaudio.clear();
-            backgroundaudio.add(activeTab);
+            state.backgroundaudio.clear();
+            state.backgroundaudio.add(state.activeTab);
         break
     case 'ignoretab':
-            ignoredTabs.add(activeTab);
-            remove(activeTab);
+            state.ignoredTabs.add(state.activeTab);
+            remove(state.activeTab);
         break
     case 'previoustab':
             lastPlaying = null;
@@ -239,10 +261,12 @@ chrome.commands.onCommand.addListener(async command => {
     case 'autopausewindow':
             chrome.windows.getCurrent(w => {
                 if (w.id === chrome.windows.WINDOW_ID_NONE) return
-                autoPauseWindow = w.id;
+                state.autoPauseWindow = w.id;
+		save();
             });
        break
     }
+    save();
 });
 
 function pause(id, checkHidden) {
@@ -250,7 +274,7 @@ function pause(id, checkHidden) {
 		chrome.tabs.discard(id);
 		return
 	}
-	if (otherTabs.has(id)) return
+	if (state.otherTabs.has(id)) return
 	if (checkHidden) {
 		send(id, 'hidden');
 	} else {
@@ -282,7 +306,7 @@ function autoResume(id) {
         return Broadcast('play');
     }
     // Make sure event is from the mediaPlaying tab.
-    if (id === mediaPlaying) {
+    if (id === state.mediaPlaying) {
         switchMedia();
     }
 }
@@ -291,45 +315,48 @@ function autoResume(id) {
 chrome.tabs.onActivated.addListener(info => {
     chrome.tabs.get(info.tabId, tab => {
         tabChange(tab);
+        save();
     });
 });
 
-chrome.tabs.onRemoved.addListener(tabId => {
+chrome.tabs.onRemoved.addListener(async tabId => {
+    await restore();
     setTimeout(() => {
-        ignoredTabs.delete(tabId);
+        state.ignoredTabs.delete(tabId);
 	remove(tabId);
+        save();
     }, 200);
 });
 
 function remove(tabId) {
-    media.delete(tabId);
-    mutedMedia.delete(tabId);
-    otherTabs.delete(tabId);
-    backgroundaudio.delete(tabId);
-    mutedTabs.delete(tabId);
+    state.media.delete(tabId);
+    state.mutedMedia.delete(tabId);
+    state.otherTabs.delete(tabId);
+    state.backgroundaudio.delete(tabId);
+    state.mutedTabs.delete(tabId);
     onPause(tabId);
 }
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (autoPauseWindow !== null  && autoPauseWindow !== tab.windowId) return
-    if (ignoredTabs.has(tabId)) return
+    if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
+    if (state.ignoredTabs.has(tabId)) return
     if (changeInfo.discarded) {
         return remove(tabId);
     }
     if (hasProperty(changeInfo, 'mutedInfo')) {
-        if (changeInfo.mutedInfo.muted && media.has(tabId)) {
-	    mutedMedia.add(tabId);
+        if (changeInfo.mutedInfo.muted && state.media.has(tabId)) {
+	    state.mutedMedia.add(tabId);
             onMute(tabId);
         }
 	// If tab gets unmuted resume it.
         else if (!changeInfo.mutedInfo.muted && mutedMedia.has(tabId)) {
-            mediaPlaying = tabId;
+            state.mediaPlaying = tabId;
             play(tabId, true);
         }
  
         else if (changeInfo.mutedInfo.muted && otherTabs.has(tabId)) {
-	    otherTabs.delete(tabId);
+	    state.otherTabs.delete(tabId);
             onPause(tabId);
         }
     }
@@ -337,22 +364,23 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     
     if (changeInfo.audible) {
         // If has not got a play message from the content script assume theres no permission.
-        if (!media.has(tabId)) {
+        if (!state.media.has(tabId)) {
             // Allow the media to check its shadow dom.
             send(tabId, 'audible');
-            otherTabs.add(tabId);
+            state.otherTabs.add(tabId);
         }
         onPlay(tab);
     } else {
         send(tabId, 'update');
-        otherTabs.delete(tabId);
+        state.otherTabs.delete(tabId);
         onPause(tabId);
     }
+    save();
 });
 
-async function Broadcast(message, exclude = false, tabs = media) {
+async function Broadcast(message, exclude = false, tabs = state.media) {
     tabs.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || id === lastPlaying) return
+        if (id === exclude || id === state.lastPlaying) return
 		if (message === 'pause') {
 			return pause(id);
 		}
@@ -361,13 +389,13 @@ async function Broadcast(message, exclude = false, tabs = media) {
     // User does not want otherTabs to be affected
     if (hasProperty(options, 'ignoreother')) return
     // Expand scope of pause to otherTabs if discarding is enabled.
-    if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === media) {
+    if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === state.media) {
         Broadcast(message, exclude, otherTabs);
     };
 };
 
 function send(id, message, force, body = "") {
-	if (otherTabs.has(id) && !force) return
+	if (state.otherTabs.has(id) && !force) return
 	chrome.tabs.sendMessage(id, {type: message, body: body}, r => {
 		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
 	});
@@ -375,7 +403,7 @@ function send(id, message, force, body = "") {
 
 function isPlaying(id) {
     return new Promise(resolve => {
-        if (otherTabs.has(id)) return true
+        if (state.otherTabs.has(id)) return true
         chrome.tabs.sendMessage(id, {type: 'isplaying'}, r => {
             var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
             resolve(r === 'true');

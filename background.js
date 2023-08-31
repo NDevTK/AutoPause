@@ -2,20 +2,28 @@
 /* global chrome */
 var state = {};
 
+const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia'];
+
 async function save() {
- let result = await chrome.storage.session.set({state: state});
+ let temp = state;
+ for (let value of setItems) {
+  temp[value] = [...temp[value]];
+ }
+ let result = await chrome.storage.session.set({state: temp});
 }
 
 async function restore() {
  let result = await chrome.storage.session.get('state');
  if (typeof result.state === 'object' && result.state !== null) {
   // Support Set();
-  for (let value of ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia']) {
+  for (let value of setItems) {
    result.state[value] = new Set(value);
   }
   state = result.state;
  }
 }
+
+
 
 state.media = new Set(); // List of tabs with media.
 state.options = {};

@@ -266,7 +266,7 @@ chrome.commands.onCommand.addListener(async command => {
             remove(state.activeTab);
         break
     case 'previoustab':
-            lastPlaying = null;
+            state.lastPlaying = null;
             switchMedia();
         break
     case 'autopausewindow':
@@ -305,7 +305,7 @@ function play(id, force) {
 
 function switchMedia() {
     const result = getResumeTab(mediaPlaying);
-    mediaPlaying = result;
+    state.mediaPlaying = result;
     if (result !== false)
         play(result);
 }

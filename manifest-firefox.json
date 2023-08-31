@@ -67,7 +67,7 @@
     "storage"
   ],
   "background": {
-    "service_worker":["registerScript.js", "background.js"]
+    "service_worker":["background.js"]
   },
   "icons": {"48": "icon48.png"},
   "browser_specific_settings":{
@@ -83,6 +83,6 @@
       "name": "NDevTK",
       "url": "https://github.com/NDevTK/AutoPause"
   },
-  "optional_permissions": ["<all_urls>"],
+  "optional_hosts": ["<all_urls>"],
   "manifest_version": 3
 }

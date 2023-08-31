@@ -2,7 +2,9 @@
   "name": "AutoPause",
   "version": "2.8.0",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
-  "content_security_policy": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content",
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content"
+  },
   "cross_origin_embedder_policy": {
     "value": "require-corp"
   },
@@ -65,17 +67,16 @@
   },
   "permissions": [
     "storage",
-    "declarativeContent"
+    "scripting"
   ],
   "background": {
-    "scripts":["registerScript-chrome.js", "background.js"]
+    "service_worker": "background.js"
   },
   "icons": {"48": "icon48.png"},
-  "web_accessible_resources": ["WindowScript.js"],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
-  "optional_permissions": ["<all_urls>"],
-  "manifest_version": 2
+  "optional_host_permissions": ["<all_urls>"],
+  "manifest_version": 3
 }

@@ -12,6 +12,10 @@
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
+	case 'visablePopup':
+            if (!visablePopup()) break
+            sendResponse('true');
+            break
         case 'toggleFastPlayback':
             toggleRate();
             break
@@ -309,21 +313,9 @@
             }
         });
     }
-
-    function injectScript(filePath) {
-        var script = document.createElement('script');
-        script.setAttribute('type', 'text/javascript');
-        script.setAttribute('crossorigin', 'anonymous');
-        script.setAttribute('src', chrome.runtime.getURL(filePath));
-        try {
-            document.head.appendChild(script);
-        } catch (e) {
-            // May be blocked by CSP.
-        }
-    }
     
     function send(message, body = '') {
-	    chrome.runtime.sendMessage({type: message, body: body});
+        chrome.runtime.sendMessage({type: message, body: body});
     }
   
     let injected = false;
@@ -334,7 +326,7 @@
         // https://github.com/NDevTK/AutoPause/issues/31
         if (location.origin.endsWith('.netflix.com')) return
         // Adds content to DOM needed because of isolation
-        injectScript('WindowScript.js');
+        send('injectScript');
     }
   
     window.addEventListener('DOMContentLoaded', () => {
@@ -349,8 +341,12 @@
         passive: true
     });
 
+    function visablePopup() {
+        return (document.visibilityState !== 'hidden' || document.pictureInPictureElement || documentPictureInPicture.window !== null);
+    }
+
     function checkVisibility() {
-        if (document.visibilityState == 'hidden' && !document.pictureInPictureElement) {
+        if (!visablePopup()) {
           checkShadow();
           send('hidden');	
         }

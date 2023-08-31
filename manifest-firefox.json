@@ -67,7 +67,7 @@
     "storage"
   ],
   "background": {
-    "service_worker":["background.js"]
+    "service_worker":"background.js"
   },
   "icons": {"48": "icon48.png"},
   "browser_specific_settings":{

@@ -12,17 +12,17 @@ async function restore() {
  state = result.state;
 }
 
-var state.media = new Set(); // List of tabs with media.
-var state.options = {};
-var state.backgroundaudio = new Set();
-var state.mediaPlaying = null; // Tab ID of active media.
-var state.activeTab = null;
-var state.lastPlaying = null;
-var state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
-var state.mutedTabs = new Set(); // Tab IDs of all muted media.
-var state.ignoredTabs = new Set();
-var state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
-var state.autoPauseWindow = null;
+state.media = new Set(); // List of tabs with media.
+state.options = {};
+state.backgroundaudio = new Set();
+state.mediaPlaying = null; // Tab ID of active media.
+state.activeTab = null;
+state.lastPlaying = null;
+state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
+state.mutedTabs = new Set(); // Tab IDs of all muted media.
+state.ignoredTabs = new Set();
+state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
+state.autoPauseWindow = null;
 
 restore();
 

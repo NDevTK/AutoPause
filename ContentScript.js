@@ -346,6 +346,7 @@
     });
 
     function injectScript(filePath) {
+        // Needed only for Firefox
         var script = document.createElement('script');
         script.setAttribute('type', 'text/javascript');
         script.setAttribute('crossorigin', 'anonymous');

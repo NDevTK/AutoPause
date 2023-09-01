@@ -451,7 +451,7 @@ async function registerScript(madeChange = false) {
   } else {
     for (let script of await chrome.scripting.getRegisteredContentScripts()) {
      // No changes made and already added.
-     if (script.id === 'WindowScript') return;
+     if (script.id === 'ContentScript') return;
     }
   }
   chrome.permissions.getAll(async p => {

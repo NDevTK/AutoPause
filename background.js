@@ -394,7 +394,7 @@ async function Broadcast(message, exclude = false, tabs = state.media) {
     if (hasProperty(options, 'ignoreother')) return
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === state.media) {
-        Broadcast(message, exclude, otherTabs);
+        Broadcast(message, exclude, state.otherTabs);
     };
 };
 

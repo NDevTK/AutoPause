@@ -360,7 +360,7 @@
 
     function visablePopup() {
         if (window.documentPictureInPicture) {
-         return (documentPictureInPicture.window !== null);
+         if (documentPictureInPicture.window !== null) return true;
         }
         return (document.visibilityState !== 'hidden' || document.pictureInPictureElement);
     }

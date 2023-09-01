@@ -474,7 +474,7 @@ async function onScriptAdd() {
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
         chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
-            chrome.scripting.executeScript({
+            await chrome.scripting.executeScript({
                 target: {
                     tabId: tab.id,
                     allFrames: true
@@ -483,7 +483,7 @@ async function onScriptAdd() {
                 injectImmediately: true
             });
             if (chrome.scripting.ExecutionWorld.MAIN) {
-                chrome.scripting.executeScript({
+                await chrome.scripting.executeScript({
                     target: {
                         tabId: tab.id,
                         allFrames: true

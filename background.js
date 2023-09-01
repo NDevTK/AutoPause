@@ -449,7 +449,7 @@ async function registerScript() {
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
-     chrome.scripting.registerContentScripts([{
+     await chrome.scripting.registerContentScripts([{
       id: 'ContentScript',
       js: ['ContentScript.js'],
       matches: p.origins,
@@ -457,7 +457,7 @@ async function registerScript() {
       runAt: 'document_start'
     }]);
      if (!chrome.scripting.ExecutionWorld.MAIN) return
-     chrome.scripting.registerContentScripts([{
+     await chrome.scripting.registerContentScripts([{
       id: 'WindowScript',
       js: ['WindowScript.js'],
       matches: p.origins,
@@ -469,7 +469,7 @@ async function registerScript() {
 }
 
 async function onScriptAdd() {
-    registerScript();
+    await registerScript();
     const tabs = await chrome.tabs.query({});
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;

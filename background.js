@@ -477,10 +477,10 @@ async function onScriptAdd() {
             chrome.scripting.executeScript({
                 target: {
                     tabId: tab.id,
-                    allFrames: true,
-                    injectImmediately: true
+                    allFrames: true
                 },
-                files: ['ContentScript.js']
+                files: ['ContentScript.js'],
+                injectImmediately: true
             });
             if (chrome.scripting.ExecutionWorld.MAIN) {
                 chrome.scripting.executeScript({

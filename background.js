@@ -62,6 +62,7 @@ function onMute(tabId) {
     // Pause hidden muted tabs.
     pause(tabId, true);
     onPause(tabId);
+    save();
 }
 
 // For when the media is silent.
@@ -71,7 +72,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
         case 'injectScript':
-            if (chrome.scripting.ExecutionWorld.MAIN) return
+            if (chrome.scripting.ExecutionWorld.MAIN) break
             send(sender.tab.id, 'UnknownWorld');
             break
         case 'hidden':
@@ -137,6 +138,7 @@ function onPlay(tab, id = '') {
     // Pause all other media.
     if (tab.audible)
         Broadcast('pause', tab.id);
+    save();
 }
 
 function onPause(id) {
@@ -145,6 +147,7 @@ function onPause(id) {
         state.lastPlaying = id;
         autoResume(id);
     }
+    save();
 }
 
 async function tabChange(tab) {
@@ -153,6 +156,7 @@ async function tabChange(tab) {
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     
     state.activeTab = tab.id;
+    save();
 
     if (hasProperty(options, 'ignoretabchange')) return
     
@@ -166,6 +170,7 @@ async function tabChange(tab) {
     } else if (state.otherTabs.has(tab.id)) {
         onPlay(tab);
     }
+    save();
 }
 
 function getResumeTab(exclude) {
@@ -364,6 +369,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
             onPause(tabId);
         }
     }
+    save();
     if (!hasProperty(changeInfo, 'audible')) return // Bool that contains if audio is playing on tab.
     
     if (changeInfo.audible) {

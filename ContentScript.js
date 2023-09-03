@@ -13,7 +13,7 @@
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
 	case 'UnknownWorld':
-            if (injected2) return
+            if (injected2) break
             injected2 = true;
             injectScript('WindowScript.js');
             break

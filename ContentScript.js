@@ -326,11 +326,11 @@
     let injected = false;
     let injected2 = false;
 
-    function pageScript(unknownWorld = false) {
+    function pageScript() {
         if (injected) return
         injected = true;
         // Adds content to DOM needed because of isolation
-	send('injectScript');     
+	send('injectScript');
     }
   
     window.addEventListener('DOMContentLoaded', () => {

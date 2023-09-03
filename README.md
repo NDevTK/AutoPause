@@ -23,3 +23,5 @@ Features:
 - Ignore other tabs
 - Mark tab for autopause usage
 - No permission mode
+
+Chrome listing: <https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll>

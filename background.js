@@ -527,8 +527,7 @@ async function checkIdle(userState) {
     } else if (state.waslocked) {
         state.waslocked = false;
         state.denyPlayback = false;
-        const result = getResumeTab(state.mediaPlaying);
-        if (result !== false) play(result);
+        if (state.media.has(state.mediaPlaying)) play(state.mediaPlaying);
     }
     save();
 }

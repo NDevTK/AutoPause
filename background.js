@@ -522,13 +522,13 @@ async function checkIdle(userState) {
     if (!hasProperty(options, 'checkidle')) return
     if (userState === 'locked') {
         state.waslocked = true;
-	state.denyPlayback = true;
+        state.denyPlayback = true;
         Broadcast('pause');
     } else if (state.waslocked) {
-        const result = getResumeTab(state.mediaPlaying);
-	if (result !== false) play(result);
         state.waslocked = false;
         state.denyPlayback = false;
+        const result = getResumeTab(state.mediaPlaying);
+        if (result !== false) play(result);
     }
     save();
 }

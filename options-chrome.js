@@ -10,15 +10,3 @@ btn.addEventListener('click', () => {
 });
 
 shortcuts.appendChild(btn);
-
-var idleButton = document.createElement('button');
-idleLabel();
-
-idleButton.addEventListener('click', () => {
-  toggleOption('checkIdle');
-  idleLabel();
-});
-
-function idleLabel() {
-  idleButton.innerText = (hasProperty(options, 'checkIdle')) ? 'Disable pause on device lock' : 'Enable pause on device lock';
-}

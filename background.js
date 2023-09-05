@@ -245,11 +245,7 @@ chrome.commands.onCommand.addListener(async command => {
         Broadcast('Rewind');
         break
     case 'togglePlayback':
-        var result = getResumeTab();
-        if (result !== false) {
-            Broadcast('pause', result);
-            if (state.otherTabs.size === 0) send(result, 'togglePlayback');
-        }
+        Broadcast('togglePlayback');
         break
     case 'next':
         Broadcast('next');

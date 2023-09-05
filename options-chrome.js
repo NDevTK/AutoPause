@@ -11,7 +11,6 @@ btn.addEventListener('click', () => {
 
 shortcuts.appendChild(btn);
 
-
 var idleButton = document.createElement('button');
 idleLabel();
 

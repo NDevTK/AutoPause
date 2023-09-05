@@ -519,7 +519,7 @@ if (chrome.idle) {
 }
 
 async function checkIdle(userState) {
-    if (!hasProperty(options, 'checkIdle')) return
+    if (!hasProperty(options, 'checkidle')) return
     if (userState === 'locked') {
         state.waslocked = true;
 	state.denyPlayback = true;

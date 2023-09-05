@@ -480,7 +480,6 @@ async function registerScript() {
 }
 
 async function onScriptAdd() {
-    idle();
     await registerScript();
     const tabs = await chrome.tabs.query({});
     tabs.forEach(async tab => {
@@ -514,25 +513,21 @@ async function onScriptRemove() {
     registerScript();
 }
 
-var idlerunning = false;
 var waslocked = false;
 
-async function idle() {
-  if (idlerunning) return
-  const allowed = await chrome.permissions.contains({permissions: ['idle']});
-  if (!allowed) return
-  chrome.idle.onStateChanged.addListener((result) => {
-    if (result === 'locked' && !waslocked) {
-      waslocked = true;
-      Broadcast('pause');
-    } else if (result !== 'locked' && waslocked) {
-      Broadcast('allowplayback');
-    }
-  });
-  idlerunning = true;
+if (chrome.idle) {
+    chrome.idle.onStateChanged.addListener(checkIdle);
 }
 
-idle();
+async function checkIdle(userState) {
+    if (userState === 'locked') {
+        waslocked = true;
+        Broadcast('pause');
+    } else if (waslocked) {
+        play(mediaPlaying);
+        waslocked = false;
+    }    
+}
 
 chrome.permissions.onAdded.addListener(onScriptAdd);
 chrome.permissions.onRemoved.addListener(onScriptRemove);

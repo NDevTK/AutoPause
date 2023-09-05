@@ -34,6 +34,7 @@ state.mutedTabs = new Set(); // Tab IDs of all muted media.
 state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.autoPauseWindow = null;
+state.denyPlayback = false;
 
 restore();
 
@@ -123,7 +124,7 @@ function onPlay(tab, id = '') {
     
     if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
+    if (denyPlayback || tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
 	    return pause(tab.id);
     };
     state.mediaPlaying = tab.id;
@@ -315,7 +316,7 @@ function switchMedia() {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || state.media.size === 0 || state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) return
+    if (hasProperty(options, 'disableresume') || state.media.size === 0 || state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother') || denyPlayback) return
     if (hasProperty(options, 'multipletabs') && state.backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');
@@ -513,20 +514,21 @@ async function onScriptRemove() {
     registerScript();
 }
 
-var waslocked = false;
-
 if (chrome.idle) {
     chrome.idle.onStateChanged.addListener(checkIdle);
 }
 
 async function checkIdle(userState) {
     if (userState === 'locked') {
-        waslocked = true;
+        state.waslocked = true;
+	state.denyPlayback = true;
         Broadcast('pause');
     } else if (waslocked) {
         play(mediaPlaying);
         waslocked = false;
-    }    
+        state.denyPlayback = false;
+    }
+    save();
 }
 
 chrome.permissions.onAdded.addListener(onScriptAdd);

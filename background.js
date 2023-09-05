@@ -524,7 +524,7 @@ async function checkIdle(userState) {
 	state.denyPlayback = true;
         Broadcast('pause');
     } else if (waslocked) {
-        play(mediaPlaying);
+        play(state.mediaPlaying);
         waslocked = false;
         state.denyPlayback = false;
     }

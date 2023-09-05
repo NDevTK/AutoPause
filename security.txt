@@ -1,3 +1,2 @@
 Contact: ndevtk@protonmail.com
-Encryption: https://raw.githubusercontent.com/NDevTK/website/master/NDevTK.txt
 Preferred-Languages: en

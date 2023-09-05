@@ -519,13 +519,14 @@ if (chrome.idle) {
 }
 
 async function checkIdle(userState) {
+    if (!hasProperty(options, 'checkIdle')) return
     if (userState === 'locked') {
         state.waslocked = true;
 	state.denyPlayback = true;
         Broadcast('pause');
     } else if (state.waslocked) {
         play(state.mediaPlaying);
-        waslocked = false;
+        state.waslocked = false;
         state.denyPlayback = false;
     }
     save();

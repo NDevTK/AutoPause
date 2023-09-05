@@ -245,7 +245,7 @@ chrome.commands.onCommand.addListener(async command => {
         Broadcast('Rewind');
         break
     case 'togglePlayback':
-        Broadcast('togglePlayback');
+        Broadcast('pause');
         break
     case 'next':
         Broadcast('next');

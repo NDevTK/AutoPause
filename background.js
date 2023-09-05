@@ -111,6 +111,11 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
 	save();
 });
 
+chrome.tabs.onReplaced.addListener((newId, oldId) => {
+    remove(oldId);
+    save();
+});
+
 function onPlay(tab, id = '') {
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     

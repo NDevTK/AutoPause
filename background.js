@@ -124,7 +124,7 @@ function onPlay(tab, id = '') {
     
     if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (denyPlayback || tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
+    if (state.denyPlayback || tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
 	    return pause(tab.id);
     };
     state.mediaPlaying = tab.id;
@@ -316,7 +316,7 @@ function switchMedia() {
 }
 
 function autoResume(id) {
-    if (hasProperty(options, 'disableresume') || state.media.size === 0 || state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother') || denyPlayback) return
+    if (hasProperty(options, 'disableresume') || state.media.size === 0 || state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother') || state.denyPlayback) return
     if (hasProperty(options, 'multipletabs') && state.backgroundaudio.size === 0) {
         // Resume all tabs when multipletabs is enabled.
         return Broadcast('play');
@@ -523,7 +523,7 @@ async function checkIdle(userState) {
         state.waslocked = true;
 	state.denyPlayback = true;
         Broadcast('pause');
-    } else if (waslocked) {
+    } else if (state.waslocked) {
         play(state.mediaPlaying);
         waslocked = false;
         state.denyPlayback = false;

@@ -67,7 +67,8 @@
   },
   "permissions": [
     "storage",
-    "scripting"
+    "scripting",
+    "idle"
   ],
   "background": {
     "service_worker": "background.js"
@@ -78,6 +79,5 @@
     "open_in_tab": false
   },
   "optional_host_permissions": ["<all_urls>"],
-  "permissions": ["idle"],
   "manifest_version": 3
 }

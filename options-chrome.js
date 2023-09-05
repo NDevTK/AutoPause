@@ -10,3 +10,21 @@ btn.addEventListener('click', () => {
 });
 
 shortcuts.appendChild(btn);
+
+
+async function idle() {
+  const allowed = await chrome.permissions.contains({permissions: ['idle']});
+  var btn2 = document.createElement('button');
+  btn2.innerText = (allowed) ? 'Disable pause on lock' : 'Enable pause on lock';
+  btn2.addEventListener('click', () => {
+    if (allowed) {
+      await chrome.permissions.remove({permissions: ['idle']});
+    } else {
+      await chrome.permissions.request({permissions: ['idle']});
+    }
+    btn2.innerText = (allowed) ? 'Disable pause on lock' : 'Enable pause on lock';
+  });
+  document.body.appendChild(btn2);
+}
+
+idle();

@@ -78,5 +78,6 @@
     "open_in_tab": false
   },
   "optional_host_permissions": ["<all_urls>"],
+  "optional_permissions": ["idle"],
   "manifest_version": 3
 }

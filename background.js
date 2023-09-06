@@ -51,7 +51,7 @@ chrome.storage.onChanged.addListener(result => {
 
 // On install display the options page so the user can give permissions.
 chrome.runtime.onInstalled.addListener(details => {
-    registerScript();
+    updateExtensionScripts();
     if (details.reason === 'install') {
         chrome.runtime.openOptionsPage();
     }
@@ -464,7 +464,7 @@ function toggleOption(o) {
     });
 }
 
-async function registerScript() {
+async function updateContentScripts() {
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async p => {
     if (p.origins.length < 1) return
@@ -487,8 +487,8 @@ async function registerScript() {
   });
 }
 
-async function onScriptAdd() {
-    await registerScript();
+async function updateExtensionScripts() {
+    await updateContentScripts();
     const tabs = await chrome.tabs.query({});
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
@@ -517,10 +517,6 @@ async function onScriptAdd() {
     });
 }
 
-async function onScriptRemove() {
-    registerScript();
-}
-
 if (chrome.idle) {
     chrome.idle.onStateChanged.addListener(checkIdle);
 }
@@ -541,5 +537,5 @@ async function checkIdle(userState) {
     save();
 }
 
-chrome.permissions.onAdded.addListener(onScriptAdd);
-chrome.permissions.onRemoved.addListener(onScriptRemove);
+chrome.permissions.onAdded.addListener(updateExtensionScripts);
+chrome.permissions.onRemoved.addListener(updateContentScripts);

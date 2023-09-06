@@ -530,6 +530,7 @@ async function checkIdle(userState) {
     if (userState === 'locked') {
         state.waslocked = true;
         state.denyPlayback = true;
+        // Pause everything
         pauseOther(false, false);
     } else if (state.waslocked) {
         state.waslocked = false;

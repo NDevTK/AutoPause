@@ -395,9 +395,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 
-async function pauseOther(exclude = false, skipActive = true) {
+async function pauseOther(exclude = false, skipLast = true) {
     state.media.forEach(id => { // Only for tabs that have had media.
-        if (skipActive && id === exclude || skipActive && id === state.lastPlaying) return
+        if (id === exclude || skipLast && id === state.lastPlaying) return
             return pause(id);
     });
     // User does not want otherTabs to be affected
@@ -405,7 +405,7 @@ async function pauseOther(exclude = false, skipActive = true) {
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
         state.otherTabs.forEach(id => {
-            if (skipActive && id === exclude || skipActive && id === state.lastPlaying) return
+            if (id === exclude || skipLast && id === state.lastPlaying) return
                 pause(id);
         });
     };

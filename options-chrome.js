@@ -1,5 +1,7 @@
 'use strict';
 /* global chrome */
+var chromeonly = document.getElementById('chromeonly');
+chromeonly.hidden = false;
 
 var shortcuts = document.getElementById('shortcuts');
 var btn = document.createElement('button');

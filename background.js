@@ -143,7 +143,7 @@ function onPlay(tab, id = '') {
     }
     // Pause all other media.
     if (tab.audible)
-        Broadcast('pause', tab.id);
+        pauseOther(tab.id);
     save();
 }
 
@@ -168,7 +168,7 @@ async function tabChange(tab) {
     
     if (hasProperty(options, 'pauseoninactive')) {
         // Pause all except active tab
-        Broadcast('pause', tab.id);
+        pauseOther(tab.id);
     }
 	
     if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
@@ -248,7 +248,7 @@ chrome.commands.onCommand.addListener(async command => {
     case 'togglePlayback':
         var result = getResumeTab();
         if (result !== false) {
-            Broadcast('pause', result);
+            pauseOther(tab.id);
             if (state.otherTabs.size === 0) send(result, 'togglePlayback');
         }
         break
@@ -394,20 +394,27 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     save();
 });
 
-async function Broadcast(message, exclude = false, tabs = state.media, lastPlaying = state.lastPlaying) {
-    tabs.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || id === lastPlaying) return
-		if (message === 'pause') {
-			return pause(id);
-		}
-        send(id, message);
+
+async function pauseOther(exclude = false, skipActive = true) {
+    state.media.forEach(id => { // Only for tabs that have had media.
+        if (skipActive && id === exclude || skipActive && id === state.lastPlaying) return
+            return pause(id);
     });
     // User does not want otherTabs to be affected
     if (hasProperty(options, 'ignoreother')) return
     // Expand scope of pause to otherTabs if discarding is enabled.
-    if (hasProperty(options, 'nopermission') && message === 'pause' && tabs === state.media) {
-        Broadcast(message, exclude, state.otherTabs);
+    if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
+        state.otherTabs.forEach(id => {
+            if (skipActive && id === exclude || skipActive && id === state.lastPlaying) return
+                pause(id);
+        });
     };
+};
+
+async function Broadcast(message) {
+    state.media.forEach(id => {
+        send(id, message);
+    });
 };
 
 function send(id, message, force, body = "") {
@@ -523,7 +530,7 @@ async function checkIdle(userState) {
     if (userState === 'locked') {
         state.waslocked = true;
         state.denyPlayback = true;
-        Broadcast('pause', false, state.media, false);
+        pauseOther(false, false);
     } else if (state.waslocked) {
         state.waslocked = false;
         state.denyPlayback = false;

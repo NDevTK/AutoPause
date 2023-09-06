@@ -394,9 +394,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     save();
 });
 
-async function Broadcast(message, exclude = false, tabs = state.media) {
+async function Broadcast(message, exclude = false, tabs = state.media, lastPlaying = state.lastPlaying) {
     tabs.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || id === state.lastPlaying) return
+        if (id === exclude || id === lastPlaying) return
 		if (message === 'pause') {
 			return pause(id);
 		}
@@ -523,11 +523,12 @@ async function checkIdle(userState) {
     if (userState === 'locked') {
         state.waslocked = true;
         state.denyPlayback = true;
-        Broadcast('pause');
+        Broadcast('pause', false, state.media, false);
     } else if (state.waslocked) {
         state.waslocked = false;
         state.denyPlayback = false;
-        if (state.media.has(state.mediaPlaying)) play(state.mediaPlaying);
+        const tabId = getResumeTab();
+	if (tabId !== false) play(tabId);
     }
     save();
 }

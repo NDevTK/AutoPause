@@ -25,3 +25,9 @@ Features:
 - No permission mode
 
 Chrome listing: <https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll>
+Firefox listing: <https://addons.mozilla.org/en-US/firefox/addon/autopause/>
+
+# Release system
+- An update maybe skipped until the browser is affected by a change.
+- New features added to the options page will probbaly have bugs.
+- Files from Github actions should always work for all supported platforms.

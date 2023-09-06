@@ -24,7 +24,7 @@ Features:
 - Mark tab for autopause usage
 - No permission mode
 
-Chrome listing: <https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll>
+Chrome listing: <https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll>  
 Firefox listing: <https://addons.mozilla.org/en-US/firefox/addon/autopause/>
 
 # Release system

@@ -115,6 +115,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
 chrome.tabs.onReplaced.addListener((newId, oldId) => {
     if (state.ignoredTabs.has(oldId)) {
         state.ignoredTabs.add(newId);
+        state.ignoredTabs.delete(oldId);
     }
     remove(oldId);
     save();

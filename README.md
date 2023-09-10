@@ -3,6 +3,7 @@
 [![MIT license](https://img.shields.io/github/license/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/blob/master/LICENSE)
 [![Stars](https://img.shields.io/github/stars/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/stargazers)
 [![Firefox version](https://img.shields.io/amo/v/autopause)](https://addons.mozilla.org/en-US/firefox/addon/autopause/)
+[![Chrome version](https://img.shields.io/chrome-web-store/v/bcecldolamfbkgokgpnlpmhjcijglhll)](https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll)
 [![Issues](https://img.shields.io/github/issues/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/issues)
 [![Forks](https://img.shields.io/github/forks/NDevTK/AutoPause)](https://github.com/NDevTK/AutoPause/network/members)
 

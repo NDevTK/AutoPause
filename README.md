@@ -32,3 +32,6 @@ Firefox listing: <https://addons.mozilla.org/en-US/firefox/addon/autopause/>
 - An update maybe skipped until the browser is affected by a change.
 - New features added to the options page will probbaly have bugs.
 - Files from Github actions should always work for all supported platforms.
+
+# How do I know the webstore version is the same code?
+https://github.com/NDevTK/ExtensionTransparency

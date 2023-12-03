@@ -475,6 +475,7 @@ async function updateContentScripts() {
      await chrome.scripting.registerContentScripts([{
       id: 'ContentScript',
       js: ['ContentScript.js'],
+      matchOriginAsFallback: true,
       matches: p.origins,
       allFrames: true,
       runAt: 'document_start'
@@ -483,6 +484,7 @@ async function updateContentScripts() {
      await chrome.scripting.registerContentScripts([{
       id: 'WindowScript',
       js: ['WindowScript.js'],
+      matchOriginAsFallback: true,
       matches: p.origins,
       allFrames: true,
       runAt: 'document_start',

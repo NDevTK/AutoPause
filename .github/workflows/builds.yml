@@ -6,7 +6,8 @@ jobs:
   build:
     name: Create artifacts
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
     steps:
     - uses: actions/checkout@v1
     - name: Chrome

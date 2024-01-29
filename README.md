@@ -9,7 +9,7 @@
 
 
 Browser extension to pause other audio and video sources if audio is playing on the active tab with automatic resume, fast forward and media controls.  
-[![Extension icon](icon.png)](https://addons.mozilla.org/en-US/firefox/addon/autopause/)
+[![Extension icon](icon.png)](https://addons.mozilla.org/firefox/addon/autopause/)
 
 Features:
 - Automatic pause (per tab or new media)
@@ -26,7 +26,7 @@ Features:
 - No permission mode
 
 Chrome listing: <https://chrome.google.com/webstore/detail/autopause/bcecldolamfbkgokgpnlpmhjcijglhll>  
-Firefox listing: <https://addons.mozilla.org/en-US/firefox/addon/autopause/>
+Firefox listing: <https://addons.mozilla.org/firefox/addon/autopause/>
 
 # Release system
 - An update maybe skipped until the browser is affected by a change.

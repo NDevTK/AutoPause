@@ -146,7 +146,7 @@ function onPlay(tab, id = '') {
         // Make tab top priority.
         state.media.delete(tab.id);
         state.media.add(tab.id);
-	if (state.media.size > 20) {
+	if (state.media.size > 5) {
 	    state.legacyMedia.add([...state.media][0]);
 	}
     }
@@ -364,6 +364,7 @@ function remove(tabId) {
     state.otherTabs.delete(tabId);
     state.backgroundaudio.delete(tabId);
     state.mutedTabs.delete(tabId);
+    state.legacyMedia.delete(tabId);
     onPause(tabId);
 }
 

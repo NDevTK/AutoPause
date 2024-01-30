@@ -186,7 +186,15 @@
 	
     function addMedia(src) {
         if (Elements.has(src)) return
-        Elements.set(src, {id: crypto.randomUUID()});
+	
+	let mediaID = '';
+	try {
+	    mediaID = crypto.randomUUID();
+	} catch {
+	    // On insecure website we cant have a ID :(
+	}
+	
+        Elements.set(src, {id: mediaID});
         let controller = new AbortController();
         
         src.addEventListener('volumechange', async  event => {

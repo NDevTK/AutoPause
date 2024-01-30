@@ -2,7 +2,7 @@
 /* global chrome */
 var state = {};
 
-const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia'];
+const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
 async function save() {
  let temp = Object.assign({}, state);
@@ -33,6 +33,7 @@ state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
 state.mutedTabs = new Set(); // Tab IDs of all muted media.
 state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
+state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
 state.denyPlayback = false;
 
@@ -140,10 +141,14 @@ function onPlay(tab, id = '') {
     if (tab.id == state.activeTab)
         state.lastPlaying = null;
     if (state.media.has(tab.id)) {
+        state.legacyMedia.delete(tab.id);
         state.mutedTabs.delete(tab.id);
         // Make tab top priority.
         state.media.delete(tab.id);
         state.media.add(tab.id);
+	if (state.media.size > 20) {
+	    state.legacyMedia.add([...state.media][0]);
+	}
     }
     // Pause all other media.
     if (tab.audible)
@@ -174,7 +179,7 @@ async function tabChange(tab) {
         // Pause all except active tab
         pauseOther(tab.id);
     }
-	
+
     if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
         play(tab.id);
     } else if (state.otherTabs.has(tab.id)) {
@@ -185,7 +190,7 @@ async function tabChange(tab) {
 
 function getResumeTab(exclude) {
     const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? state.backgroundaudio : state.media;
-    const resumableMedia = Array.from(tabs).filter(id => id !== exclude);
+    const resumableMedia = Array.from(tabs).filter(id => id !== exclude && !state.legacyMedia.has(id));
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();
     }

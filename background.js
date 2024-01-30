@@ -252,6 +252,12 @@ chrome.commands.onCommand.addListener(async command => {
     case 'togglePlayback':
         var result = getResumeTab();
         if (result !== false) {
+            // Ignore pause event due to this hotkey
+            if (state.mediaPlaying === null) {
+	        state.mediaPlaying = result;
+	    } else {
+	        state.mediaPlaying = null;
+	    }
             pauseOther(result);
             if (state.otherTabs.size === 0) send(result, 'togglePlayback');
         }

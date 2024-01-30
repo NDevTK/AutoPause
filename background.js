@@ -252,7 +252,7 @@ chrome.commands.onCommand.addListener(async command => {
     case 'togglePlayback':
         var result = getResumeTab();
         if (result !== false) {
-            pauseOther(tab.id);
+            pauseOther(result);
             if (state.otherTabs.size === 0) send(result, 'togglePlayback');
         }
         break

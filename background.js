@@ -255,11 +255,11 @@ chrome.commands.onCommand.addListener(async command => {
             // Ignore pause event due to this hotkey
             if (state.mediaPlaying === null) {
 	        state.mediaPlaying = result;
+	        if (state.otherTabs.size === 0) play(result)
 	    } else {
 	        state.mediaPlaying = null;
+	        pauseOther(false, false);
 	    }
-            pauseOther(false, false);
-            if (state.otherTabs.size === 0) play(result)
         }
         break
     case 'next':

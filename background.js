@@ -258,8 +258,8 @@ chrome.commands.onCommand.addListener(async command => {
 	    } else {
 	        state.mediaPlaying = null;
 	    }
-            pauseOther(result);
-            if (state.otherTabs.size === 0) send(result, 'togglePlayback');
+            pauseOther(false, false);
+            if (state.otherTabs.size === 0) play(result)
         }
         break
     case 'next':
@@ -542,7 +542,7 @@ async function checkIdle(userState) {
         state.waslocked = false;
         state.denyPlayback = false;
         const tabId = getResumeTab();
-	if (tabId !== false) play(tabId);
+	if (tabId !== false && state.otherTabs.size === 0) play(tabId);
     }
     save();
 }

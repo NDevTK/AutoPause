@@ -260,7 +260,7 @@ chrome.commands.onCommand.addListener(async command => {
             // Ignore pause event due to this hotkey
             if (state.mediaPlaying === null) {
 	        state.mediaPlaying = result;
-	        if (state.otherTabs.size === 0) play(result)
+	        play(result);
 	    } else {
 	        state.mediaPlaying = null;
 	        pauseOther(false, false);
@@ -548,7 +548,7 @@ async function checkIdle(userState) {
         state.waslocked = false;
         state.denyPlayback = false;
         const tabId = getResumeTab();
-	if (tabId !== false && state.otherTabs.size === 0) play(tabId);
+	if (tabId !== false) play(tabId);
     }
     save();
 }

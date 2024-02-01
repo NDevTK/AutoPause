@@ -177,8 +177,8 @@ async function tabChange(tab) {
     if (hasProperty(options, 'ignoretabchange')) return
     
     if (hasProperty(options, 'pauseoninactive')) {
-        // Pause all except active tab
-        pauseOther(tab.id);
+        // Pause all except active, last playing, backgroundaudio tab
+        pauseOther(tab.id, true, true);
     }
 
     if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
@@ -191,7 +191,14 @@ async function tabChange(tab) {
 
 function getResumeTab(exclude) {
     const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? state.backgroundaudio : state.media;
-    const resumableMedia = Array.from(tabs).filter(id => id !== exclude && !state.legacyMedia.has(id));
+
+    // Prefer the active tab
+    if (state.media.has(state.activeTab) && state.activeTab !== exclude) {
+         return state.activeTab
+    }
+
+    const resumableMedia = Array.from(tabs).filter(id => id !== exclude);
+
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();
     }
@@ -412,9 +419,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 
-async function pauseOther(exclude = false, skipLast = true) {
+async function pauseOther(exclude = false, skipLast = true, allowbg =  false) {
     state.media.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || skipLast && id === state.lastPlaying) return
+        if (id === exclude || skipLast && id === state.lastPlaying || allowbg && state.backgroundaudio.has(id)) return
             return pause(id);
     });
     // User does not want otherTabs to be affected

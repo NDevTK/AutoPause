@@ -2,6 +2,7 @@
 /* global chrome */
 var state = {};
 
+const resumelimit = 5;
 const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
 async function save() {
@@ -146,8 +147,8 @@ function onPlay(tab, id = '') {
         // Make tab top priority.
         state.media.delete(tab.id);
         state.media.add(tab.id);
-	if (hasProperty(options, 'resumelimit') && state.media.size > 5) {
-	    state.legacyMedia.add([...state.media][0]);
+	if (hasProperty(options, 'resumelimit') && state.media.size > resumelimit) {
+	    state.legacyMedia.add([...state.media][state.media.size-1-resumelimit]);
 	}
     }
     // Pause all other media.

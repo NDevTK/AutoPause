@@ -187,9 +187,8 @@ function getResumeTab(exclude) {
     const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? state.backgroundaudio : state.media;
 
     // Prefer the active tab
-    if (state.media.has(state.activeTab)) {
-	tabs.delete(state.activeTab);
-        tabs.add(state.activeTab);
+    if (state.media.has(state.activeTab) && state.activeTab !== exclude) {
+         return state.activeTab
     }
 
     const resumableMedia = Array.from(tabs).filter(id => id !== exclude);

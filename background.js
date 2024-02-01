@@ -197,7 +197,7 @@ function getResumeTab(exclude) {
          return state.activeTab
     }
 
-    const resumableMedia = Array.from(tabs).filter(id => id !== exclude);
+    const resumableMedia = Array.from(tabs).filter(id => id !== exclude && !state.legacyMedia.has(id));
 
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();

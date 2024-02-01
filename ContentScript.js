@@ -27,9 +27,6 @@
         case 'Rewind':
             Rewind();
             break
-        case 'togglePlayback':
-            togglePlayback();
-            break
         case 'allowplayback':
             resume(false);
             break
@@ -78,22 +75,6 @@
             break
         }
     });
-    
-    function togglePlayback() {
-        Elements.forEach((data, e) => {
-            if (e.paused) return;
-            if (data.togglePause) {
-                data.togglePause = false;
-                e.playbackRate = data.wasPlaybackRate;
-            } else {
-                data.togglePause = true;
-                data.wasPlaying = false;
-                data.wasPlaybackRate = e.playbackRate;
-                e.playbackRate = 0;
-            }
-            Elements.set(e, data);
-        });
-    }
 
     function isPlaying() {
         checkShadow();

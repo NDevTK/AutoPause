@@ -2,7 +2,8 @@
 /* global chrome */
 var state = {};
 
-const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia'];
+const resumelimit = 5;
+const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
 async function save() {
  let temp = Object.assign({}, state);
@@ -33,6 +34,7 @@ state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
 state.mutedTabs = new Set(); // Tab IDs of all muted media.
 state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
+state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
 state.denyPlayback = false;
 
@@ -140,10 +142,14 @@ function onPlay(tab, id = '') {
     if (tab.id == state.activeTab)
         state.lastPlaying = null;
     if (state.media.has(tab.id)) {
+        state.legacyMedia.delete(tab.id);
         state.mutedTabs.delete(tab.id);
         // Make tab top priority.
         state.media.delete(tab.id);
         state.media.add(tab.id);
+	if (hasProperty(options, 'resumelimit') && state.media.size > resumelimit) {
+	    state.legacyMedia.add([...state.media][state.media.size-1-resumelimit]);
+	}
     }
     // Pause all other media.
     if (tab.audible)
@@ -174,7 +180,7 @@ async function tabChange(tab) {
         // Pause all except active, last playing, backgroundaudio tab
         pauseOther(tab.id, true, true);
     }
-	
+
     if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
         play(tab.id);
     } else if (state.otherTabs.has(tab.id)) {
@@ -192,6 +198,7 @@ function getResumeTab(exclude) {
     }
 
     const resumableMedia = Array.from(tabs).filter(id => id !== exclude);
+
     if (resumableMedia.length > 0) {
         return resumableMedia.pop();
     }
@@ -258,8 +265,14 @@ chrome.commands.onCommand.addListener(async command => {
     case 'togglePlayback':
         var result = getResumeTab();
         if (result !== false) {
-            pauseOther(result);
-            if (state.otherTabs.size === 0) send(result, 'togglePlayback');
+            // Ignore pause event due to this hotkey
+            if (state.mediaPlaying === null) {
+	        state.mediaPlaying = result;
+	        play(result);
+	    } else {
+	        state.mediaPlaying = null;
+	        pauseOther(false, false);
+	    }
         }
         break
     case 'next':
@@ -359,6 +372,7 @@ function remove(tabId) {
     state.otherTabs.delete(tabId);
     state.backgroundaudio.delete(tabId);
     state.mutedTabs.delete(tabId);
+    state.legacyMedia.delete(tabId);
     onPause(tabId);
 }
 

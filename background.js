@@ -146,7 +146,7 @@ function onPlay(tab, id = '') {
         // Make tab top priority.
         state.media.delete(tab.id);
         state.media.add(tab.id);
-	if (state.media.size > 5) {
+	if (hasProperty(options, 'resumelimit') && state.media.size > 5) {
 	    state.legacyMedia.add([...state.media][0]);
 	}
     }

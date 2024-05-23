@@ -497,6 +497,7 @@ async function updateContentScripts() {
       js: ['ContentScript.js'],
       matches: p.origins,
       allFrames: true,
+      matchOriginAsFallback: true,
       runAt: 'document_start'
     }]);
      if (!chrome.scripting.ExecutionWorld.MAIN) return

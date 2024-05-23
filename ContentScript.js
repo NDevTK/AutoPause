@@ -309,7 +309,7 @@
     }
     
     function send(message, body = '') {
-        chrome.runtime.sendMessage({type: message, body: body});
+        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive});
     }
   
     let injected = false;

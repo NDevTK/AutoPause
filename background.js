@@ -96,7 +96,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             } else {
                 state.mutedMedia.delete(sender.tab.id);
                 state.media.add(sender.tab.id);
-                onPlay(sender.tab, message.body);
+                onPlay(sender.tab, message.body, message.userActivation);
             }
             break
         case 'playMuted':
@@ -123,14 +123,14 @@ chrome.tabs.onReplaced.addListener((newId, oldId) => {
     save();
 });
 
-function onPlay(tab, id = '') {
+function onPlay(tab, id = '', userActivation = false) {
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     
     if (hasProperty(options, 'ignoreother') && state.otherTabs.has(tab.id)) return
     
     if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (state.denyPlayback || tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
+    if (state.denyPlayback || !userActivation && tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
 	    return pause(tab.id);
     };
     state.mediaPlaying = tab.id;

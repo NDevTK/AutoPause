@@ -137,7 +137,7 @@ function onPlay(tab, id = '', userActivation = false) {
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
-    if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', false, id);
+    if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', id);
 
     if (tab.id == state.activeTab)
         state.lastPlaying = null;
@@ -441,31 +441,24 @@ async function Broadcast(message) {
     });
 };
 
-function send(id, message, force, body = "") {
-	if (state.otherTabs.has(id) && !force) return
-	chrome.tabs.sendMessage(id, {type: message, body: body}, r => {
-		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-	});
+async function send(id, message, body = "") {
+    try {
+        return await chrome.tabs.sendMessage(id, {type: message, body: body});
+    } catch {}
 }
 
-function visablePopup(id) {
-    return new Promise(resolve => {
-        if (state.otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, {type: 'visablePopup'}, r => {
-            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-            resolve(r === 'true');
-        });
-    });
+async function tabTest(id, test) {
+    if (state.otherTabs.has(id)) return true;
+    const response = await send(id, test);
+    return (response === 'true');
 }
 
-function isPlaying(id) {
-    return new Promise(resolve => {
-        if (state.otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, {type: 'isplaying'}, r => {
-            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-            resolve(r === 'true');
-        });
-    });
+async function visablePopup(id) {
+    return await tabTest(id, 'visablePopup');
+}
+
+async function isPlaying(id) {
+    return await tabTest(id, 'isplaying');
 }
 
 function hasProperty(value, key) {
@@ -537,7 +530,7 @@ async function updateExtensionScripts() {
                     injectImmediately: true
                 });
             }
-            send(tab.id, 'new', true);
+            send(tab.id, 'new');
         });
     });
 }

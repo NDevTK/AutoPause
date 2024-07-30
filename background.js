@@ -271,7 +271,7 @@ chrome.commands.onCommand.addListener(async command => {
 	        play(result);
 	    } else {
 	        state.mediaPlaying = null;
-	        pauseOther(false, false);
+	        pauseAll();
 	    }
         }
         break
@@ -419,29 +419,34 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 
-async function denyPause(id, exclude, skipLast, allowbg) {
+async function denyPause(id, exclude, skipLast, allowbg, auto) {
     // Logic used to determine if the extension is allowed to pause automatically.
     if (state.denyPlayback) return false;
     if (hasProperty(options, 'denypause')) return true;
     if (id === exclude) return true;
     if (allowbg && state.backgroundaudio.has(id)) return true;
     if (skipLast && id === state.lastPlaying) return true;
-    if (hasProperty(options, 'allowactive') && exclude !== false) {
+    if (hasProperty(options, 'allowactive') && auto) {
         const tab = await chrome.tabs.get(id);
         if (tab.active) return true;
     }
     return false;
 }
 
-async function pauseOther(exclude = false, skipLast = true, allowbg =  false) {
+async function pauseAll() {
+	// Pause all media on a users request
+	await pauseOther(false, false, false, false);
+}
+
+async function pauseOther(exclude = false, skipLast = true, allowbg =  false, auto = true) {
     state.media.forEach(id => { // Only for tabs that have had media.
-        if (await denyPause(id, exclude, skipLast, allowbg)) return
+        if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
             return pause(id);
     });
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
         state.otherTabs.forEach(id => {
-            if (await denyPause(id, exclude, skipLast, allowbg)) return
+            if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
                 pause(id);
         });
     };
@@ -557,7 +562,7 @@ async function checkIdle(userState) {
         state.waslocked = true;
         state.denyPlayback = true;
         // Pause everything
-        pauseOther(false, false);
+        pauseAll();
     } else if (state.waslocked) {
         state.waslocked = false;
         state.denyPlayback = false;

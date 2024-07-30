@@ -50,16 +50,6 @@
             if (!isPlaying()) break
             sendResponse('true');
             break
-        case 'update':
-            // Remind Firefox theres new media :)
-            Elements.forEach((data, e) => {
-                if (isPaused(e) || isMuted(e)) return;
-                let real = e.volume;
-                if (real === 0) return;
-                e.volume = 0;
-                e.volume = real;
-            });
-            break
         case 'pauseOther':
             pauseOther(message.body);
             break

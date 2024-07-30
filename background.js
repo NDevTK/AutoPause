@@ -79,8 +79,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             send(sender.tab.id, 'UnknownWorld');
             break
         case 'hidden':
-            let visablePopup1 = await visablePopup(sender.tab.id);
-            if (visablePopup1) break
+            if (await visablePopup(sender.tab.id)) break
             if (state.mutedTabs.has(sender.tab.id)) {
                 if (hasProperty(options, 'muteonpause') && state.mutedMedia.has(sender.tab.id)) {
 		    state.media.add(sender.tab.id);

@@ -510,24 +510,22 @@ function toggleOption(o) {
 async function updateContentScripts() {
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async p => {
-    if (p.origins.length < 1) return
-     await chrome.scripting.registerContentScripts([{
-      id: 'ContentScript',
-      js: ['ContentScript.js'],
-      matches: p.origins,
-      allFrames: true,
-      matchOriginAsFallback: true,
-      runAt: 'document_start'
-    }]);
-     if (!chrome.scripting.ExecutionWorld.MAIN) return
-     await chrome.scripting.registerContentScripts([{
-      id: 'WindowScript',
-      js: ['WindowScript.js'],
-      matches: p.origins,
-      allFrames: true,
-      runAt: 'document_start',
-      world: 'MAIN'
-    }]);
+      if (p.origins.length < 1) return
+          await chrome.scripting.registerContentScripts([{
+              id: 'ContentScript',
+              js: ['ContentScript.js'],
+              matches: p.origins,
+              allFrames: true,
+              matchOriginAsFallback: true,
+              runAt: 'document_start'
+          }, {
+              id: 'WindowScript',
+              js: ['WindowScript.js'],
+              matches: p.origins,
+              allFrames: true,
+              runAt: 'document_start',
+              world: 'MAIN'
+          }]);
   });
 }
 
@@ -545,17 +543,15 @@ async function updateExtensionScripts() {
                 files: ['ContentScript.js'],
                 injectImmediately: true
             });
-            if (chrome.scripting.ExecutionWorld.MAIN) {
-                await chrome.scripting.executeScript({
-                    target: {
-                        tabId: tab.id,
-                        allFrames: true
-                    },
-                    files: ['WindowScript.js'],
-                    world: 'MAIN',
-                    injectImmediately: true
-                });
-            }
+            await chrome.scripting.executeScript({
+                target: {
+                    tabId: tab.id,
+                    allFrames: true
+                },
+                files: ['WindowScript.js'],
+                world: 'MAIN',
+                injectImmediately: true
+            });
             send(tab.id, 'new');
         });
     });

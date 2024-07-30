@@ -419,17 +419,28 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 
+async function denyPause(id, exclude, skipLast, allowbg) {
+    // Logic used to demine if the extension is allowed to pause automatically.
+    if (state.denyPlayback) return false;
+    if (id === exclude) return true;
+    if (allowbg && state.backgroundaudio.has(id)) return true;
+    if (skipLast && id === state.lastPlaying) return true;
+    if (hasProperty(options, 'allowactive')) {
+        const tab = await chrome.tabs.get(id);
+        if (tab.active) return true;
+    }
+    return false;
+}
+
 async function pauseOther(exclude = false, skipLast = true, allowbg =  false) {
     state.media.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || skipLast && id === state.lastPlaying || allowbg && state.backgroundaudio.has(id)) return
+        if (await denyPause(id, exclude, skipLast, allowbg)) return
             return pause(id);
     });
-    // User does not want otherTabs to be affected
-    if (hasProperty(options, 'ignoreother')) return
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
         state.otherTabs.forEach(id => {
-            if (id === exclude || skipLast && id === state.lastPlaying) return
+            if (await denyPause(id, exclude, skipLast, allowbg)) return
                 pause(id);
         });
     };

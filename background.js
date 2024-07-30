@@ -411,7 +411,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         }
         onPlay(tab);
     } else {
-        send(tabId, 'update');
         state.otherTabs.delete(tabId);
         onPause(tabId);
     }

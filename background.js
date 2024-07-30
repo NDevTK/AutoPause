@@ -422,6 +422,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 async function denyPause(id, exclude, skipLast, allowbg) {
     // Logic used to determine if the extension is allowed to pause automatically.
     if (state.denyPlayback) return false;
+    if (hasProperty(options, 'denypause')) return true;
     if (id === exclude) return true;
     if (allowbg && state.backgroundaudio.has(id)) return true;
     if (skipLast && id === state.lastPlaying) return true;

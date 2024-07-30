@@ -426,7 +426,7 @@ async function denyPause(id, exclude, skipLast, allowbg) {
     if (id === exclude) return true;
     if (allowbg && state.backgroundaudio.has(id)) return true;
     if (skipLast && id === state.lastPlaying) return true;
-    if (hasProperty(options, 'allowactive')) {
+    if (hasProperty(options, 'allowactive') && exclude !== false) {
         const tab = await chrome.tabs.get(id);
         if (tab.active) return true;
     }

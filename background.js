@@ -439,13 +439,13 @@ async function pauseAll() {
 }
 
 async function pauseOther(exclude = false, skipLast = true, allowbg =  false, auto = true) {
-    state.media.forEach(id => { // Only for tabs that have had media.
+    state.media.forEach(async id => { // Only for tabs that have had media.
         if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
             return pause(id);
     });
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
-        state.otherTabs.forEach(id => {
+        state.otherTabs.forEach(async id => {
             if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
                 pause(id);
         });

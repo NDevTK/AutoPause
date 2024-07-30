@@ -130,7 +130,7 @@ function onPlay(tab, id = '', userActivation = false) {
     
     if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (state.denyPlayback || !userActivation && tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
+    if (denyPlay(id, userActivation)) {
 	    return pause(tab.id);
     };
     state.mediaPlaying = tab.id;
@@ -418,6 +418,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     save();
 });
 
+function denyPlay(id, userActivation = false) {
+    // Logic used to determine if videos are allowed to play.
+    if (state.denyPlayback) return true;
+    if (userActivation) return false;
+    if (id === state.activeTab) return false;
+    if (id === state.lastPlaying) return false;
+    if (id === state.mediaPlaying) return false;
+    return true;
+}
 
 async function denyPause(id, exclude, skipLast, allowbg, auto) {
     // Logic used to determine if the extension is allowed to pause automatically.

@@ -415,7 +415,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 function denyPlay(tab, userActivation = false) {
-    // Logic used to determine if videos are allowed to play.
+    // Logic used to determine if videos are not allowed to play.
     if (state.denyPlayback) return true;
     if (userActivation) return false;
     if (tab.id === state.activeTab) return false;
@@ -426,7 +426,7 @@ function denyPlay(tab, userActivation = false) {
 }
 
 async function denyPause(id, exclude, skipLast, allowbg, auto) {
-    // Logic used to determine if the extension is allowed to pause automatically.
+    // Logic used to determine if the extension is not allowed to pause automatically.
     if (state.denyPlayback) return false;
     if (id === exclude) return true;
     if (allowbg && state.backgroundaudio.has(id)) return true;

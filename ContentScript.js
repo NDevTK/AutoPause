@@ -12,11 +12,6 @@
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
-	case 'UnknownWorld':
-            if (injected2) break
-            injected2 = true;
-            injectScript('WindowScript.js');
-            break
 	case 'visablePopup':
             if (!visablePopup()) break
             sendResponse('true');
@@ -54,16 +49,6 @@
         case 'isplaying':
             if (!isPlaying()) break
             sendResponse('true');
-            break
-        case 'update':
-            // Remind Firefox theres new media :)
-            Elements.forEach((data, e) => {
-                if (isPaused(e) || isMuted(e)) return;
-                let real = e.volume;
-                if (real === 0) return;
-                e.volume = 0;
-                e.volume = real;
-            });
             break
         case 'pauseOther':
             pauseOther(message.body);

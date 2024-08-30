@@ -79,8 +79,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             send(sender.tab.id, 'UnknownWorld');
             break
         case 'hidden':
-            let visablePopup1 = await visablePopup(sender.tab.id);
-            if (visablePopup1) break
+            if (await visablePopup(sender.tab.id)) break
             if (state.mutedTabs.has(sender.tab.id)) {
                 if (hasProperty(options, 'muteonpause') && state.mutedMedia.has(sender.tab.id)) {
 		    state.media.add(sender.tab.id);
@@ -100,14 +99,12 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             }
             break
         case 'playMuted':
-            let playing1 = await isPlaying(sender.tab.id);
-            if (playing1) break
+            if (await isPlaying(sender.tab.id)) break
             state.mutedMedia.delete(sender.tab.id);
             onMute(sender.tab.id);
             break
         case 'pause':
-            let playing2 = await isPlaying(sender.tab.id);
-            if (playing2) break
+            if (await isPlaying(sender.tab.id)) break
             remove(sender.tab.id);
             break
         }
@@ -130,14 +127,14 @@ function onPlay(tab, id = '', userActivation = false) {
     
     if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) return
     // Dont allow a diffrent tab to hijack active media.
-    if (state.denyPlayback || !userActivation && tab.id !== state.activeTab && tab.id !== state.lastPlaying && state.mediaPlaying !== tab.id) {
+    if (denyPlay(tab, userActivation)) {
 	    return pause(tab.id);
     };
     state.mediaPlaying = tab.id;
 
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(tab.id, {"muted": false});
 	
-    if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', false, id);
+    if (hasProperty(options, 'permediapause') && id.length === 36) send(tab.id, 'pauseOther', id);
 
     if (tab.id == state.activeTab)
         state.lastPlaying = null;
@@ -271,7 +268,7 @@ chrome.commands.onCommand.addListener(async command => {
 	        play(result);
 	    } else {
 	        state.mediaPlaying = null;
-	        pauseOther(false, false);
+	        pauseAll();
 	    }
         }
         break
@@ -411,25 +408,50 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         }
         onPlay(tab);
     } else {
-        send(tabId, 'update');
         state.otherTabs.delete(tabId);
         onPause(tabId);
     }
     save();
 });
 
+function denyPlay(tab, userActivation = false) {
+    // Logic used to determine if videos are not allowed to play.
+    if (state.denyPlayback) return true;
+    if (userActivation) return false;
+    if (tab.id === state.activeTab) return false;
+    if (tab.id === state.lastPlaying) return false;
+    if (tab.id === state.mediaPlaying) return false;
+    if (hasProperty(options, 'allowactive') && tab.active) return false;
+    return true;
+}
 
-async function pauseOther(exclude = false, skipLast = true, allowbg =  false) {
-    state.media.forEach(id => { // Only for tabs that have had media.
-        if (id === exclude || skipLast && id === state.lastPlaying || allowbg && state.backgroundaudio.has(id)) return
+async function denyPause(id, exclude, skipLast, allowbg, auto) {
+    // Logic used to determine if the extension is not allowed to pause automatically.
+    if (state.denyPlayback) return false;
+    if (id === exclude) return true;
+    if (allowbg && state.backgroundaudio.has(id)) return true;
+    if (skipLast && id === state.lastPlaying) return true;
+    if (hasProperty(options, 'allowactive') && auto) {
+        const tab = await chrome.tabs.get(id);
+        if (tab.active) return true;
+    }
+    return false;
+}
+
+async function pauseAll() {
+	// Pause all media on a users request
+	await pauseOther(false, false, false, false);
+}
+
+async function pauseOther(exclude = false, skipLast = true, allowbg =  false, auto = true) {
+    state.media.forEach(async id => { // Only for tabs that have had media.
+        if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
             return pause(id);
     });
-    // User does not want otherTabs to be affected
-    if (hasProperty(options, 'ignoreother')) return
     // Expand scope of pause to otherTabs if discarding is enabled.
     if (hasProperty(options, 'nopermission') && !hasProperty(options, 'ignoreother')) {
-        state.otherTabs.forEach(id => {
-            if (id === exclude || skipLast && id === state.lastPlaying) return
+        state.otherTabs.forEach(async id => {
+            if (await denyPause(id, exclude, skipLast, allowbg, auto)) return
                 pause(id);
         });
     };
@@ -441,31 +463,24 @@ async function Broadcast(message) {
     });
 };
 
-function send(id, message, force, body = "") {
-	if (state.otherTabs.has(id) && !force) return
-	chrome.tabs.sendMessage(id, {type: message, body: body}, r => {
-		var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-	});
+async function send(id, message, body = "") {
+    try {
+        return await chrome.tabs.sendMessage(id, {type: message, body: body});
+    } catch {}
 }
 
-function visablePopup(id) {
-    return new Promise(resolve => {
-        if (state.otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, {type: 'visablePopup'}, r => {
-            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-            resolve(r === 'true');
-        });
-    });
+async function tabTest(id, test) {
+    if (state.otherTabs.has(id)) return true;
+    const response = await send(id, test);
+    return (response === 'true');
 }
 
-function isPlaying(id) {
-    return new Promise(resolve => {
-        if (state.otherTabs.has(id)) return true
-        chrome.tabs.sendMessage(id, {type: 'isplaying'}, r => {
-            var lastError = chrome.runtime.lastError; // lgtm [js/unused-local-variable]
-            resolve(r === 'true');
-        });
-    });
+async function visablePopup(id) {
+    return await tabTest(id, 'visablePopup');
+}
+
+async function isPlaying(id) {
+    return await tabTest(id, 'isplaying');
 }
 
 function hasProperty(value, key) {
@@ -491,24 +506,22 @@ function toggleOption(o) {
 async function updateContentScripts() {
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async p => {
-    if (p.origins.length < 1) return
-     await chrome.scripting.registerContentScripts([{
-      id: 'ContentScript',
-      js: ['ContentScript.js'],
-      matches: p.origins,
-      allFrames: true,
-      matchOriginAsFallback: true,
-      runAt: 'document_start'
-    }]);
-     if (!chrome.scripting.ExecutionWorld.MAIN) return
-     await chrome.scripting.registerContentScripts([{
-      id: 'WindowScript',
-      js: ['WindowScript.js'],
-      matches: p.origins,
-      allFrames: true,
-      runAt: 'document_start',
-      world: 'MAIN'
-    }]);
+      if (p.origins.length < 1) return
+          await chrome.scripting.registerContentScripts([{
+              id: 'ContentScript',
+              js: ['ContentScript.js'],
+              matches: p.origins,
+              allFrames: true,
+              matchOriginAsFallback: true,
+              runAt: 'document_start'
+          }, {
+              id: 'WindowScript',
+              js: ['WindowScript.js'],
+              matches: p.origins,
+              allFrames: true,
+              runAt: 'document_start',
+              world: 'MAIN'
+          }]);
   });
 }
 
@@ -526,18 +539,16 @@ async function updateExtensionScripts() {
                 files: ['ContentScript.js'],
                 injectImmediately: true
             });
-            if (chrome.scripting.ExecutionWorld.MAIN) {
-                await chrome.scripting.executeScript({
-                    target: {
-                        tabId: tab.id,
-                        allFrames: true
-                    },
-                    files: ['WindowScript.js'],
-                    world: 'MAIN',
-                    injectImmediately: true
-                });
-            }
-            send(tab.id, 'new', true);
+            await chrome.scripting.executeScript({
+                target: {
+                    tabId: tab.id,
+                    allFrames: true
+                },
+                files: ['WindowScript.js'],
+                world: 'MAIN',
+                injectImmediately: true
+            });
+            send(tab.id, 'new');
         });
     });
 }
@@ -552,7 +563,7 @@ async function checkIdle(userState) {
         state.waslocked = true;
         state.denyPlayback = true;
         // Pause everything
-        pauseOther(false, false);
+        pauseAll();
     } else if (state.waslocked) {
         state.waslocked = false;
         state.denyPlayback = false;

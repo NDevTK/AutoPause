@@ -6,8 +6,8 @@ const resumelimit = 5;
 const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
 // This is a list of places where it doesn't make sense to inject scripts.
-// Improves performance by not running pointless code and security in the case content script has a logic issue.
-const excludeMatches = ["https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.proton.me/*", "https://account.proton.me/*", "https://outlook.live.com/*", "https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.protonmail.com/*", "https://account.protonmail.com/*", "https://outlook.live.com/*"];
+// Improves performance by not running pointless code and security in the case content script has a logic issue, Ideally the extension wont have permission in the first place.
+const excludeMatches = ["https://myaccount.google.com/*", "https://login.live.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.proton.me/*", "https://account.proton.me/*", "https://outlook.live.com/*", "https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.protonmail.com/*", "https://account.protonmail.com/*", "https://outlook.live.com/*"];
 
 async function save() {
  let temp = Object.assign({}, state);

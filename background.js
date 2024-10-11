@@ -5,6 +5,10 @@ var state = {};
 const resumelimit = 5;
 const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
+// This is a list of places where it doesn't make sense to inject scripts.
+// Improves performance by not running pointless code and security in the case the content script has a logic issue.
+const excludeMatches = ["https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.proton.me/*", "https://account.proton.me/*", "https://outlook.live.com/*", "https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.protonmail.com/*", "https://account.protonmail.com/*", "https://outlook.live.com/*"];
+
 async function save() {
  let temp = Object.assign({}, state);
  for (let value of setItems) {
@@ -502,7 +506,7 @@ function toggleOption(o) {
         });
     });
 }
-
+	
 async function updateContentScripts() {
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async p => {
@@ -511,6 +515,7 @@ async function updateContentScripts() {
               id: 'ContentScript',
               js: ['ContentScript.js'],
               matches: p.origins,
+              excludeMatches: excludeMatches,
               allFrames: true,
               matchOriginAsFallback: true,
               runAt: 'document_start'
@@ -518,6 +523,7 @@ async function updateContentScripts() {
               id: 'WindowScript',
               js: ['WindowScript.js'],
               matches: p.origins,
+              excludeMatches: excludeMatches,
               allFrames: true,
               runAt: 'document_start',
               world: 'MAIN'

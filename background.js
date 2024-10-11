@@ -6,7 +6,7 @@ const resumelimit = 5;
 const setItems = ['media','backgroundaudio', 'otherTabs', 'mutedTabs', 'ignoredTabs', 'mutedMedia', 'legacyMedia'];
 
 // This is a list of places where it doesn't make sense to inject scripts.
-// Improves performance by not running pointless code and security in the case the content script has a logic issue.
+// Improves performance by not running pointless code and security in the case content script has a logic issue.
 const excludeMatches = ["https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.proton.me/*", "https://account.proton.me/*", "https://outlook.live.com/*", "https://myaccount.google.com/*", "https://payments.google.com/*", "https://myactivity.google.com/*", "https://pay.google.com/*", "https://adssettings.google.com/*", "https://mail.google.com/*", "https://mail.protonmail.com/*", "https://account.protonmail.com/*", "https://outlook.live.com/*"];
 
 async function save() {
@@ -536,6 +536,10 @@ async function updateExtensionScripts() {
     const tabs = await chrome.tabs.query({});
     tabs.forEach(async tab => {
         if (!tab.url || !tab.id) return;
+	for (let match of excludeMatches) {
+            // Not perfect, url may change and support for matchs is limited.
+            if (tab.url.startsWith(match.split('*')[0])) return;
+	}
         chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
             await chrome.scripting.executeScript({
                 target: {

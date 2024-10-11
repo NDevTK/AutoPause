@@ -298,7 +298,6 @@
     }
   
     let injected = false;
-    let injected2 = false;
 
     function pageScript() {
         if (injected) return
@@ -318,19 +317,6 @@
     }, {
         passive: true
     });
-
-    function injectScript(filePath) {
-        // Needed only for Firefox
-        var script = document.createElement('script');
-        script.setAttribute('type', 'text/javascript');
-        script.setAttribute('crossorigin', 'anonymous');
-        script.setAttribute('src', chrome.runtime.getURL(filePath));
-        try {
-            document.head.appendChild(script);
-        } catch (e) {
-            // May be blocked by CSP.
-        }
-    }
 
     function visablePopup() {
         if (window.documentPictureInPicture) {

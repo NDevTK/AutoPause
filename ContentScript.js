@@ -41,8 +41,13 @@
             resume(true);
             break
         case 'audible':
-            send('imfinem8');
             checkShadow();
+            if (!isPlaying()) send('pause');
+            
+            if (documentPictureInPicture.window) {
+          	// Tell the same-origin PiP window that we are audible
+            	documentPictureInPicture.window.postMessage('autoPauseExtension-Audible');
+	    }
             break
         case 'hidden':
             checkVisibility();

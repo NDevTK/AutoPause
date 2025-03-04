@@ -10,26 +10,6 @@
     
     var Elements = new Map();
     
-    function microphone(state) {
-        const message = (state === 'granted') ? 'microphoneGranted' : 'microphoneDenied';
-        send(message);
-    }
-
-    try {
-        navigator.permissions.query({
-            name: 'microphone'
-        }).then(function(permissionStatus){
-            microphone(permissionStatus.state);
-            permissionStatus.onchange = () => {
-                microphone(this.state);
-            };
-        }).catch(() => {
-            microphone('error');
-        });
-    } catch {
-        microphone('error');
-    }
-    
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
         case 'visablePopup':

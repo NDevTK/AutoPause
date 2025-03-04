@@ -358,5 +358,15 @@
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    if (location.href === 'about:blank') {
+        window.addEventListener('message', (e) => {
+            // Only allow same-origin requests from the opener if we are documentPictureInPicture.window
+            if (e.origin !== location.origin || e.origin !== window.origin || e.source !== window.opener || window.opener.documentPictureInPicture.window !== window) return;
+            if (e.data !== 'autoPauseExtension-Audible') return;
+            if (isPlaying()) send('audible');
+	});
+    }
+
     // End of code
 })();

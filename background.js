@@ -79,13 +79,6 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     state.otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
     switch (message.type) {
-	case 'microphoneGranted':
-            state.otherTabs.add('microphone');
-            pauseOther(sender.tab.id);
-            break
-	case 'microphoneDenied':
-            state.otherTabs.delete('microphone');
-            break
         case 'hidden':
             if (await visablePopup(sender.tab.id)) break
             if (state.mutedTabs.has(sender.tab.id)) {

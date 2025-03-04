@@ -41,6 +41,7 @@
             resume(true);
             break
         case 'audible':
+            send('imfinem8');
             checkShadow();
             break
         case 'hidden':

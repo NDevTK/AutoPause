@@ -44,7 +44,6 @@
             break
         case 'audible':
             checkShadow();
-            if (!isPlaying()) send('pause');
             break
         case 'hidden':
             checkVisibility();

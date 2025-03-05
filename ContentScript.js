@@ -9,7 +9,9 @@
     var Targets = new Set();
     
     var Elements = new Map();
-    
+
+    var ref = '';
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
         case 'visablePopup':
@@ -43,11 +45,6 @@
         case 'audible':
             checkShadow();
             if (!isPlaying()) send('pause');
-            
-            if (documentPictureInPicture.window) {
-          	// Tell the same-origin PiP window that we are audible
-            	documentPictureInPicture.window.postMessage('autoPauseExtension-Audible');
-	    }
             break
         case 'hidden':
             checkVisibility();
@@ -300,7 +297,7 @@
     }
     
     function send(message, body = '') {
-        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive});
+        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive, ref: ref});
     }
   
     let injected = false;
@@ -363,10 +360,16 @@
         window.addEventListener('message', (e) => {
             // Only allow same-origin requests from the opener if we are documentPictureInPicture.window
             if (e.origin !== location.origin || e.origin !== window.origin || e.source !== window.opener || window.opener.documentPictureInPicture.window !== window) return;
-            if (e.data !== 'autoPauseExtension-Audible') return;
-            if (isPlaying()) send('audible');
+            // Only act on messages that might be from the extension
+            if (typeof e.data !== 'object' || e.data === null || e.data.type !== 'autoPauseExtension') return; 
+            ref = e.ref;
 	});
     }
 
+    documentPictureInPicture.addEventListener("enter", (event) => {
+        let ref = crypto.randomUUID();
+        send('linkTab', ref);
+        documentPictureInPicture.window.postMessage({type: 'autoPauseExtension', ref: ref});
+    });
     // End of code
 })();

@@ -18,7 +18,7 @@
     }
 
     documentPictureInPicture.addEventListener('enter', (event) => {
-        addListener(event.document);
+        addListener(event.window.document);
     });
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -274,6 +274,8 @@
     }
     
     function checkShadow(DOM = document) {
+        // If we are checking this document also check documentPictureInPicture
+        if (DOM === document && documentPictureInPicture.window) checkShadow(documentPictureInPicture.window.document);
         [...DOM.querySelectorAll('*')].map(e => {
             if (e instanceof HTMLElement) {
                 let shadowDOM = shadow(e);

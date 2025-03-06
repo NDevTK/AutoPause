@@ -106,6 +106,9 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         case 'tabFocus':
             tabChange(sender.tab);
             break
+        case 'ignoreTab':
+            state.ignoredTabs.add(sender.tab.id);
+            break
         }
 	save();
 });

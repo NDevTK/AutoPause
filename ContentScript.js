@@ -10,8 +10,6 @@
     
     var Elements = new Map();
 
-    var type = 'main';
-
     // Opener handles documentPictureInPicture
     if (location.href === 'about:blank') {
         try {
@@ -307,7 +305,7 @@
     }
     
     function send(message, body = '') {
-        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive, type: type});
+        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive});
     }
   
     let injected = false;

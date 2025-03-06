@@ -104,7 +104,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             remove(sender.tab.id);
             break
         case 'tabFocus':
-            state.activeTab = sender.tab.id;
+            tabChange(sender.tab);
             break
         }
 	save();

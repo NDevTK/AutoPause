@@ -10,7 +10,7 @@
     
     var Elements = new Map();
 
-    var ref = '';
+    var type = 'main';
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
@@ -296,7 +296,7 @@
     }
     
     function send(message, body = '') {
-        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive, ref: ref});
+        chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive, type: type});
     }
   
     let injected = false;
@@ -356,19 +356,9 @@
     }
 
     if (location.href === 'about:blank') {
-        window.addEventListener('message', (e) => {
-            // Only allow same-origin requests from the opener if we are documentPictureInPicture.window
-            if (e.origin !== location.origin || e.origin !== window.origin || e.source !== window.opener || window.opener.documentPictureInPicture.window !== window) return;
-            // Only act on messages that might be from the extension
-            if (typeof e.data !== 'object' || e.data === null || e.data.type !== 'autoPauseExtension') return; 
-            ref = e.ref;
-	});
+        try {
+            if (window.opener.documentPictureInPicture.window === window) type = 'documentpip';
+        } catch {}
     }
-
-    documentPictureInPicture.addEventListener("enter", (event) => {
-        let ref = crypto.randomUUID();
-        send('linkTab', ref);
-        documentPictureInPicture.window.postMessage({type: 'autoPauseExtension', ref: ref});
-    });
     // End of code
 })();

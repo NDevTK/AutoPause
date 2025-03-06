@@ -13,7 +13,10 @@
     // Opener handles documentPictureInPicture
     if (location.href === 'about:blank') {
         try {
-            if (window.opener.documentPictureInPicture.window === window) return;
+            if (window.opener.documentPictureInPicture.window === window) {
+            	send('ignoreTab');
+            	return
+	    }
         } catch {}
     }
 

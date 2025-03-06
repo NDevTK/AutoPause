@@ -12,6 +12,17 @@
 
     var type = 'main';
 
+    // Opener handles documentPictureInPicture
+    if (location.href === 'about:blank') {
+        try {
+            if (window.opener.documentPictureInPicture.window === window) return;
+        } catch {}
+    }
+
+    documentPictureInPicture.addEventListener('enter', (event) => {
+        addListener(event.document);
+    });
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         switch (message.type) {
         case 'visablePopup':
@@ -353,12 +364,6 @@
     
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    if (location.href === 'about:blank') {
-        try {
-            if (window.opener.documentPictureInPicture.window === window) type = 'documentpip';
-        } catch {}
     }
     // End of code
 })();

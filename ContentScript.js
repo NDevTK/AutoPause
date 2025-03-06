@@ -19,6 +19,9 @@
 
     documentPictureInPicture.addEventListener('enter', (event) => {
         addListener(event.window.document);
+        event.window.addEventListener('focus', (e) => {
+	    if (e.isTrusted) send('tabFocus');
+	});
     });
 
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

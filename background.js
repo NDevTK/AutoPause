@@ -407,6 +407,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
             // Allow the media to check its shadow dom.
             send(tabId, 'audible');
             state.otherTabs.add(tabId);
+            if (hasProperty(options, 'ask')) chrome.permissions.addHostAccessRequest({tabId: tabId});
         }
         onPlay(tab);
     } else {

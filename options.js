@@ -4,7 +4,7 @@ var permissions = [];
 var options = {};
 
 // ID for each checkbox
-const supported = ['disableresume', 'pauseoninactive', 'multipletabs', 'ignoretabchange', 'muteonpause', 'ignoreother', 'nopermission', 'permediapause', 'checkidle','resumelimit', 'allowactive'];
+const supported = ['disableresume', 'pauseoninactive', 'multipletabs', 'ignoretabchange', 'muteonpause', 'ignoreother', 'nopermission', 'permediapause', 'checkidle','resumelimit', 'allowactive', 'ask'];
 
 var userinput = document.getElementById('userinput');
 

@@ -20,7 +20,7 @@
         } catch {}
     }
 
-    documentPictureInPicture.addEventListener('enter', (event) => {
+    if (window.documentPictureInPicture) documentPictureInPicture.addEventListener('enter', (event) => {
         addListener(event.window.document);
         event.window.addEventListener('focus', (e) => {
 	    if (e.isTrusted) send('tabFocus');
@@ -71,7 +71,6 @@
             pauseOther(message.body);
             break
         case 'new':
-            pageScript();
             checkShadow();
             checkDOM();
             break
@@ -315,21 +314,6 @@
     function send(message, body = '') {
         chrome.runtime.sendMessage({type: message, body: body, userActivation: navigator.userActivation.isActive});
     }
-  
-    let injected = false;
-
-    function pageScript() {
-        if (injected) return
-        injected = true;
-        // Adds content to DOM needed because of isolation
-	send('injectScript');
-    }
-  
-    window.addEventListener('DOMContentLoaded', () => {
-      pageScript();
-    }, {
-        passive: true
-    });
 
     window.addEventListener('pagehide', () => {
         send('pause');

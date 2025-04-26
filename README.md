@@ -8,3 +8,6 @@ Firefox listing: <https://addons.mozilla.org/firefox/addon/autopause/>
 
 # How do I know the webstore version is the same code?
 https://github.com/NDevTK/ExtensionTransparency
+
+# Should the owner ever release a Chrome version without Firefox support
+NO THEY SHOULD NOT.

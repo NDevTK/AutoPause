@@ -19,6 +19,7 @@ window.addEventListener('keyup', event => {
 chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
+// Security: chrome.storage.sync is not safe from website content scripts.
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null) {
         options = result.options;
@@ -101,7 +102,7 @@ async function permissionUpdate() {
             getPermissions();
         });
     }
-
+    // Security: Maybe discourage the usage of <all_urls>
     if (add.length > 0) {
         chrome.permissions.request({
             origins: add

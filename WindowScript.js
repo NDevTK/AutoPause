@@ -1,4 +1,4 @@
-// Code here is exposed to the website.
+// Security: Code here is exposed to the website.
 // Automaticly add media elements to DOM.
 (function() {
   'use strict';

@@ -41,6 +41,7 @@ state.denyPlayback = false;
 restore();
 
 
+// Security: chrome.storage.sync is not safe from website content scripts.
 chrome.storage.sync.get('options', result => {
     if (typeof result.options === 'object' && result.options !== null)
         options = result.options;
@@ -68,8 +69,8 @@ function onMute(tabId) {
     save();
 }
 
-// For when the media is silent.
 chrome.runtime.onMessage.addListener(async (message, sender) => {
+    // Security: Messages are from untrusted website content scripts.
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== sender.tab.windowId) return
     state.otherTabs.delete(sender.tab.id);
     if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id)) return
@@ -104,9 +105,11 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             remove(sender.tab.id);
             break
         case 'tabFocus':
+            // Security: Verify the action is actually a real tab activation (documentPictureInPicture)
             tabChange(sender.tab);
             break
         case 'ignoreTab':
+            // Security: Extension DoS limited to sender tab (documentPictureInPicture)
             state.ignoredTabs.add(sender.tab.id);
             break
         }
@@ -123,6 +126,7 @@ chrome.tabs.onReplaced.addListener((newId, oldId) => {
 });
 
 function onPlay(tab, id = '', userActivation = false) {
+    // Security: userActivation is from untrusted website content scripts however the isolated world should prevent attacks.
     if (state.autoPauseWindow !== null  && state.autoPauseWindow !== tab.windowId) return
     
     if (hasProperty(options, 'ignoreother') && state.otherTabs.has(tab.id)) return
@@ -230,6 +234,7 @@ chrome.tabs.onDetached.addListener(async id => {
 
 // Handle keyboard shortcuts.
 chrome.commands.onCommand.addListener(async command => {
+    // Security: Websites might trick the user into running commands.
     switch (command) {
     case 'gotoaudible':
         // Go to audible tab thats not active.
@@ -308,6 +313,7 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 function pause(id, checkHidden) {
+	// Security: Leaks to websites that a different tab is audible or shotcut usage, Boring DoS.
 	if (hasProperty(options, 'nopermission')) {
 		chrome.tabs.discard(id);
 		return
@@ -322,6 +328,7 @@ function pause(id, checkHidden) {
 }
 
 function play(id, force) {
+    // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
     if (hasProperty(options, 'muteonpause')) chrome.tabs.update(id, {"muted": false});
     if (hasProperty(options, 'disableresume') && !force) {
         send(id, 'allowplayback');
@@ -418,7 +425,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 function denyPlay(tab, userActivation = false) {
-    // Logic used to determine if videos are not allowed to play.
+    // Security: Logic used to determine if videos are not allowed to play.
     if (state.denyPlayback) return true;
     if (userActivation) return false;
     if (tab.id === state.activeTab) return false;
@@ -429,7 +436,7 @@ function denyPlay(tab, userActivation = false) {
 }
 
 async function denyPause(id, exclude, skipLast, allowbg, auto) {
-    // Logic used to determine if the extension is not allowed to pause automatically.
+    // Security: Logic used to determine if the extension is not allowed to pause automatically.
     if (state.denyPlayback) return false;
     if (id === exclude) return true;
     if (allowbg && state.backgroundaudio.has(id)) return true;
@@ -564,6 +571,7 @@ async function checkIdle(userState) {
     if (!hasProperty(options, 'checkidle')) return
     if (userState === 'locked') {
         state.waslocked = true;
+        // Security: While locked no media should be playing and state.denyPlayback should stay true.
         state.denyPlayback = true;
         // Pause everything
         pauseAll();

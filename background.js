@@ -189,7 +189,7 @@ async function tabChange(tab) {
 }
 
 function getResumeTab(exclude) {
-    const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive')) ? state.backgroundaudio : state.media;
+    const tabs = (state.backgroundaudio.size > 0 || hasProperty(options, 'pauseoninactive') || hasProperty(options, 'noauto')) ? state.backgroundaudio : state.media;
 
     // Prefer the active tab
     if (state.media.has(state.activeTab) && state.activeTab !== exclude) {

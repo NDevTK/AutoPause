@@ -226,7 +226,7 @@
     
     addListener(document);
 
-    function onPause(src, controller) {
+    async function onPause(src, controller) {
         await sleep(200);
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();

@@ -261,14 +261,14 @@
         Elements.set(e, data);
     }
 
-    async function pause() {
+    function pause() {
         Elements.forEach((data, e) => {
             if (isPaused(e)) return;
             pauseElement(e, data);
         });
     }
 
-    async function resume(shouldPlay) {
+    function resume(shouldPlay) {
         Elements.forEach((data, e) => {
             if (!data.wasPlaying) return
             // Pause foreground media normaly

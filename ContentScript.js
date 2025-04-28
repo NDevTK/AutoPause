@@ -190,8 +190,9 @@
             passive: true
         });
         
-        src.addEventListener('pause', event => {
+        src.addEventListener('pause', async event => {
             let src = event.srcElement;
+            await sleep(200);
             onPause(src, controller);
         }, {
             signal: controller.signal,
@@ -226,8 +227,7 @@
     
     addListener(document);
 
-    async function onPause(src, controller) {
-        await sleep(200);
+    function onPause(src, controller) {
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();
             normalPlayback(src);
@@ -261,14 +261,14 @@
         Elements.set(e, data);
     }
 
-    function pause() {
+    async function pause() {
         Elements.forEach((data, e) => {
             if (isPaused(e)) return;
             pauseElement(e, data);
         });
     }
 
-    function resume(shouldPlay) {
+    async function resume(shouldPlay) {
         Elements.forEach((data, e) => {
             if (!data.wasPlaying) return
             // Pause foreground media normaly

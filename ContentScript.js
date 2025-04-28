@@ -190,9 +190,8 @@
             passive: true
         });
         
-        src.addEventListener('pause', async event => {
+        src.addEventListener('pause', event => {
             let src = event.srcElement;
-            await sleep(200);
             onPause(src, controller);
         }, {
             signal: controller.signal,
@@ -228,6 +227,7 @@
     addListener(document);
 
     function onPause(src, controller) {
+        await sleep(200);
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();
             normalPlayback(src);

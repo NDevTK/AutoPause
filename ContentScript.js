@@ -10,16 +10,6 @@
     
     var Elements = new Map();
 
-    // Opener handles documentPictureInPicture
-    if (location.href === 'about:blank') {
-        try {
-            if (window.opener.documentPictureInPicture.window === window) {
-            	send('ignoreTab');
-            	return
-	    }
-        } catch {}
-    }
-
     if (window.documentPictureInPicture) documentPictureInPicture.addEventListener('enter', (event) => {
         addListener(event.window.document);
         event.window.addEventListener('focus', (e) => {
@@ -190,9 +180,8 @@
             passive: true
         });
         
-        src.addEventListener('pause', async event => {
+        src.addEventListener('pause', event => {
             let src = event.srcElement;
-            await sleep(200);
             onPause(src, controller);
         }, {
             signal: controller.signal,
@@ -227,7 +216,8 @@
     
     addListener(document);
 
-    function onPause(src, controller) {
+    async function onPause(src, controller) {
+        await sleep(200);
         if (src instanceof HTMLMediaElement && src.paused) {
             controller.abort();
             normalPlayback(src);
@@ -261,14 +251,14 @@
         Elements.set(e, data);
     }
 
-    async function pause() {
+    function pause() {
         Elements.forEach((data, e) => {
             if (isPaused(e)) return;
             pauseElement(e, data);
         });
     }
 
-    async function resume(shouldPlay) {
+    function resume(shouldPlay) {
         Elements.forEach((data, e) => {
             if (!data.wasPlaying) return
             // Pause foreground media normaly

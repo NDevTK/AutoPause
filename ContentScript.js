@@ -131,10 +131,7 @@ function validMedia(e) {
   } catch {}
   if (e instanceof HTMLMediaElement) return true;
   if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
-    if (
-      e instanceof
-      window.documentPictureInPicture.window.HTMLMediaElement
-    )
+    if (e instanceof window.documentPictureInPicture.window.HTMLMediaElement)
       return true;
   }
   return false;

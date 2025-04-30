@@ -128,9 +128,13 @@ function validMedia(event) {
   if (event.srcElement instanceof HTMLMediaElement) return true;
   if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
     //  documentPictureInPicture window.top is tracked by the opener
-    if (event.srcElement instanceof window.documentPictureInPicture.window.HTMLMediaElement) return true;
+    if (
+      event.srcElement instanceof
+      window.documentPictureInPicture.window.HTMLMediaElement
+    )
+      return true;
   }
-  return false
+  return false;
 }
 
 function addListener(src) {
@@ -179,10 +183,7 @@ function addMedia(src) {
   src.addEventListener(
     'volumechange',
     async (event) => {
-      if (
-        validMedia(event) &&
-        !isPaused(event.srcElement)
-      ) {
+      if (validMedia(event) && !isPaused(event.srcElement)) {
         if (isMuted(event.srcElement)) await sleep(200);
         onPlay(event.srcElement);
       }

@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* global chrome */
 
 var Targets = new Set();
@@ -6,57 +6,57 @@ var Targets = new Set();
 var Elements = new Map();
 
 if (window.documentPictureInPicture)
-  documentPictureInPicture.addEventListener("enter", (event) => {
+  documentPictureInPicture.addEventListener('enter', (event) => {
     // For the top documentPictureInPicture window we are sharing the opener tab audible value
     addListener(event.window.document);
-    event.window.addEventListener("focus", (e) => {
-      if (e.isTrusted) send("tabFocus");
+    event.window.addEventListener('focus', (e) => {
+      if (e.isTrusted) send('tabFocus');
     });
   });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
-    case "visablePopup":
+    case 'visablePopup':
       if (!visablePopup()) break;
-      sendResponse("true");
+      sendResponse('true');
       break;
-    case "toggleFastPlayback":
+    case 'toggleFastPlayback':
       toggleRate();
       break;
-    case "Rewind":
+    case 'Rewind':
       Rewind();
       break;
-    case "allowplayback":
+    case 'allowplayback':
       resume(false);
       break;
-    case "next":
+    case 'next':
       next();
       break;
-    case "previous":
+    case 'previous':
       previous();
       break;
-    case "pause":
+    case 'pause':
       pause();
       break;
-    case "play":
+    case 'play':
       // When there media already playing tell the background script.
-      if (isPlaying()) send("play");
+      if (isPlaying()) send('play');
       resume(true);
       break;
-    case "audible":
+    case 'audible':
       checkShadow();
       break;
-    case "hidden":
+    case 'hidden':
       checkVisibility();
       break;
-    case "isplaying":
+    case 'isplaying':
       if (!isPlaying()) break;
-      sendResponse("true");
+      sendResponse('true');
       break;
-    case "pauseOther":
+    case 'pauseOther':
       pauseOther(message.body);
       break;
-    case "new":
+    case 'new':
       checkShadow();
       checkDOM();
       break;
@@ -118,9 +118,9 @@ function Rewind() {
 function onPlay(e) {
   let data = Elements.get(e);
   if (isMuted(e)) {
-    send("playMuted");
+    send('playMuted');
   } else {
-    send("play", data.id);
+    send('play', data.id);
   }
 }
 
@@ -129,7 +129,7 @@ function addListener(src) {
   Targets.add(src);
   // On media play event
   src.addEventListener(
-    "play",
+    'play',
     function (event) {
       //  documentPictureInPicture window.top is tracked by the opener
       if (window.opener.documentPictureInPicture.window === window) return;
@@ -140,8 +140,8 @@ function addListener(src) {
     },
     {
       capture: true,
-      passive: true,
-    },
+      passive: true
+    }
   );
 }
 
@@ -159,18 +159,18 @@ function isMuted(e) {
 function addMedia(src) {
   if (Elements.has(src)) return;
 
-  let mediaID = "";
+  let mediaID = '';
   try {
     mediaID = crypto.randomUUID();
   } catch {
     // On insecure website we cant have a ID :(
   }
 
-  Elements.set(src, { id: mediaID });
+  Elements.set(src, {id: mediaID});
   let controller = new AbortController();
 
   src.addEventListener(
-    "volumechange",
+    'volumechange',
     async (event) => {
       if (
         event.srcElement instanceof HTMLMediaElement &&
@@ -183,12 +183,12 @@ function addMedia(src) {
     {
       signal: controller.signal,
       capture: true,
-      passive: true,
-    },
+      passive: true
+    }
   );
 
   src.addEventListener(
-    "pause",
+    'pause',
     async (event) => {
       let src = event.srcElement;
       await sleep(200);
@@ -197,25 +197,25 @@ function addMedia(src) {
     {
       signal: controller.signal,
       capture: true,
-      passive: true,
-    },
+      passive: true
+    }
   );
 
   src.addEventListener(
-    "abort",
+    'abort',
     (event) => {
       onPause(event.srcElement, controller);
     },
     {
       signal: controller.signal,
       capture: true,
-      passive: true,
-    },
+      passive: true
+    }
   );
 
   // Dont tell the media please
   src.addEventListener(
-    "ratechange",
+    'ratechange',
     function (event) {
       if (event.srcElement instanceof HTMLMediaElement) {
         let data = Elements.has(event.srcElement)
@@ -231,8 +231,8 @@ function addMedia(src) {
     },
     {
       signal: controller.signal,
-      capture: true,
-    },
+      capture: true
+    }
   );
 }
 
@@ -245,7 +245,7 @@ function onPause(src, controller) {
     Elements.delete(src);
     // Check if all elements have paused.
     if (!isPlaying()) {
-      send("pause");
+      send('pause');
     }
   }
 }
@@ -296,13 +296,13 @@ function checkShadow(DOM = document) {
     documentPictureInPicture.window
   )
     checkShadow(documentPictureInPicture.window.document);
-  [...DOM.querySelectorAll("*")].map((e) => {
+  [...DOM.querySelectorAll('*')].map((e) => {
     if (e instanceof HTMLElement) {
       let shadowDOM = shadow(e);
       if (shadowDOM !== null) {
         checkShadow(shadowDOM);
         addListener(shadowDOM);
-        [...shadowDOM.querySelectorAll("*")].map((e) => {
+        [...shadowDOM.querySelectorAll('*')].map((e) => {
           if (!isPaused(e)) {
             if (e instanceof HTMLMediaElement) {
               addMedia(e);
@@ -316,7 +316,7 @@ function checkShadow(DOM = document) {
 }
 
 function checkDOM() {
-  [...document.querySelectorAll("*")].map((e) => {
+  [...document.querySelectorAll('*')].map((e) => {
     if (!isPaused(e)) {
       if (e instanceof HTMLMediaElement) {
         addMedia(e);
@@ -326,22 +326,22 @@ function checkDOM() {
   });
 }
 
-function send(message, body = "") {
+function send(message, body = '') {
   chrome.runtime.sendMessage({
     type: message,
     body: body,
-    userActivation: navigator.userActivation.isActive,
+    userActivation: navigator.userActivation.isActive
   });
 }
 
 window.addEventListener(
-  "pagehide",
+  'pagehide',
   () => {
-    send("pause");
+    send('pause');
   },
   {
-    passive: true,
-  },
+    passive: true
+  }
 );
 
 function visablePopup() {
@@ -349,20 +349,20 @@ function visablePopup() {
     if (documentPictureInPicture.window !== null) return true;
   }
   return (
-    document.visibilityState !== "hidden" || document.pictureInPictureElement
+    document.visibilityState !== 'hidden' || document.pictureInPictureElement
   );
 }
 
 function checkVisibility() {
   if (!visablePopup()) {
     checkShadow();
-    send("hidden");
+    send('hidden');
   }
 }
 
-window.addEventListener("visibilitychange", checkVisibility, {
+window.addEventListener('visibilitychange', checkVisibility, {
   capture: true,
-  passive: true,
+  passive: true
 });
 
 function hasProperty(value, key) {
@@ -370,7 +370,7 @@ function hasProperty(value, key) {
 }
 
 function shadow(e) {
-  if ("openOrClosedShadowRoot" in e) {
+  if ('openOrClosedShadowRoot' in e) {
     return e.openOrClosedShadowRoot;
   } else {
     return chrome.dom.openOrClosedShadowRoot(e);

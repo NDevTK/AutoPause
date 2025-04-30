@@ -4,7 +4,7 @@ var commands = [];
 var shortcuts = document.getElementById('shortcuts');
 
 function commandsUpdate() {
-  commands.forEach(async command => {
+  commands.forEach(async (command) => {
     const id = command.name + 'shortcut';
     const element = document.getElementById(id);
     if (element.value !== command.shortcut) {
@@ -21,7 +21,7 @@ function commandsUpdate() {
   });
 }
 
-window.addEventListener('keyup', event => {
+window.addEventListener('keyup', (event) => {
   if (event.keyCode === 13) {
     event.preventDefault();
     commandsUpdate();
@@ -32,18 +32,18 @@ getCommands();
 
 async function getCommands() {
   commands = await browser.commands.getAll();
-  commands.forEach(command => {
+  commands.forEach((command) => {
     const id = command.name + 'shortcut';
     const element = document.getElementById(id);
     if (element) {
       element.value = command.shortcut;
-      return
+      return;
     }
     const label = document.createElement('label');
     label.innerText = command.description + ' ';
     label.setAttribute('for', id);
     const input = document.createElement('input');
-    input.type = 'text'
+    input.type = 'text';
     input.id = id;
     input.value = command.shortcut;
     label.appendChild(input);
@@ -51,4 +51,4 @@ async function getCommands() {
     const br = document.createElement('br');
     shortcuts.appendChild(br);
   });
-};
+}

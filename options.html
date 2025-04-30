@@ -1,32 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <title>AutoPause</title>
-    <link rel="stylesheet" href="options.css">
+    <link rel="stylesheet" href="options.css" />
     <script src="options-browser.js" defer></script>
     <script src="options.js" defer></script>
-</head>
-<body>
+  </head>
+  <body>
     <h1>After changes press enter.</h1>
-    <label>Places to use this extension (space separated): <br><input id="userinput" size="500" placeholder="Examples: youtube or <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com/*"></label>
-    <p>This permission is needed to pause, resume and fast forward media its not needed to detect audio.</p><br>
-    <div><label for="nopermission"> No permission mode, discards tabs when needed.</label><input type="checkbox" id="nopermission"></div>
-    <div><label for="disableresume"> Disable automatic resume</label><input type="checkbox" id="disableresume"></div>
-    <div><label for="noauto"> Limit resume to the active and marked tabs</label><input type="checkbox" id="noauto"></div>
-    <div><label for="resumelimit"> Dont resume old media</label><input type="checkbox" id="resumelimit"></div>
-    <div><label for="pauseoninactive"> Pause media on tab change and limit resume to the active and marked tabs</label><input type="checkbox" id="pauseoninactive"></div>
-    <div><label for="ignoretabchange"> Ignore tab changes</label><input type="checkbox" id="ignoretabchange"></div>
-    <div><label for="muteonpause"> Mute tab when its paused (unmuting a tab will resume it, no tab switching needed)</label><input type="checkbox" id="muteonpause"></div>
-    <div><label for="multipletabs"> Resume multiple tabs (old behavior)</label><input type="checkbox" id="multipletabs"></div>
-    <div><label for="ignoreother"> Ignore media from other tabs</label><input type="checkbox" id="ignoreother"></div>
-    <div><label for="permediapause"> Pause per media instead of per tab</label><input type="checkbox" id="permediapause"></div>
-    <div><label for="allowactive"> Dont automatically pause active windows</label><input type="checkbox" id="allowactive"></div>
+    <label
+      >Places to use this extension (space separated): <br /><input
+        id="userinput"
+        size="500"
+        placeholder="Examples: youtube or <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com/*"
+    /></label>
+    <p>
+      This permission is needed to pause, resume and fast forward media its not
+      needed to detect audio.
+    </p>
+    <br />
+    <div>
+      <label for="nopermission">
+        No permission mode, discards tabs when needed.</label
+      ><input type="checkbox" id="nopermission" />
+    </div>
+    <div>
+      <label for="disableresume"> Disable automatic resume</label
+      ><input type="checkbox" id="disableresume" />
+    </div>
+    <div>
+      <label for="noauto"> Limit resume to the active and marked tabs</label
+      ><input type="checkbox" id="noauto" />
+    </div>
+    <div>
+      <label for="resumelimit"> Dont resume old media</label
+      ><input type="checkbox" id="resumelimit" />
+    </div>
+    <div>
+      <label for="pauseoninactive">
+        Pause media on tab change and limit resume to the active and marked
+        tabs</label
+      ><input type="checkbox" id="pauseoninactive" />
+    </div>
+    <div>
+      <label for="ignoretabchange"> Ignore tab changes</label
+      ><input type="checkbox" id="ignoretabchange" />
+    </div>
+    <div>
+      <label for="muteonpause">
+        Mute tab when its paused (unmuting a tab will resume it, no tab
+        switching needed)</label
+      ><input type="checkbox" id="muteonpause" />
+    </div>
+    <div>
+      <label for="multipletabs"> Resume multiple tabs (old behavior)</label
+      ><input type="checkbox" id="multipletabs" />
+    </div>
+    <div>
+      <label for="ignoreother"> Ignore media from other tabs</label
+      ><input type="checkbox" id="ignoreother" />
+    </div>
+    <div>
+      <label for="permediapause"> Pause per media instead of per tab</label
+      ><input type="checkbox" id="permediapause" />
+    </div>
+    <div>
+      <label for="allowactive"> Dont automatically pause active windows</label
+      ><input type="checkbox" id="allowactive" />
+    </div>
     <div id="chromeonly" hidden>
-        <div><label for="checkidle"> Pause media on device lock (Chrome Only)</label><input type="checkbox" id="checkidle"></div>
-        <div><label for="ask"> Ask for permission to run on audible tabs (Chrome Only)</label><input type="checkbox" id="ask"></div>
+      <div>
+        <label for="checkidle"> Pause media on device lock (Chrome Only)</label
+        ><input type="checkbox" id="checkidle" />
+      </div>
+      <div>
+        <label for="ask">
+          Ask for permission to run on audible tabs (Chrome Only)</label
+        ><input type="checkbox" id="ask" />
+      </div>
     </div>
     <h2>Shortcuts</h2>
     <div id="shortcuts"></div>
-</body>
+  </body>
 </html>

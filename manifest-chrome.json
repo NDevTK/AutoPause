@@ -13,63 +13,59 @@
   },
   "commands": {
     "gotoaudible": {
-        "suggested_key": {
-            "default": "Alt+K",
-            "mac": "Alt+K"
-        },
-        "description": "Go to tab with audio"
+      "suggested_key": {
+        "default": "Alt+K",
+        "mac": "Alt+K"
+      },
+      "description": "Go to tab with audio"
     },
     "disableresume": {
-        "description": "Toggle auto resume"
+      "description": "Toggle auto resume"
     },
     "toggleFastPlayback": {
-        "suggested_key": {
-            "default": "Alt+Q",
-            "mac": "Alt+Q"
-        },
-        "description": "Toggle fast playback"
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "Alt+Q"
+      },
+      "description": "Toggle fast playback"
     },
     "Rewind": {
-        "description": "Rewind"
+      "description": "Rewind"
     },
     "pauseoninactive": {
-        "suggested_key": {
-            "default": "Alt+I",
-            "mac": "Alt+I"
-        },
-        "description": "Toggle pause on inactive"
-    },	
-    "backgroundaudio": {	
-        "suggested_key": {
-            "default": "Alt+O",	
-            "mac": "Alt+O"	
-        },	
-        "description": "Set tab to play when nothing else is"	
+      "suggested_key": {
+        "default": "Alt+I",
+        "mac": "Alt+I"
+      },
+      "description": "Toggle pause on inactive"
+    },
+    "backgroundaudio": {
+      "suggested_key": {
+        "default": "Alt+O",
+        "mac": "Alt+O"
+      },
+      "description": "Set tab to play when nothing else is"
     },
     "togglePlayback": {
-        "description": "Toggle media playback"
+      "description": "Toggle media playback"
     },
     "next": {
-        "description": "Go to end of media"
+      "description": "Go to end of media"
     },
     "previous": {
-        "description": "Go to start of media"
+      "description": "Go to start of media"
     },
     "ignoretab": {
-        "description": "Ignore a tab"
+      "description": "Ignore a tab"
     },
     "previoustab": {
-        "description": "Play media from previous tab"
+      "description": "Play media from previous tab"
     },
     "autopausewindow": {
-        "description": "Limit autopause usage to a window"
+      "description": "Limit autopause usage to a window"
     }
   },
-  "permissions": [
-    "storage",
-    "scripting",
-    "idle"
-  ],
+  "permissions": ["storage", "scripting", "idle"],
   "background": {
     "service_worker": "background.js"
   },

@@ -1,19 +1,19 @@
 // Security: Code here is exposed to the website.
 // Automaticly add media elements to DOM.
-(function() {
+(function () {
   'use strict';
-  
+
   // https://github.com/NDevTK/AutoPause/issues/31
-  if (location.origin.endsWith('.netflix.com')) return
-  
+  if (location.origin.endsWith('.netflix.com')) return;
+
   // This is okay because the HTMLMediaElement prototype gets hooked.
   // Note to self: DO NOT CHANGE NAME
   if (window.autoPauseExtensionInjected) return;
   window.autoPauseExtensionInjected = true;
-  
+
   const play = window.HTMLMediaElement.prototype.play;
   let div = null;
-  window.HTMLMediaElement.prototype.play = function() {
+  window.HTMLMediaElement.prototype.play = function () {
     try {
       if (this instanceof HTMLMediaElement && !this.isConnected) {
         if (!document.contains(div)) {
@@ -21,12 +21,16 @@
           div.hidden = true;
           document.head.appendChild(div);
           // If media gets paused remove it from the div
-          div.addEventListener('pause', event => {
-            const src = event.srcElement;
-            if (src instanceof HTMLMediaElement) {
-              div.removeChild(src);
-            }
-          }, { passive: true, capture: true });
+          div.addEventListener(
+            'pause',
+            (event) => {
+              const src = event.srcElement;
+              if (src instanceof HTMLMediaElement) {
+                div.removeChild(src);
+              }
+            },
+            {passive: true, capture: true}
+          );
         }
         div.appendChild(this);
       }
@@ -34,5 +38,5 @@
       // Extension errors should not affect the API.
     }
     return play.apply(this, arguments);
-  }
+  };
 })();

@@ -1,4 +1,4 @@
-name: Deploy
+name: Clean
 on:
   workflow_dispatch:
   push:

@@ -1,10 +1,5 @@
 'use strict';
 /* global chrome */
-
-(() => {
-    // Script should only run once
-
-    if (hasProperty(window, 'Elements')) return
     
     var Targets = new Set();
     
@@ -136,6 +131,8 @@
         Targets.add(src);
         // On media play event
         src.addEventListener('play', function (event) {
+            //  documentPictureInPicture window.top is tracked by the opener
+            if (window.opener.documentPictureInPicture.window === window) return;
             if (event.srcElement instanceof HTMLMediaElement) {
                 addMedia(event.srcElement);
                 onPlay(event.srcElement);
@@ -346,5 +343,3 @@
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-    // End of code
-})();

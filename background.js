@@ -108,10 +108,6 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
             // Security: Verify the action is actually a real tab activation (documentPictureInPicture)
             tabChange(sender.tab);
             break
-        case 'ignoreTab':
-            // Security: Extension DoS limited to sender tab (documentPictureInPicture)
-            state.ignoredTabs.add(sender.tab.id);
-            break
         }
 	save();
 });

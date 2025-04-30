@@ -127,14 +127,9 @@ function onPlay(e) {
 function validMedia(e) {
   try {
     //  documentPictureInPicture window.top media is tracked by the opener
-    if (window.opener.documentPictureInPicture.window === window) return false;
+    if (window.opener.documentPictureInPicture.window === window) return
   } catch {}
-  if (e instanceof HTMLMediaElement) return true;
-  if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
-    if (e instanceof window.documentPictureInPicture.window.HTMLMediaElement)
-      return true;
-  }
-  return false;
+  if (e.ownerDocument.defaultView.HTMLMediaElement instanceof HTMLMediaElement) return true;
 }
 
 function addListener(src) {

@@ -7,9 +7,23 @@ jobs:
     name: Create artifacts
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
     - uses: actions/checkout@v4
+    - name: Format
+      run: |
+        npx prettier . --write --single-quote --no-bracket-spacing --bracket-same-line --trailing-comma none --cache --cache-location=prettier_cache
+
+    - name: Submit
+      continue-on-error: true
+      run: |
+        git config --global user.name "Prettier Bot"
+        git config --global user.email "sync@corp.google.com"
+
+        git add -A
+        git commit -m "Prettier"
+        git push origin main
+
     - name: Chrome
       run: |
         mkdir -p chrome

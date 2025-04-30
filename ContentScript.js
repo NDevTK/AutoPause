@@ -130,7 +130,7 @@ function validMedia(e) {
     if (window.opener.documentPictureInPicture.window === window) return false;
     if (e instanceof e.ownerDocument.defaultView.HTMLMediaElement) return true;
   } catch {}
-  return false
+  return false;
 }
 
 function addListener(src) {

@@ -124,15 +124,15 @@ function onPlay(e) {
   }
 }
 
-function validMedia(event) {
+function validMedia(e) {
   try {
     //  documentPictureInPicture window.top media is tracked by the opener
     if (window.opener.documentPictureInPicture.window === window) return false;
   } catch {}
-  if (event.srcElement instanceof HTMLMediaElement) return true;
+  if (e instanceof HTMLMediaElement) return true;
   if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
     if (
-      event.srcElement instanceof
+      e instanceof
       window.documentPictureInPicture.window.HTMLMediaElement
     )
       return true;
@@ -147,7 +147,7 @@ function addListener(src) {
   src.addEventListener(
     'play',
     function (event) {
-      if (validMedia(event)) {
+      if (validMedia(event.srcElement)) {
         addMedia(event.srcElement);
         onPlay(event.srcElement);
       }
@@ -186,7 +186,7 @@ function addMedia(src) {
   src.addEventListener(
     'volumechange',
     async (event) => {
-      if (validMedia(event) && !isPaused(event.srcElement)) {
+      if (validMedia(event.srcElement) && !isPaused(event.srcElement)) {
         if (isMuted(event.srcElement)) await sleep(200);
         onPlay(event.srcElement);
       }
@@ -228,7 +228,7 @@ function addMedia(src) {
   src.addEventListener(
     'ratechange',
     function (event) {
-      if (validMedia(event)) {
+      if (validMedia(event.srcElement)) {
         let data = Elements.has(event.srcElement)
           ? Elements.get(event.srcElement)
           : {};

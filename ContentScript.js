@@ -129,7 +129,11 @@ function validMedia(e) {
     //  documentPictureInPicture window.top media is tracked by the opener
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
-  if (e.ownerDocument?.defaultView?.HTMLMediaElement && e instanceof e.ownerDocument.defaultView.HTMLMediaElement) return true;
+  if (
+    e.ownerDocument?.defaultView?.HTMLMediaElement &&
+    e instanceof e.ownerDocument.defaultView.HTMLMediaElement
+  )
+    return true;
 }
 
 function addListener(src) {

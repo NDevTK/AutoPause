@@ -132,7 +132,7 @@ function addListener(src) {
     'play',
     function (event) {
       //  documentPictureInPicture window.top is tracked by the opener
-      if (window.opener.documentPictureInPicture.window === window) return;
+      if (window.opener?.documentPictureInPicture?.window === window) return;
       if (event.srcElement instanceof HTMLMediaElement) {
         addMedia(event.srcElement);
         onPlay(event.srcElement);

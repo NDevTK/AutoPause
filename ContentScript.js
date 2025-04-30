@@ -124,6 +124,15 @@ function onPlay(e) {
   }
 }
 
+function validMedia(event) {
+  if (event.srcElement instanceof HTMLMediaElement) return true;
+  if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
+    //  documentPictureInPicture window.top is tracked by the opener
+    if (event.srcElement instanceof window.documentPictureInPicture.window.HTMLMediaElement) return true;
+  }
+  return false
+}
+
 function addListener(src) {
   if (Targets.has(src)) return;
   Targets.add(src);
@@ -131,9 +140,7 @@ function addListener(src) {
   src.addEventListener(
     'play',
     function (event) {
-      //  documentPictureInPicture window.top is tracked by the opener
-      if (window.opener?.documentPictureInPicture?.window === window) return;
-      if (event.srcElement instanceof HTMLMediaElement) {
+      if (validMedia(event)) {
         addMedia(event.srcElement);
         onPlay(event.srcElement);
       }
@@ -173,7 +180,7 @@ function addMedia(src) {
     'volumechange',
     async (event) => {
       if (
-        event.srcElement instanceof HTMLMediaElement &&
+        validMedia(event) &&
         !isPaused(event.srcElement)
       ) {
         if (isMuted(event.srcElement)) await sleep(200);
@@ -217,7 +224,7 @@ function addMedia(src) {
   src.addEventListener(
     'ratechange',
     function (event) {
-      if (event.srcElement instanceof HTMLMediaElement) {
+      if (validMedia(event)) {
         let data = Elements.has(event.srcElement)
           ? Elements.get(event.srcElement)
           : {};
@@ -239,7 +246,7 @@ function addMedia(src) {
 addListener(document);
 
 function onPause(src, controller) {
-  if (src instanceof HTMLMediaElement && src.paused) {
+  if (validMedia(src) && src.paused) {
     controller.abort();
     normalPlayback(src);
     Elements.delete(src);

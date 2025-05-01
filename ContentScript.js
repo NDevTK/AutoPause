@@ -130,18 +130,14 @@ function validMedia(e) {
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
 
-
   if (
     e.ownerDocument?.defaultView?.HTMLMediaElement &&
     e instanceof e.ownerDocument.defaultView.HTMLMediaElement
   )
     return true;
-  
+
   if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
-    if (
-      e instanceof
-      window.documentPictureInPicture.window.HTMLMediaElement
-    )
+    if (e instanceof window.documentPictureInPicture.window.HTMLMediaElement)
       return true;
   }
 }

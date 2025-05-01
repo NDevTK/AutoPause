@@ -136,6 +136,8 @@ function validMedia(e) {
   )
     return true;
 
+  if (e instanceof HTMLMediaElement) return true;
+
   if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
     if (e instanceof window.documentPictureInPicture.window.HTMLMediaElement)
       return true;

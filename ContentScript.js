@@ -130,18 +130,15 @@ function validMedia(e) {
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
 
+  // This is a media created by the current document
+  if (e instanceof HTMLMediaElement) return true;
+
+  // This is a media created by the document its in.
   if (
     e.ownerDocument?.defaultView?.HTMLMediaElement &&
     e instanceof e.ownerDocument.defaultView.HTMLMediaElement
   )
-    return true;
-
-  if (e instanceof HTMLMediaElement) return true;
-
-  if (window.documentPictureInPicture?.window?.HTMLMediaElement) {
-    if (e instanceof window.documentPictureInPicture.window.HTMLMediaElement)
-      return true;
-  }
+    return true;  
 }
 
 function addListener(src) {

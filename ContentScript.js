@@ -138,7 +138,7 @@ function validMedia(e) {
     e.ownerDocument?.defaultView?.HTMLMediaElement &&
     e instanceof e.ownerDocument.defaultView.HTMLMediaElement
   )
-    return true;  
+    return true;
 }
 
 function addListener(src) {

@@ -130,10 +130,10 @@ function validMedia(e) {
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
 
-  // This is a media created by the current document
+  // This is media created by the current document
   if (e instanceof HTMLMediaElement) return true;
 
-  // This is a media created by the document its in.
+  // This is media created by the document its in.
   if (
     e.ownerDocument?.defaultView?.HTMLMediaElement &&
     e instanceof e.ownerDocument.defaultView.HTMLMediaElement

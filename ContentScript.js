@@ -384,11 +384,11 @@ function hasProperty(value, key) {
 
 function shadow(e) {
   try {
-  if ('openOrClosedShadowRoot' in e) {
-    return e.openOrClosedShadowRoot;
-  } else {
-    return chrome.dom.openOrClosedShadowRoot(e);
-  }
+    if ('openOrClosedShadowRoot' in e) {
+      return e.openOrClosedShadowRoot;
+    } else {
+      return chrome.dom.openOrClosedShadowRoot(e);
+    }
   } catch {
     return null;
   }

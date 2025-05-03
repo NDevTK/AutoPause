@@ -129,16 +129,8 @@ function validMedia(e) {
     //  documentPictureInPicture window.top media is tracked by the opener
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
-
-  // This is media created by the current document
-  if (e instanceof HTMLMediaElement) return true;
-
-  // This is media created by the document its in.
-  if (
-    e.ownerDocument?.defaultView?.HTMLMediaElement &&
-    e instanceof e.ownerDocument.defaultView.HTMLMediaElement
-  )
-    return true;
+  
+  return (typeof e.play === 'function' && typeof e.pause === 'function' && typeof e.playbackRate === 'number' && typeof e.muted === 'boolean' && typeof e.paused === 'boolean');
 }
 
 function addListener(src) {

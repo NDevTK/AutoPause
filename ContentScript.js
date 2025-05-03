@@ -7,11 +7,13 @@ var Elements = new Map();
 
 if (window.documentPictureInPicture)
   documentPictureInPicture.addEventListener('enter', (event) => {
-    // For the top documentPictureInPicture window we are sharing the opener tab audible value
-    addListener(event.window.document);
-    event.window.addEventListener('focus', (e) => {
-      if (e.isTrusted) send('tabFocus');
-    });
+    if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
+      // For the top documentPictureInPicture window we are sharing the opener tab audible value
+      addListener(event.window.document);
+      event.window.addEventListener('focus', (e) => {
+        if (e.isTrusted && event.window.navigator.userActivation.isActive) send('tabFocus');
+      });
+    }
   });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -129,8 +129,14 @@ function validMedia(e) {
     //  documentPictureInPicture window.top media is tracked by the opener
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
-  
-  return (typeof e.play === 'function' && typeof e.pause === 'function' && typeof e.playbackRate === 'number' && typeof e.muted === 'boolean' && typeof e.paused === 'boolean');
+
+  return (
+    typeof e.play === 'function' &&
+    typeof e.pause === 'function' &&
+    typeof e.playbackRate === 'number' &&
+    typeof e.muted === 'boolean' &&
+    typeof e.paused === 'boolean'
+  );
 }
 
 function addListener(src) {

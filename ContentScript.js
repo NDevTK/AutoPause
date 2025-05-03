@@ -298,6 +298,10 @@ async function resume(shouldPlay) {
   });
 }
 
+function validElement(e) {
+  
+}
+
 function checkShadow(DOM = document) {
   // If we are checking this document also check documentPictureInPicture
   if (
@@ -307,20 +311,18 @@ function checkShadow(DOM = document) {
   )
     checkShadow(documentPictureInPicture.window.document);
   [...DOM.querySelectorAll('*')].map((e) => {
-    if (e instanceof HTMLElement) {
       let shadowDOM = shadow(e);
       if (shadowDOM !== null) {
         checkShadow(shadowDOM);
         addListener(shadowDOM);
         [...shadowDOM.querySelectorAll('*')].map((e) => {
           if (!isPaused(e)) {
-            if (e instanceof HTMLMediaElement) {
+            if (validMedia(e)) {
               addMedia(e);
               onPlay(e);
             }
           }
         });
-      }
     }
   });
 }
@@ -328,7 +330,7 @@ function checkShadow(DOM = document) {
 function checkDOM() {
   [...document.querySelectorAll('*')].map((e) => {
     if (!isPaused(e)) {
-      if (e instanceof HTMLMediaElement) {
+      if (validMedia(e)) {
         addMedia(e);
         onPlay(e);
       }

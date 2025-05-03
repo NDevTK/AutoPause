@@ -11,8 +11,7 @@ if (window.documentPictureInPicture)
       // For the top documentPictureInPicture window we are sharing the opener tab audible value
       addListener(event.window.document);
       event.window.addEventListener('focus', (e) => {
-        if (e.isTrusted)
-          send('tabFocus');
+        if (e.isTrusted) send('tabFocus');
       });
     }
   });

@@ -201,9 +201,8 @@ function addMedia(src) {
 
   src.addEventListener(
     'pause',
-    async (event) => {
+     (event) => {
       let src = event.srcElement;
-      await sleep(200);
       onPause(src, controller);
     },
     {
@@ -215,7 +214,7 @@ function addMedia(src) {
 
   src.addEventListener(
     'abort',
-    (event) => {
+     (event) => {
       onPause(event.srcElement, controller);
     },
     {
@@ -250,7 +249,8 @@ function addMedia(src) {
 
 addListener(document);
 
-function onPause(src, controller) {
+async function onPause(src, controller) {
+  await sleep(200);
   if (validMedia(src) && src.paused) {
     controller.abort();
     normalPlayback(src);

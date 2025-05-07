@@ -201,7 +201,7 @@ function addMedia(src) {
 
   src.addEventListener(
     'pause',
-     (event) => {
+    (event) => {
       let src = event.srcElement;
       onPause(src, controller);
     },
@@ -214,7 +214,7 @@ function addMedia(src) {
 
   src.addEventListener(
     'abort',
-     (event) => {
+    (event) => {
       onPause(event.srcElement, controller);
     },
     {

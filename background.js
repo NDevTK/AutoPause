@@ -297,15 +297,17 @@ chrome.commands.onCommand.addListener(async (command) => {
       Broadcast('Rewind');
       break;
     case 'togglePlayback':
-      var result = getResumeTab();
-      if (result !== false) {
-        // Ignore pause event due to this hotkey
-        if (state.mediaPlaying === null) {
-          state.mediaPlaying = result;
-          play(result);
-        } else {
-          state.mediaPlaying = null;
-          pauseAll();
+      if (state.mediaPlaying !== null) {
+        state.mediaPlaying = null;
+        pauseAll();
+      } else {
+        var result = getResumeTab();
+        if (result !== false) {
+          // Ignore pause event due to this hotkey
+          if (state.mediaPlaying === null) {
+            state.mediaPlaying = result;
+            play(result);
+          }
         }
       }
       break;

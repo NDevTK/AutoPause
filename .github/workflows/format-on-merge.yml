@@ -28,6 +28,7 @@ jobs:
       - name: Run Prettier
         run: |
           npx prettier . --write --single-quote --no-bracket-spacing --bracket-same-line --trailing-comma none --cache --cache-location=prettier_cache
+          git config --global user.email "sync@corp.google.com"
 
       - name: Configure git
         run: |

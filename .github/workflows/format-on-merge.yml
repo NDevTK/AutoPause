@@ -1,0 +1,45 @@
+name: Format on Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  format:
+    name: Apply Prettier Formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push changes
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # The token is automatically provided by GitHub Actions.
+          # Using a token with write permissions to allow push.
+          # For pushes from the same repository, GITHUB_TOKEN has write perm by default if job has contents:write
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Run Prettier
+        run: |
+          npx prettier . --write --single-quote --no-bracket-spacing --bracket-same-line --trailing-comma none --cache --cache-location=prettier_cache
+
+      - name: Configure git
+        run: |
+          git config --global user.name "Prettier Bot"
+
+      - name: Commit and push changes
+        run: |
+          git add -A
+          # Check if there are any changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "style: apply Prettier formatting"
+            git push
+          fi

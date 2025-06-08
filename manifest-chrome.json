@@ -1,6 +1,6 @@
 {
   "name": "AutoPause",
-  "version": "2.8.7",
+  "version": "2.8.8",
   "description": "Pause other audio and video sources if audio is playing on active tab with automatic resume",
   "content_security_policy": {
     "extension_pages": "default-src 'none'; script-src 'self'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; block-all-mixed-content"

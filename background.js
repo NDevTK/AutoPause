@@ -30,6 +30,8 @@ async function restore() {
     }
     state = result.state;
   }
+  let result2 = await chrome.storage.sync.get('options');
+  if (typeof result2.options === 'object' && result2.options !== null) options = result2.options;
   resolveInitialization();
 }
 
@@ -55,11 +57,6 @@ const initializationCompletePromise = new Promise((resolve) => {
 restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
-chrome.storage.sync.get('options', (result) => {
-  if (typeof result.options === 'object' && result.options !== null)
-    options = result.options;
-});
-
 chrome.storage.onChanged.addListener((result) => {
   if (typeof result.options === 'object' && result.options !== null)
     options = result.options.newValue;

@@ -13,6 +13,25 @@ const setItems = [
   'legacyMedia'
 ];
 
+var options = {};
+state.media = new Set(); // List of tabs with media.
+state.backgroundaudio = new Set();
+state.mediaPlaying = null; // Tab ID of active media.
+state.activeTab = null;
+state.lastPlaying = null;
+state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
+state.mutedTabs = new Set(); // Tab IDs of all muted media.
+state.ignoredTabs = new Set();
+state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
+state.legacyMedia = new Set(); // Tab IDs of old media.
+state.autoPauseWindow = null;
+state.denyPlayback = false;
+
+let resolveInitialization;
+const initializationCompletePromise = new Promise((resolve) => {
+  resolveInitialization = resolve;
+});
+
 async function save() {
   let temp = Object.assign({}, state);
   for (let value of setItems) {
@@ -35,25 +54,6 @@ async function restore() {
     options = result2.options;
   resolveInitialization();
 }
-
-var options = {};
-state.media = new Set(); // List of tabs with media.
-state.backgroundaudio = new Set();
-state.mediaPlaying = null; // Tab ID of active media.
-state.activeTab = null;
-state.lastPlaying = null;
-state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
-state.mutedTabs = new Set(); // Tab IDs of all muted media.
-state.ignoredTabs = new Set();
-state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
-state.legacyMedia = new Set(); // Tab IDs of old media.
-state.autoPauseWindow = null;
-state.denyPlayback = false;
-
-let resolveInitialization;
-const initializationCompletePromise = new Promise((resolve) => {
-  resolveInitialization = resolve;
-});
 
 restore();
 

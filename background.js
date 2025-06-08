@@ -30,6 +30,7 @@ async function restore() {
     }
     state = result.state;
   }
+  resolveInitialization();
 }
 
 var options = {};
@@ -46,6 +47,11 @@ state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
 state.denyPlayback = false;
 
+let resolveInitialization;
+const initializationCompletePromise = new Promise((resolve) => {
+  resolveInitialization = resolve;
+});
+
 restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
@@ -60,7 +66,8 @@ chrome.storage.onChanged.addListener((result) => {
 });
 
 // On install display the options page so the user can give permissions.
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  await initializationCompletePromise;
   updateExtensionScripts();
   if (details.reason === 'install') {
     chrome.runtime.openOptionsPage();
@@ -77,6 +84,7 @@ function onMute(tabId) {
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender) => {
+  await initializationCompletePromise;
   // Security: Messages are from untrusted website content scripts.
   if (
     state.autoPauseWindow !== null &&
@@ -127,7 +135,8 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   save();
 });
 
-chrome.tabs.onReplaced.addListener((newId, oldId) => {
+chrome.tabs.onReplaced.addListener(async (newId, oldId) => {
+  await initializationCompletePromise;
   if (state.ignoredTabs.has(oldId)) {
     state.ignoredTabs.add(newId);
     state.ignoredTabs.delete(oldId);
@@ -234,6 +243,7 @@ function getResumeTab(exclude) {
 
 // User may have mutiple windows open.
 chrome.windows.onFocusChanged.addListener(async (id) => {
+  await initializationCompletePromise;
   if (id === chrome.windows.WINDOW_ID_NONE) return;
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== id) return;
   setTimeout(() => {
@@ -254,6 +264,7 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
 
 // Dont track unrelated windows
 chrome.tabs.onDetached.addListener(async (id) => {
+  await initializationCompletePromise;
   if (state.autoPauseWindow === null) return;
   remove(id);
   save();
@@ -261,6 +272,7 @@ chrome.tabs.onDetached.addListener(async (id) => {
 
 // Handle keyboard shortcuts.
 chrome.commands.onCommand.addListener(async (command) => {
+  await initializationCompletePromise;
   // Security: Websites might trick the user into running commands.
   switch (command) {
     case 'gotoaudible':
@@ -400,6 +412,7 @@ function autoResume(id) {
 
 // On tab change
 chrome.tabs.onActivated.addListener(async (info) => {
+  await initializationCompletePromise;
   chrome.tabs.get(info.tabId, async (tab) => {
     tabChange(tab);
     save();
@@ -407,6 +420,7 @@ chrome.tabs.onActivated.addListener(async (info) => {
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
+  await initializationCompletePromise;
   setTimeout(() => {
     state.ignoredTabs.delete(tabId);
     remove(tabId);
@@ -426,6 +440,7 @@ function remove(tabId) {
 
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  await initializationCompletePromise;
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
   if (state.ignoredTabs.has(tabId)) return;
@@ -568,6 +583,7 @@ function toggleOption(o) {
 }
 
 async function updateContentScripts() {
+  await initializationCompletePromise;
   await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async (p) => {
     if (p.origins.length < 1) return;
@@ -593,6 +609,7 @@ async function updateContentScripts() {
 }
 
 async function updateExtensionScripts() {
+  await initializationCompletePromise;
   await updateContentScripts();
   const tabs = await chrome.tabs.query({});
   tabs.forEach(async (tab) => {
@@ -620,11 +637,10 @@ async function updateExtensionScripts() {
   });
 }
 
-if (chrome.idle) {
-  chrome.idle.onStateChanged.addListener(checkIdle);
-}
+
 
 async function checkIdle(userState) {
+  await initializationCompletePromise;
   if (!hasProperty(options, 'checkidle')) return;
   if (userState === 'locked') {
     state.waslocked = true;
@@ -639,6 +655,10 @@ async function checkIdle(userState) {
     if (tabId !== false) play(tabId);
   }
   save();
+}
+
+if (chrome.idle) {
+  chrome.idle.onStateChanged.addListener(checkIdle);
 }
 
 chrome.permissions.onAdded.addListener(updateExtensionScripts);

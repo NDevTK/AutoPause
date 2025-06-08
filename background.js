@@ -637,8 +637,6 @@ async function updateExtensionScripts() {
   });
 }
 
-
-
 async function checkIdle(userState) {
   await initializationCompletePromise;
   if (!hasProperty(options, 'checkidle')) return;

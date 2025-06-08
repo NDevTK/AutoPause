@@ -31,7 +31,8 @@ async function restore() {
     state = result.state;
   }
   let result2 = await chrome.storage.sync.get('options');
-  if (typeof result2.options === 'object' && result2.options !== null) options = result2.options;
+  if (typeof result2.options === 'object' && result2.options !== null)
+    options = result2.options;
   resolveInitialization();
 }
 

@@ -42,7 +42,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     case 'play':
       // When there media already playing tell the background script.
-      if (isPlaying()) send('play');
+      // The send('play') was removed as resume(true) should trigger
+      // the standard media 'play' event, which ContentScript.js's
+      // onPlay handler will catch and then notify background.js.
       resume(true);
       break;
     case 'audible':
@@ -232,9 +234,15 @@ function addMedia(src) {
         let data = Elements.has(event.srcElement)
           ? Elements.get(event.srcElement)
           : {};
+        // If playbackRate becomes 0 AND this element was "soft paused" by us (data.wasPlaying),
+        // stop the event propagation. This prevents the web page's own 'ratechange' listeners
+        // from observing the temporary rate change to 0 that we induced for the soft pause,
+        // making the extension's pause action less detectable or disruptive to the page's logic.
         if (event.srcElement.playbackRate === 0 && data.wasPlaying) {
           event.stopPropagation();
         }
+        // If the media is genuinely playing (not paused, not at rate 0),
+        // trigger the onPlay logic to inform the background script.
         if (!isPaused(event.srcElement)) {
           onPlay(event.srcElement);
         }
@@ -272,16 +280,24 @@ function normalPlayback(src) {
 }
 
 function pauseElement(e, data) {
-  // If media attempts to play when it should be paused dont change its old values.
+  // "Soft pause" mechanism:
+  // Instead of calling e.pause() directly (which might be detectable by the page
+  // or cause issues on some sites), we effectively silence the media element.
+  // Store the original volume and playbackRate if we haven't already (i.e., not already soft-paused).
   if (!data.wasPlaying) {
     data.wasVolume = e.volume;
     data.wasPlaybackRate = e.playbackRate;
   }
-  // Rate change event will stopPropagation.
+  // Mark that this element is now being "soft paused" by the extension.
   data.wasPlaying = true;
+  // Setting playbackRate to 0 effectively stops progression.
   e.playbackRate = 0;
+  // Setting volume to 0 silences audio.
   e.volume = 0;
   Elements.set(e, data);
+  // Note: The associated 'ratechange' event listener (in addMedia) will call
+  // event.stopPropagation() to prevent the page from seeing this rate change to 0
+  // if data.wasPlaying is true. This helps make the soft pause less intrusive.
 }
 
 async function pause() {

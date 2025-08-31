@@ -596,7 +596,7 @@ function matchPatternToRegExp(pattern) {
     return /^(?!)/; // Matches nothing
   }
   const [, scheme, host, path] = match;
-  const specialChars = /[\[\]\(\)\{\}\^\$\+\.\?]/g;
+  const specialChars = /[\\[\]\(\)\{\}\^\$\+\.\?]/g;
   let re = '^';
   if (scheme === '*') {
     re += '(https?|ftp)';

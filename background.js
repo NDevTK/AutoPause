@@ -40,6 +40,7 @@ async function save() {
   let result = await chrome.storage.session.set({state: temp});
 }
 
+var exclude = [];
 async function restore() {
   let result = await chrome.storage.session.get('state');
   if (typeof result.state === 'object' && result.state !== null) {
@@ -49,9 +50,10 @@ async function restore() {
     }
     state = result.state;
   }
-  let result2 = await chrome.storage.sync.get('options');
+  let result2 = await chrome.storage.sync.get(['options', 'exclude']);
   if (typeof result2.options === 'object' && result2.options !== null)
     options = result2.options;
+  if (Array.isArray(result2.exclude)) exclude = result2.exclude;
   resolveInitialization();
 }
 
@@ -61,6 +63,10 @@ restore();
 chrome.storage.onChanged.addListener((result) => {
   if (typeof result.options === 'object' && result.options !== null)
     options = result.options.newValue;
+  if (typeof result.exclude === 'object' && result.exclude !== null) {
+    exclude = result.exclude.newValue;
+    updateContentScripts();
+  }
 });
 
 // On install display the options page so the user can give permissions.
@@ -580,6 +586,48 @@ function toggleOption(o) {
   });
 }
 
+function matchPatternToRegExp(pattern) {
+  if (pattern === '<all_urls>') {
+    return /^(https?|file|ftp):\/\/.*/;
+  }
+  const match = /^(.*):\/\/([^/]+)(\/.*)$/.exec(pattern);
+  if (!match) {
+    console.error('Invalid pattern:', pattern);
+    return /^(?!)/; // Matches nothing
+  }
+  const [, scheme, host, path] = match;
+  const specialChars = /[\\[\]\(\)\{\}\^\$\+\.\?]/g;
+  let re = '^';
+  if (scheme === '*') {
+    re += '(https?|ftp)';
+  } else {
+    re += scheme.replace(specialChars, '\\$&');
+  }
+  re += ':\\/\\/';
+  if (host === '*') {
+    re += '[^/]+';
+  } else if (host.startsWith('*.')) {
+    re += '([^/]+\\.)?';
+    re += host.substring(2).replace(specialChars, '\\$&');
+  } else {
+    re += host.replace(specialChars, '\\$&');
+  }
+  re += path.replace(specialChars, '\\$&').replace(/\*/g, '.*');
+  re += '$';
+  return new RegExp(re);
+}
+
+function isUrlExcluded(url) {
+  return exclude.some((pattern) => {
+    try {
+      return matchPatternToRegExp(pattern).test(url);
+    } catch (e) {
+      console.error('Error matching pattern:', pattern, e);
+      return false;
+    }
+  });
+}
+
 async function updateContentScripts() {
   await initializationCompletePromise;
   await chrome.scripting.unregisterContentScripts();
@@ -590,6 +638,7 @@ async function updateContentScripts() {
         id: 'ContentScript',
         js: ['ContentScript.js'],
         matches: p.origins,
+        excludeMatches: exclude,
         allFrames: true,
         matchOriginAsFallback: true,
         runAt: 'document_start'
@@ -598,6 +647,7 @@ async function updateContentScripts() {
         id: 'WindowScript',
         js: ['WindowScript.js'],
         matches: p.origins,
+        excludeMatches: exclude,
         allFrames: true,
         runAt: 'document_start',
         world: 'MAIN'
@@ -611,8 +661,9 @@ async function updateExtensionScripts() {
   await updateContentScripts();
   const tabs = await chrome.tabs.query({});
   tabs.forEach(async (tab) => {
-    if (!tab.url || !tab.id) return;
+    if (!tab.url || !tab.id || isUrlExcluded(tab.url)) return;
     chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
+      if (isUrlExcluded(tab.url)) return;
       await chrome.scripting.executeScript({
         target: {
           tabId: tab.id,

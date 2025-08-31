@@ -21,6 +21,7 @@ const supported = [
 ];
 
 var userinput = document.getElementById('userinput');
+var exclude = document.getElementById('exclude');
 
 // User presses enter
 window.addEventListener('keyup', (event) => {
@@ -34,10 +35,13 @@ chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
 // Security: chrome.storage.sync is not safe from website content scripts.
-chrome.storage.sync.get('options', (result) => {
+chrome.storage.sync.get(['options', 'exclude'], (result) => {
   if (typeof result.options === 'object' && result.options !== null) {
     options = result.options;
     applyChanges();
+  }
+  if (Array.isArray(result.exclude)) {
+    exclude.value = result.exclude.join(' ');
   }
 });
 
@@ -145,4 +149,7 @@ async function permissionUpdate() {
       }
     );
   }
+  chrome.storage.sync.set({
+    exclude: exclude.value.split(' ').filter((domain) => domain)
+  });
 }

@@ -292,7 +292,7 @@ chrome.commands.onCommand.addListener(async (command) => {
             chrome.tabs.update(tabs[0].id, {
               active: true
             });
-          } else if (media.size > 0) {
+          } else if (state.media.size > 0) {
             const result = getResumeTab();
             if (result !== false) {
               chrome.tabs.update(result, {

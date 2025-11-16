@@ -26,7 +26,7 @@ state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
-state.denyPlayback = false;
+state.locked = false;
 
 let resolveInitialization;
 const initializationCompletePromise = new Promise((resolve) => {
@@ -405,7 +405,7 @@ function autoResume(id) {
     hasProperty(options, 'disableresume') ||
     state.media.size === 0 ||
     (state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) ||
-    state.denyPlayback
+    state.locked
   )
     return;
   if (
@@ -494,7 +494,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 function denyPlay(tab, userActivation = false) {
   // Security: Logic used to determine if videos are not allowed to play.
-  if (state.denyPlayback) return true;
+  if (state.locked) return true;
   if (userActivation) return false;
   if (tab.id === state.activeTab) return false;
   if (tab.id === state.lastPlaying) return false;
@@ -505,7 +505,7 @@ function denyPlay(tab, userActivation = false) {
 
 async function denyPause(id, exclude, skipLast, allowbg, auto) {
   // Security: Logic used to determine if the extension is not allowed to pause automatically.
-  if (state.denyPlayback) return false;
+  if (state.locked) return false;
   if (id === exclude) return true;
   if (allowbg && state.backgroundaudio.has(id)) return true;
   if (skipLast && id === state.lastPlaying) return true;
@@ -698,14 +698,12 @@ async function checkIdle(userState) {
   await initializationCompletePromise;
   if (!hasProperty(options, 'checkidle')) return;
   if (userState === 'locked') {
-    state.waslocked = true;
-    // Security: While locked no media should be playing and state.denyPlayback should stay true.
-    state.denyPlayback = true;
+    // Security: While locked no media should be playing and state.locked should stay true.
+    state.locked = true;
     // Pause everything
     pauseAll();
-  } else if (state.waslocked) {
-    state.waslocked = false;
-    state.denyPlayback = false;
+  } else if (state.locked) {
+    state.locked = false;
     const tabId = getResumeTab();
     if (tabId !== false) play(tabId);
   }

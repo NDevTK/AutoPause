@@ -645,7 +645,7 @@ async function updateContentScripts() {
         id: 'ContentScript',
         js: ['ContentScript.js'],
         matches: p.origins,
-        excludeMatches: exclude.concat(unsupportedContentScripts),
+        excludeMatches: exclude.concat(unsupportedScripts),
         allFrames: true,
         matchOriginAsFallback: true,
         runAt: 'document_start'

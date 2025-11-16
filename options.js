@@ -50,7 +50,11 @@ chrome.storage.onChanged.addListener((result) => {
     options = result.options.newValue;
     applyChanges();
   }
-  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
+  if (
+    typeof result.exclude === 'object' &&
+    result.exclude !== null &&
+    Array.isArray(result.exclude.newValue)
+  ) {
     exclude.value = result.exclude.newValue.join(' ');
   }
 });
@@ -165,9 +169,10 @@ async function permissionUpdate() {
       }
     );
   }
-  
-  const newExclude = exclude.value.split(' ').filter((domain) => domain === '<all_urls>' || regex.test(domain));
-  chrome.storage.sync.set({ exclude: newExclude });
+
+  const newExclude = exclude.value
+    .split(' ')
+    .filter((domain) => domain === '<all_urls>' || regex.test(domain));
+  chrome.storage.sync.set({exclude: newExclude});
   exclude.value = newExclude.join(' ');
-  
 }

@@ -69,7 +69,11 @@ restore();
 chrome.storage.onChanged.addListener((result) => {
   if (typeof result.options === 'object' && result.options !== null)
     options = result.options.newValue;
-  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
+  if (
+    typeof result.exclude === 'object' &&
+    result.exclude !== null &&
+    Array.isArray(result.exclude.newValue)
+  ) {
     exclude = result.exclude.newValue;
     updateContentScripts();
   }
@@ -653,7 +657,9 @@ async function updateContentScripts() {
         id: 'WindowScript',
         js: ['WindowScript.js'],
         matches: p.origins,
-        excludeMatches: exclude.concat(unsupportedScripts).concat(unsupportedWindowScripts),
+        excludeMatches: exclude
+          .concat(unsupportedScripts)
+          .concat(unsupportedWindowScripts),
         allFrames: true,
         runAt: 'document_start',
         world: 'MAIN'

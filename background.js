@@ -14,6 +14,7 @@ const setItems = [
 ];
 
 var options = {};
+
 state.media = new Set(); // List of tabs with media.
 state.backgroundaudio = new Set();
 state.mediaPlaying = null; // Tab ID of active media.
@@ -25,7 +26,7 @@ state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
-state.denyPlayback = false;
+state.locked = false;
 
 let resolveInitialization;
 const initializationCompletePromise = new Promise((resolve) => {
@@ -41,6 +42,11 @@ async function save() {
 }
 
 var exclude = [];
+
+// https://github.com/NDevTK/AutoPause/issues/31
+const unsupportedWindowScripts = ['https://*.netflix.com/*'];
+const unsupportedScripts = [];
+
 async function restore() {
   let result = await chrome.storage.session.get('state');
   if (typeof result.state === 'object' && result.state !== null) {
@@ -63,7 +69,7 @@ restore();
 chrome.storage.onChanged.addListener((result) => {
   if (typeof result.options === 'object' && result.options !== null)
     options = result.options.newValue;
-  if (typeof result.exclude === 'object' && result.exclude !== null) {
+  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
     exclude = result.exclude.newValue;
     updateContentScripts();
   }
@@ -292,7 +298,7 @@ chrome.commands.onCommand.addListener(async (command) => {
             chrome.tabs.update(tabs[0].id, {
               active: true
             });
-          } else if (media.size > 0) {
+          } else if (state.media.size > 0) {
             const result = getResumeTab();
             if (result !== false) {
               chrome.tabs.update(result, {
@@ -398,7 +404,7 @@ function autoResume(id) {
     hasProperty(options, 'disableresume') ||
     state.media.size === 0 ||
     (state.otherTabs.size > 0 && !hasProperty(options, 'ignoreother')) ||
-    state.denyPlayback
+    state.locked
   )
     return;
   if (
@@ -487,7 +493,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 function denyPlay(tab, userActivation = false) {
   // Security: Logic used to determine if videos are not allowed to play.
-  if (state.denyPlayback) return true;
+  if (state.locked) return true;
   if (userActivation) return false;
   if (tab.id === state.activeTab) return false;
   if (tab.id === state.lastPlaying) return false;
@@ -498,7 +504,7 @@ function denyPlay(tab, userActivation = false) {
 
 async function denyPause(id, exclude, skipLast, allowbg, auto) {
   // Security: Logic used to determine if the extension is not allowed to pause automatically.
-  if (state.denyPlayback) return false;
+  if (state.locked) return false;
   if (id === exclude) return true;
   if (allowbg && state.backgroundaudio.has(id)) return true;
   if (skipLast && id === state.lastPlaying) return true;
@@ -617,8 +623,8 @@ function matchPatternToRegExp(pattern) {
   return new RegExp(re);
 }
 
-function isUrlExcluded(url) {
-  return exclude.some((pattern) => {
+function isUrlExcluded(url, extra = []) {
+  return exclude.concat(extra).some((pattern) => {
     try {
       return matchPatternToRegExp(pattern).test(url);
     } catch (e) {
@@ -630,15 +636,15 @@ function isUrlExcluded(url) {
 
 async function updateContentScripts() {
   await initializationCompletePromise;
-  await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async (p) => {
+    await chrome.scripting.unregisterContentScripts();
     if (p.origins.length < 1) return;
     await chrome.scripting.registerContentScripts([
       {
         id: 'ContentScript',
         js: ['ContentScript.js'],
         matches: p.origins,
-        excludeMatches: exclude,
+        excludeMatches: exclude.concat(unsupportedScripts),
         allFrames: true,
         matchOriginAsFallback: true,
         runAt: 'document_start'
@@ -647,7 +653,7 @@ async function updateContentScripts() {
         id: 'WindowScript',
         js: ['WindowScript.js'],
         matches: p.origins,
-        excludeMatches: exclude,
+        excludeMatches: exclude.concat(unsupportedScripts).concat(unsupportedWindowScripts),
         allFrames: true,
         runAt: 'document_start',
         world: 'MAIN'
@@ -661,9 +667,9 @@ async function updateExtensionScripts() {
   await updateContentScripts();
   const tabs = await chrome.tabs.query({});
   tabs.forEach(async (tab) => {
-    if (!tab.url || !tab.id || isUrlExcluded(tab.url)) return;
+    if (!tab.url || !tab.id) return;
     chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
-      if (isUrlExcluded(tab.url)) return;
+      if (isUrlExcluded(tab.url, unsupportedScripts)) return;
       await chrome.scripting.executeScript({
         target: {
           tabId: tab.id,
@@ -672,6 +678,7 @@ async function updateExtensionScripts() {
         files: ['ContentScript.js'],
         injectImmediately: true
       });
+      if (isUrlExcluded(tab.url, unsupportedWindowScripts)) return;
       await chrome.scripting.executeScript({
         target: {
           tabId: tab.id,
@@ -690,14 +697,12 @@ async function checkIdle(userState) {
   await initializationCompletePromise;
   if (!hasProperty(options, 'checkidle')) return;
   if (userState === 'locked') {
-    state.waslocked = true;
-    // Security: While locked no media should be playing and state.denyPlayback should stay true.
-    state.denyPlayback = true;
+    // Security: While locked no media should be playing and state.locked should stay true.
+    state.locked = true;
     // Pause everything
     pauseAll();
-  } else if (state.waslocked) {
-    state.waslocked = false;
-    state.denyPlayback = false;
+  } else if (state.locked) {
+    state.locked = false;
     const tabId = getResumeTab();
     if (tabId !== false) play(tabId);
   }

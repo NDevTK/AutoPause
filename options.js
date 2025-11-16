@@ -50,6 +50,9 @@ chrome.storage.onChanged.addListener((result) => {
     options = result.options.newValue;
     applyChanges();
   }
+  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
+    exclude.value = result.exclude.newValue.join(' ');
+  }
 });
 
 function applyChanges() {
@@ -103,19 +106,32 @@ const common = new Map([
   ['pandora', 'https://*.pandora.com/*'],
   ['wrif', 'https://wrif.com/*'],
   ['ustvgo', 'https://ustvgo.tv/*'],
-  ['picarto', 'https://picarto.tv/*']
+  ['picarto', 'https://picarto.tv/*'],
+  ['meet', 'https://meet.google.com/*'],
+  ['discord', 'https://discord.com/*'],
+  ['zoom', 'https://*.zoom.us/*'],
+  ['teams', 'https://teams.live.com/*'],
+  ['messenger', 'https://www.messenger.com/*'],
+  ['whatsapp', 'https://web.whatsapp.com/*'],
+  ['twitter', 'https://x.com/*'],
+  ['facebook', 'https://www.facebook.com/*']
 ]);
 
-userinput.oninput = () => {
-  let result = userinput.value.split(' ');
-  for (let [index, value] of result.entries()) {
-    const key = value.toLowerCase();
-    if (common.has(key)) {
-      result[index] = common.get(key);
+function autoComplete(e) {
+  e.oninput = () => {
+    let result = e.value.split(' ');
+    for (let [index, value] of result.entries()) {
+      const key = value.toLowerCase();
+      if (common.has(key)) {
+        result[index] = common.get(key);
+      }
     }
-  }
-  userinput.value = result.join(' ');
-};
+    e.value = result.join(' ');
+  };
+}
+
+autoComplete(userinput);
+autoComplete(exclude);
 
 async function permissionUpdate() {
   const domains = userinput.value.split(' ');
@@ -149,7 +165,9 @@ async function permissionUpdate() {
       }
     );
   }
-  chrome.storage.sync.set({
-    exclude: exclude.value.split(' ').filter((domain) => domain)
-  });
+  
+  const newExclude = exclude.value.split(' ').filter((domain) => domain === '<all_urls>' || regex.test(domain));
+  chrome.storage.sync.set({ exclude: newExclude });
+  exclude.value = newExclude.join(' ');
+  
 }

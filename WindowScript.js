@@ -3,9 +3,6 @@
 (function () {
   'use strict';
 
-  // https://github.com/NDevTK/AutoPause/issues/31
-  if (location.origin.endsWith('.netflix.com')) return;
-
   // This is okay because the HTMLMediaElement prototype gets hooked.
   // Note to self: DO NOT CHANGE NAME
   if (window.autoPauseExtensionInjected) return;

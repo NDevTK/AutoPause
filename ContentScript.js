@@ -300,8 +300,6 @@ async function resume(shouldPlay) {
   });
 }
 
-function validElement(e) {}
-
 function checkShadow(DOM = document) {
   // If we are checking this document also check documentPictureInPicture
   if (

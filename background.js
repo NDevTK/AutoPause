@@ -14,6 +14,7 @@ const setItems = [
 ];
 
 var options = {};
+
 state.media = new Set(); // List of tabs with media.
 state.backgroundaudio = new Set();
 state.mediaPlaying = null; // Tab ID of active media.
@@ -41,6 +42,12 @@ async function save() {
 }
 
 var exclude = [];
+
+// https://github.com/NDevTK/AutoPause/issues/31
+const unsupportedWindowScripts = ['https://*.netflix.com/*'];
+// Calls shouldn't work the same as other media if you get a call you probably want to hear it and when playing a video you likely don't want to mute the other person https://github.com/NDevTK/AutoPause/issues/58
+const unsupportedScripts = ['https://meet.google.com/*', 'https://discord.com/*', 'https://*.zoom.us/*'];
+
 async function restore() {
   let result = await chrome.storage.session.get('state');
   if (typeof result.state === 'object' && result.state !== null) {
@@ -617,8 +624,8 @@ function matchPatternToRegExp(pattern) {
   return new RegExp(re);
 }
 
-function isUrlExcluded(url) {
-  return exclude.some((pattern) => {
+function isUrlExcluded(url, extra = []) {
+  return exclude.concat(extra).some((pattern) => {
     try {
       return matchPatternToRegExp(pattern).test(url);
     } catch (e) {
@@ -638,7 +645,7 @@ async function updateContentScripts() {
         id: 'ContentScript',
         js: ['ContentScript.js'],
         matches: p.origins,
-        excludeMatches: exclude,
+        excludeMatches: exclude.concat(unsupportedContentScripts),
         allFrames: true,
         matchOriginAsFallback: true,
         runAt: 'document_start'
@@ -647,7 +654,7 @@ async function updateContentScripts() {
         id: 'WindowScript',
         js: ['WindowScript.js'],
         matches: p.origins,
-        excludeMatches: exclude,
+        excludeMatches: exclude.concat(unsupportedScripts).concat(unsupportedWindowScripts),
         allFrames: true,
         runAt: 'document_start',
         world: 'MAIN'
@@ -661,9 +668,9 @@ async function updateExtensionScripts() {
   await updateContentScripts();
   const tabs = await chrome.tabs.query({});
   tabs.forEach(async (tab) => {
-    if (!tab.url || !tab.id || isUrlExcluded(tab.url)) return;
+    if (!tab.url || !tab.id) return;
     chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
-      if (isUrlExcluded(tab.url)) return;
+      if (isUrlExcluded(tab.url, unsupportedScripts)) return;
       await chrome.scripting.executeScript({
         target: {
           tabId: tab.id,
@@ -672,6 +679,7 @@ async function updateExtensionScripts() {
         files: ['ContentScript.js'],
         injectImmediately: true
       });
+      if (isUrlExcluded(tab.url, unsupportedWindowScripts)) return;
       await chrome.scripting.executeScript({
         target: {
           tabId: tab.id,

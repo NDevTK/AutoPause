@@ -70,7 +70,7 @@ restore();
 chrome.storage.onChanged.addListener((result) => {
   if (typeof result.options === 'object' && result.options !== null)
     options = result.options.newValue;
-  if (typeof result.exclude === 'object' && result.exclude !== null) {
+  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
     exclude = result.exclude.newValue;
     updateContentScripts();
   }

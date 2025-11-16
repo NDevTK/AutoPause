@@ -50,6 +50,9 @@ chrome.storage.onChanged.addListener((result) => {
     options = result.options.newValue;
     applyChanges();
   }
+  if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
+    exclude.value = result.exclude.join(' ');
+  }
 });
 
 function applyChanges() {
@@ -150,6 +153,8 @@ async function permissionUpdate() {
     );
   }
   chrome.storage.sync.set({
-    exclude: exclude.value.split(' ').filter((domain) => domain)
+    exclude: exclude.value.split(' ').filter(
+    (domain) => domain === '<all_urls>' || regex.test(domain)
+  );
   });
 }

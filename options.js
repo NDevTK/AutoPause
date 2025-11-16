@@ -152,9 +152,9 @@ async function permissionUpdate() {
       }
     );
   }
-  chrome.storage.sync.set({
-    exclude: exclude.value.split(' ').filter(
-      (domain) => domain === '<all_urls>' || regex.test(domain)
-    )
-  });
+  
+  const newExclude = exclude.value.split(' ').filter((domain) => domain === '<all_urls>' || regex.test(domain));
+  chrome.storage.sync.set({ exclude: newExclude });
+  exclude.value = newExclude.join(' ');
+  
 }

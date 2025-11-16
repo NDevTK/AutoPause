@@ -51,7 +51,7 @@ chrome.storage.onChanged.addListener((result) => {
     applyChanges();
   }
   if (typeof result.exclude === 'object' && result.exclude !== null && Array.isArray(result.exclude.newValue)) {
-    exclude.value = result.exclude.join(' ');
+    exclude.value = result.exclude.newValue.join(' ');
   }
 });
 

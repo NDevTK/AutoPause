@@ -154,7 +154,7 @@ async function permissionUpdate() {
   }
   chrome.storage.sync.set({
     exclude: exclude.value.split(' ').filter(
-    (domain) => domain === '<all_urls>' || regex.test(domain)
-  );
+      (domain) => domain === '<all_urls>' || regex.test(domain)
+    )
   });
 }

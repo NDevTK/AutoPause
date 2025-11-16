@@ -637,8 +637,8 @@ function isUrlExcluded(url, extra = []) {
 
 async function updateContentScripts() {
   await initializationCompletePromise;
-  await chrome.scripting.unregisterContentScripts();
   chrome.permissions.getAll(async (p) => {
+    await chrome.scripting.unregisterContentScripts();
     if (p.origins.length < 1) return;
     await chrome.scripting.registerContentScripts([
       {

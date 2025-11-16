@@ -45,8 +45,7 @@ var exclude = [];
 
 // https://github.com/NDevTK/AutoPause/issues/31
 const unsupportedWindowScripts = ['https://*.netflix.com/*'];
-// Calls shouldn't work the same as other media if you get a call you probably want to hear it and when playing a video you likely don't want to mute the other person https://github.com/NDevTK/AutoPause/issues/58
-const unsupportedScripts = ['https://meet.google.com/*', 'https://discord.com/*', 'https://*.zoom.us/*'];
+const unsupportedScripts = [];
 
 async function restore() {
   let result = await chrome.storage.session.get('state');

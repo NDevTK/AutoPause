@@ -1,0 +1,4 @@
+## 2024-05-23 - ReDoS in Match Patterns
+**Vulnerability:** The function `matchPatternToRegExp` in `background.js` converted user-supplied glob patterns into regular expressions by replacing `*` with `.*`. This allowed a malicious user (or sync data) to supply a pattern like `*a*b*c*` which, when converted to regex `.*a.*b.*c.*`, causes catastrophic backtracking (ReDoS) on mismatched strings.
+**Learning:** Blindly converting glob patterns to regex is dangerous if the glob allows arbitrary wildcards. Regex engines often struggle with multiple adjacent or near-adjacent `.*` groups.
+**Prevention:** Use a dedicated glob matching library or implement a linear-time scanning algorithm for wildcards instead of using Regular Expressions. I implemented a safe O(N) `matchesPattern` function that parses the URL and checks segments sequentially.

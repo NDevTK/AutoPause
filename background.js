@@ -596,41 +596,74 @@ function toggleOption(o) {
   });
 }
 
-function matchPatternToRegExp(pattern) {
+function matchesPattern(pattern, url) {
   if (pattern === '<all_urls>') {
-    return /^(https?|file|ftp):\/\/.*/;
+    return /^(https?|file|ftp):\/\//.test(url);
   }
+
   const match = /^(.*):\/\/([^/]+)(\/.*)$/.exec(pattern);
   if (!match) {
-    console.error('Invalid pattern:', pattern);
-    return /^(?!)/; // Matches nothing
+    // console.error('Invalid pattern:', pattern);
+    return false;
   }
   const [, scheme, host, path] = match;
-  const specialChars = /[\\[\]\(\)\{\}\^\$\+\.\?]/g;
-  let re = '^';
+
+  let urlObj;
+  try {
+    urlObj = new URL(url);
+  } catch (e) {
+    return false;
+  }
+
+  // Check Scheme
   if (scheme === '*') {
-    re += '(https?|ftp)';
+    if (!['http:', 'https:'].includes(urlObj.protocol)) return false;
   } else {
-    re += scheme.replace(specialChars, '\\$&');
+    if (urlObj.protocol !== scheme + ':') return false;
   }
-  re += ':\\/\\/';
+
+  // Check Host
   if (host === '*') {
-    re += '[^/]+';
+    // Matches any host
   } else if (host.startsWith('*.')) {
-    re += '([^/]+\\.)?';
-    re += host.substring(2).replace(specialChars, '\\$&');
+    const domain = host.slice(2);
+    if (urlObj.hostname !== domain && !urlObj.hostname.endsWith('.' + domain)) {
+      return false;
+    }
   } else {
-    re += host.replace(specialChars, '\\$&');
+    if (urlObj.hostname !== host) return false;
   }
-  re += path.replace(specialChars, '\\$&').replace(/\*/g, '.*');
-  re += '$';
-  return new RegExp(re);
+
+  // Check Path
+  const fullPath = urlObj.pathname + urlObj.search + urlObj.hash;
+  const parts = path.split('*');
+
+  if (!fullPath.startsWith(parts[0])) return false;
+
+  let currentIndex = parts[0].length;
+
+  for (let i = 1; i < parts.length - 1; i++) {
+    const part = parts[i];
+    const foundIndex = fullPath.indexOf(part, currentIndex);
+    if (foundIndex === -1) return false;
+    currentIndex = foundIndex + part.length;
+  }
+
+  const lastPart = parts[parts.length - 1];
+  if (lastPart === '') {
+    return true;
+  }
+
+  if (!fullPath.endsWith(lastPart)) return false;
+  if (fullPath.length - lastPart.length < currentIndex) return false;
+
+  return true;
 }
 
 function isUrlExcluded(url, extra = []) {
   return exclude.concat(extra).some((pattern) => {
     try {
-      return matchPatternToRegExp(pattern).test(url);
+      return matchesPattern(pattern, url);
     } catch (e) {
       console.error('Error matching pattern:', pattern, e);
       return false;

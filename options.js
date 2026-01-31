@@ -76,22 +76,24 @@ function hasProperty(value, key) {
   return Object.prototype.hasOwnProperty.call(value, key);
 }
 
+function sendUpdate(data) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      Object.assign({type: 'updateOptions'}, data),
+      function (result) {
+        resolve(result);
+      }
+    );
+  });
+}
+
 function toggleOption(o) {
   if (hasProperty(options, o)) {
     delete options[o];
   } else {
     options[o] = true;
   }
-  return new Promise((resolve) => {
-    chrome.storage.sync.set(
-      {
-        options
-      },
-      function (result) {
-        resolve(result);
-      }
-    );
-  });
+  return sendUpdate({options});
 }
 
 function getPermissions() {
@@ -173,6 +175,6 @@ async function permissionUpdate() {
   const newExclude = exclude.value
     .split(' ')
     .filter((domain) => domain === '<all_urls>' || regex.test(domain));
-  chrome.storage.sync.set({exclude: newExclude});
+  sendUpdate({exclude: newExclude});
   exclude.value = newExclude.join(' ');
 }

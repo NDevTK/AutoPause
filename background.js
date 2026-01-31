@@ -56,10 +56,26 @@ async function restore() {
     }
     state = result.state;
   }
-  let result2 = await chrome.storage.sync.get(['options', 'exclude']);
-  if (typeof result2.options === 'object' && result2.options !== null)
+  let result2 = await chrome.storage.session.get(['options', 'exclude']);
+  if (typeof result2.options === 'object' && result2.options !== null) {
     options = result2.options;
-  if (Array.isArray(result2.exclude)) exclude = result2.exclude;
+  } else {
+    let result3 = await chrome.storage.sync.get(['options']);
+    if (typeof result3.options === 'object' && result3.options !== null) {
+      options = result3.options;
+      chrome.storage.session.set({options});
+    }
+  }
+
+  if (Array.isArray(result2.exclude)) {
+    exclude = result2.exclude;
+  } else {
+    let result3 = await chrome.storage.sync.get(['exclude']);
+    if (Array.isArray(result3.exclude)) {
+      exclude = result3.exclude;
+      chrome.storage.session.set({exclude});
+    }
+  }
   resolveInitialization();
 }
 
@@ -67,16 +83,8 @@ restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
 chrome.storage.onChanged.addListener((result) => {
-  if (typeof result.options === 'object' && result.options !== null)
-    options = result.options.newValue;
-  if (
-    typeof result.exclude === 'object' &&
-    result.exclude !== null &&
-    Array.isArray(result.exclude.newValue)
-  ) {
-    exclude = result.exclude.newValue;
-    updateContentScripts();
-  }
+  // We ignore options and exclude changes here to prevent content script tampering.
+  // Updates are handled via trusted messages from the options page.
 });
 
 // On install display the options page so the user can give permissions.
@@ -99,12 +107,33 @@ function onMute(tabId) {
 
 chrome.runtime.onMessage.addListener(async (message, sender) => {
   await initializationCompletePromise;
+
+  if (message.type === 'updateOptions') {
+    // Security: Only allow options updates from extension pages.
+    if (sender.url && sender.url.startsWith(chrome.runtime.getURL(''))) {
+      if (typeof message.options === 'object' && message.options !== null) {
+        options = message.options;
+        chrome.storage.session.set({options});
+        chrome.storage.sync.set({options});
+      }
+      if (Array.isArray(message.exclude)) {
+        exclude = message.exclude;
+        chrome.storage.session.set({exclude});
+        chrome.storage.sync.set({exclude});
+        updateContentScripts();
+      }
+    }
+    return;
+  }
+
   // Security: Messages are from untrusted website content scripts.
-  if (
+  if (sender.tab &&
     state.autoPauseWindow !== null &&
     state.autoPauseWindow !== sender.tab.windowId
   )
     return;
+
+  if (!sender.tab) return;
   state.otherTabs.delete(sender.tab.id);
   if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id))
     return;
@@ -584,6 +613,7 @@ function toggleOption(o) {
   } else {
     options[o] = true;
   }
+  chrome.storage.session.set({options});
   return new Promise((resolve) => {
     chrome.storage.sync.set(
       {

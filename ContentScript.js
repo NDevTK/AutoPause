@@ -326,14 +326,14 @@ function checkShadow(DOM = document) {
 }
 
 function checkDOM() {
-  [...document.querySelectorAll('*')].map((e) => {
+  for (const e of document.querySelectorAll('*')) {
     if (!isPaused(e)) {
       if (validMedia(e)) {
         addMedia(e);
         onPlay(e);
       }
     }
-  });
+  }
 }
 
 function send(message, body = '') {

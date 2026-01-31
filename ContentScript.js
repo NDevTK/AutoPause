@@ -85,7 +85,7 @@ function next() {
 function previous() {
   Elements.forEach((data, e) => {
     if (isPaused(e)) return;
-    // Unknown
+    // Go to start of media
     e.currentTime = 0;
   });
 }

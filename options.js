@@ -11,6 +11,7 @@ const supported = [
   'ignoretabchange',
   'muteonpause',
   'ignoreother',
+  'ignoreshort',
   'nopermission',
   'permediapause',
   'checkidle',

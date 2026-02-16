@@ -122,7 +122,7 @@ function onPlay(e) {
   if (isMuted(e)) {
     send('playMuted');
   } else {
-    send('play', data.id);
+    send('play', data.id, e.duration);
   }
 }
 
@@ -336,12 +336,14 @@ function checkDOM() {
   }
 }
 
-function send(message, body = '') {
-  chrome.runtime.sendMessage({
+function send(message, body = '', duration) {
+  const msg = {
     type: message,
     body: body,
     userActivation: navigator.userActivation.isActive
-  });
+  };
+  if (duration !== undefined) msg.duration = duration;
+  chrome.runtime.sendMessage(msg);
 }
 
 window.addEventListener(

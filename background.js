@@ -3,7 +3,7 @@
 var state = {};
 
 const resumelimit = 5;
-const shortMediaDuration = 10; // seconds
+const shortMediaDuration = 3; // seconds
 const shortMediaDebounce = 5000; // ms, for tabs without content script access
 const pendingAudible = new Map();
 const setItems = [

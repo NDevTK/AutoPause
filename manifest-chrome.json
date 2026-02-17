@@ -70,6 +70,9 @@
     "service_worker": "background.js"
   },
   "icons": {"48": "icon48.png"},
+  "action": {
+    "default_title": "Open Settings"
+  },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": false

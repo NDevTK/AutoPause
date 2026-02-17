@@ -503,10 +503,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         chrome.permissions.addHostAccessRequest({tabId: tabId});
     }
     // Debounce otherTabs when ignoreshort is enabled to filter notification sounds.
-    if (
-      hasProperty(options, 'ignoreshort') &&
-      state.otherTabs.has(tabId)
-    ) {
+    if (hasProperty(options, 'ignoreshort') && state.otherTabs.has(tabId)) {
       if (pendingAudible.has(tabId)) clearTimeout(pendingAudible.get(tabId));
       pendingAudible.set(
         tabId,

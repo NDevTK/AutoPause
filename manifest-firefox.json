@@ -73,6 +73,9 @@
       "id": "automute@ndevtk"
     }
   },
+  "action": {
+    "default_title": "Open Settings"
+  },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": false,

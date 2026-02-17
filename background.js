@@ -3,6 +3,9 @@
 var state = {};
 
 const resumelimit = 5;
+const shortMediaDuration = 3; // seconds
+const shortMediaDebounce = 5000; // ms, for tabs without content script access
+const pendingAudible = new Map();
 const setItems = [
   'media',
   'backgroundaudio',
@@ -127,6 +130,14 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         state.mutedMedia.add(sender.tab.id);
         onMute(sender.tab.id);
       } else {
+        // Ignore short media (e.g. notification sounds) when option is enabled.
+        if (
+          hasProperty(options, 'ignoreshort') &&
+          isFinite(message.duration) &&
+          message.duration > 0 &&
+          message.duration < shortMediaDuration
+        )
+          break;
         state.mutedMedia.delete(sender.tab.id);
         state.media.add(sender.tab.id);
         onPlay(sender.tab, message.body, message.userActivation);
@@ -449,6 +460,10 @@ function remove(tabId) {
   state.backgroundaudio.delete(tabId);
   state.mutedTabs.delete(tabId);
   state.legacyMedia.delete(tabId);
+  if (pendingAudible.has(tabId)) {
+    clearTimeout(pendingAudible.get(tabId));
+    pendingAudible.delete(tabId);
+  }
   onPause(tabId);
 }
 
@@ -487,8 +502,28 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       if (hasProperty(options, 'ask'))
         chrome.permissions.addHostAccessRequest({tabId: tabId});
     }
-    onPlay(tab);
+    // Debounce otherTabs when ignoreshort is enabled to filter notification sounds.
+    if (
+      hasProperty(options, 'ignoreshort') &&
+      state.otherTabs.has(tabId)
+    ) {
+      if (pendingAudible.has(tabId)) clearTimeout(pendingAudible.get(tabId));
+      pendingAudible.set(
+        tabId,
+        setTimeout(() => {
+          pendingAudible.delete(tabId);
+          if (state.otherTabs.has(tabId)) onPlay(tab);
+        }, shortMediaDebounce)
+      );
+    } else {
+      onPlay(tab);
+    }
   } else {
+    // Cancel pending debounce if tab stopped being audible.
+    if (pendingAudible.has(tabId)) {
+      clearTimeout(pendingAudible.get(tabId));
+      pendingAudible.delete(tabId);
+    }
     state.otherTabs.delete(tabId);
     onPause(tabId);
   }

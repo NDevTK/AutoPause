@@ -91,6 +91,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
+
 function onMute(tabId) {
   state.mutedTabs.add(tabId);
   state.media.delete(tabId);

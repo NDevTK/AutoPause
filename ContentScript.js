@@ -121,9 +121,24 @@ function onPlay(e) {
   let data = Elements.get(e);
   if (isMuted(e)) {
     send('playMuted');
-  } else {
-    send('play', data.id, e.duration);
+    return;
   }
+  // If duration is unknown, wait for metadata before reporting to background.
+  // This lets the background correctly identify short media (e.g. notification sounds).
+  if (isNaN(e.duration)) {
+    let sent = false;
+    const sendOnce = () => {
+      if (sent) return;
+      sent = true;
+      if (!isPaused(e) && !isMuted(e)) {
+        send('play', data.id, e.duration);
+      }
+    };
+    e.addEventListener('durationchange', sendOnce, {once: true});
+    setTimeout(sendOnce, 500);
+    return;
+  }
+  send('play', data.id, e.duration);
 }
 
 function validMedia(e) {

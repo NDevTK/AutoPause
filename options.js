@@ -16,6 +16,7 @@ const supported = [
   'permediapause',
   'checkidle',
   'resumelimit',
+  'pauseonrecording',
   'allowactive',
   'ask',
   'noauto'

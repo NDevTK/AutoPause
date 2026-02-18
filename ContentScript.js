@@ -264,6 +264,15 @@ function addMedia(src) {
 
 addListener(document);
 
+// Detect microphone usage from WindowScript.js (main world).
+document.addEventListener('autopause-microphone-start', () => {
+  send('microphoneStart');
+});
+
+document.addEventListener('autopause-microphone-stop', () => {
+  send('microphoneStop');
+});
+
 async function onPause(src, controller) {
   await sleep(200);
   if (validMedia(src) && src.paused) {

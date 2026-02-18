@@ -30,10 +30,9 @@ state.ignoredTabs = new Set();
 state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.legacyMedia = new Set(); // Tab IDs of old media.
 state.microphoneTabs = new Set(); // Tab IDs of tabs using the microphone.
+state.microphoneCounts = {}; // tabId -> active microphone session count
 state.autoPauseWindow = null;
 state.locked = false;
-
-const microphoneCounts = new Map(); // tabId -> active microphone session count
 
 let resolveInitialization;
 const initializationCompletePromise = new Promise((resolve) => {
@@ -163,20 +162,20 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     case 'microphoneStart':
       if (!hasProperty(options, 'pauseonrecording')) break;
       {
-        const count = (microphoneCounts.get(sender.tab.id) || 0) + 1;
-        microphoneCounts.set(sender.tab.id, count);
+        const count = (state.microphoneCounts[sender.tab.id] || 0) + 1;
+        state.microphoneCounts[sender.tab.id] = count;
         state.microphoneTabs.add(sender.tab.id);
         pauseOther(sender.tab.id);
       }
       break;
     case 'microphoneStop':
       {
-        const count = (microphoneCounts.get(sender.tab.id) || 1) - 1;
+        const count = (state.microphoneCounts[sender.tab.id] || 1) - 1;
         if (count <= 0) {
-          microphoneCounts.delete(sender.tab.id);
+          delete state.microphoneCounts[sender.tab.id];
           state.microphoneTabs.delete(sender.tab.id);
         } else {
-          microphoneCounts.set(sender.tab.id, count);
+          state.microphoneCounts[sender.tab.id] = count;
         }
       }
       break;
@@ -490,7 +489,7 @@ function remove(tabId) {
   state.mutedTabs.delete(tabId);
   state.legacyMedia.delete(tabId);
   state.microphoneTabs.delete(tabId);
-  microphoneCounts.delete(tabId);
+  delete state.microphoneCounts[tabId];
   if (pendingAudible.has(tabId)) {
     clearTimeout(pendingAudible.get(tabId));
     pendingAudible.delete(tabId);

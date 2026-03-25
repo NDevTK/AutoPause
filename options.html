@@ -2,98 +2,130 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AutoPause</title>
+    <title>AutoPause Settings</title>
     <link rel="stylesheet" href="options.css" />
     <script src="options-browser.js" defer></script>
     <script src="options.js" defer></script>
   </head>
   <body>
-    <h1>After changes press enter.</h1>
-    <label
-      >Places to use this extension (space separated): <br /><input
+    <header>
+      <h1>AutoPause</h1>
+      <p class="subtitle">Settings</p>
+    </header>
+
+    <section class="card">
+      <h2>Permissions</h2>
+      <p class="hint">
+        Required to pause, resume, and fast forward media. Not needed for audio
+        detection. Type a site name (e.g. youtube) or a URL pattern, then click
+        Apply.
+      </p>
+      <label for="userinput">Sites to manage</label>
+      <input
         id="userinput"
-        size="500"
-        placeholder="Examples: youtube or <all_urls> or https://*.youtube.com/* https://soundcloud.com/* https://example.com/*"
-    /></label>
-    <label
-      >Exclude Matches (space separated): <br /><input
+        type="text"
+        placeholder="e.g. youtube, <all_urls>, https://*.youtube.com/*"
+      />
+      <label for="exclude">Excluded sites</label>
+      <input
         id="exclude"
-        size="500"
-        placeholder="Examples: zoom or https://meet.google.com/* https://discord.com/* https://teams.live.com/*"
-    /></label>
-    <p>
-      This permission is needed to pause, resume and fast forward media its not
-      needed to detect audio (You can opt-out of detecting media from other tabs
-      below)
-    </p>
-    <br />
-    <div>
-      <label for="ignoreother"> Ignore media from other tabs</label
-      ><input type="checkbox" id="ignoreother" />
-    </div>
-    <div>
-      <label for="ignoreshort">
-        Ignore short media under 3 seconds (e.g. notification sounds)</label
-      ><input type="checkbox" id="ignoreshort" />
-    </div>
-    <div>
-      <label for="nopermission">
-        No permission mode, discards tabs when needed.</label
-      ><input type="checkbox" id="nopermission" />
-    </div>
-    <div>
-      <label for="disableresume"> Disable automatic resume</label
-      ><input type="checkbox" id="disableresume" />
-    </div>
-    <div>
-      <label for="noauto"> Limit resume to the active and marked tabs</label
-      ><input type="checkbox" id="noauto" />
-    </div>
-    <div>
-      <label for="resumelimit"> Dont resume old media thats 5 plays old</label
-      ><input type="checkbox" id="resumelimit" />
-    </div>
-    <div>
-      <label for="pauseoninactive">
-        Pause media on tab change and limit resume to the active and marked
-        tabs</label
-      ><input type="checkbox" id="pauseoninactive" />
-    </div>
-    <div>
-      <label for="ignoretabchange"> Ignore tab changes</label
-      ><input type="checkbox" id="ignoretabchange" />
-    </div>
-    <div>
-      <label for="muteonpause">
-        Mute tab when its paused (unmuting a tab will resume it, no tab
-        switching needed)</label
-      ><input type="checkbox" id="muteonpause" />
-    </div>
-    <div>
-      <label for="multipletabs"> Resume multiple tabs (old behavior)</label
-      ><input type="checkbox" id="multipletabs" />
-    </div>
-    <div>
-      <label for="permediapause">
-        Pause per media instead of per tab (Breaks some sites)</label
-      ><input type="checkbox" id="permediapause" />
-    </div>
-    <div>
-      <label for="allowactive"> Don't automatically pause active windows</label
-      ><input type="checkbox" id="allowactive" />
-    </div>
+        type="text"
+        placeholder="e.g. zoom, https://meet.google.com/*"
+      />
+      <button id="applypermissions" type="button">Apply</button>
+    </section>
+
+    <section class="card">
+      <h2>Pausing</h2>
+      <div class="option">
+        <label for="ignoreother">Ignore media from other tabs</label>
+        <input type="checkbox" id="ignoreother" />
+      </div>
+      <div class="option">
+        <label for="ignoreshort"
+          >Ignore short media under 3 seconds (e.g. notification
+          sounds)</label
+        >
+        <input type="checkbox" id="ignoreshort" />
+      </div>
+      <div class="option">
+        <label for="pauseoninactive"
+          >Pause media on tab change and limit resume to the active and marked
+          tabs</label
+        >
+        <input type="checkbox" id="pauseoninactive" />
+      </div>
+      <div class="option">
+        <label for="ignoretabchange">Ignore tab changes</label>
+        <input type="checkbox" id="ignoretabchange" />
+      </div>
+      <div class="option">
+        <label for="permediapause"
+          >Pause per media instead of per tab (breaks some sites)</label
+        >
+        <input type="checkbox" id="permediapause" />
+      </div>
+      <div class="option">
+        <label for="allowactive"
+          >Don't automatically pause active windows</label
+        >
+        <input type="checkbox" id="allowactive" />
+      </div>
+      <div class="option">
+        <label for="muteonpause"
+          >Mute tab when paused (unmuting resumes playback)</label
+        >
+        <input type="checkbox" id="muteonpause" />
+      </div>
+      <div class="option">
+        <label for="nopermission"
+          >No permission mode (discards tabs when needed)</label
+        >
+        <input type="checkbox" id="nopermission" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Resuming</h2>
+      <div class="option">
+        <label for="disableresume">Disable automatic resume</label>
+        <input type="checkbox" id="disableresume" />
+      </div>
+      <div class="option">
+        <label for="noauto">Limit resume to active and marked tabs</label>
+        <input type="checkbox" id="noauto" />
+      </div>
+      <div class="option">
+        <label for="resumelimit"
+          >Don't resume old media that's 5 plays old</label
+        >
+        <input type="checkbox" id="resumelimit" />
+      </div>
+      <div class="option">
+        <label for="multipletabs">Resume multiple tabs (old behavior)</label>
+        <input type="checkbox" id="multipletabs" />
+      </div>
+    </section>
+
     <div id="chromeonly" hidden>
-      <div>
-        <label for="checkidle"> Pause media on device lock (Chrome Only)</label
-        ><input type="checkbox" id="checkidle" />
-      </div>
-      <div>
-        <label for="ask">
-          Ask for permission to run on audible tabs (Chrome Only)</label
-        ><input type="checkbox" id="ask" />
-      </div>
+      <section class="card">
+        <h2>Chrome Only</h2>
+        <div class="option">
+          <label for="checkidle">Pause media on device lock</label>
+          <input type="checkbox" id="checkidle" />
+        </div>
+        <div class="option">
+          <label for="ask"
+            >Ask for permission to run on audible tabs</label
+          >
+          <input type="checkbox" id="ask" />
+        </div>
+      </section>
     </div>
-    <h2>Shortcuts</h2>
-    <div id="shortcuts"></div>
+
+    <section class="card">
+      <h2>Shortcuts</h2>
+      <div id="shortcuts"></div>
+    </section>
   </body>
 </html>

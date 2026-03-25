@@ -24,7 +24,11 @@ const supported = [
 var userinput = document.getElementById('userinput');
 var exclude = document.getElementById('exclude');
 
-// User presses enter
+// Apply permissions on button click or Enter key
+document.getElementById('applypermissions').addEventListener('click', () => {
+  permissionUpdate();
+});
+
 window.addEventListener('keyup', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();

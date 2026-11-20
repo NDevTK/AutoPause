@@ -2,6 +2,8 @@ name: Builds
 
 on: [push, pull_request, workflow_dispatch]
 
+permissions: {}
+
 jobs:
   build:
     name: Create artifacts
@@ -9,7 +11,9 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Chrome
       run: |
         mkdir -p chrome
@@ -18,7 +22,7 @@ jobs:
         mv chrome/manifest-chrome.json chrome/manifest.json
         mv chrome/options-chrome.js chrome/options-browser.js
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: chrome
         path: chrome
@@ -31,7 +35,7 @@ jobs:
         mv firefox/manifest-firefox.json firefox/manifest.json
         mv firefox/options-firefox.js firefox/options-browser.js
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: firefox
         path: firefox

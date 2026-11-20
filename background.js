@@ -189,6 +189,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
       break;
     case 'tabFocus':
       // Security: Verify the action is actually a real tab activation (documentPictureInPicture)
+      if (sender.frameId !== 0) break;
       tabChange(sender.tab);
       break;
   }
@@ -434,6 +435,7 @@ function pause(id, checkHidden) {
 
 function play(id, force) {
   // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
+  if (state.locked) return;
   if (hasProperty(options, 'muteonpause'))
     chrome.tabs.update(id, {muted: false});
   if (hasProperty(options, 'disableresume') && !force) {

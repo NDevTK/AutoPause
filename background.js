@@ -74,7 +74,6 @@ async function restrictStorageAccess() {
 }
 
 async function restore() {
-  await restrictStorageAccess();
   let result = await chrome.storage.session.get('state');
   if (typeof result.state === 'object' && result.state !== null) {
     // Support Set();
@@ -115,6 +114,7 @@ chrome.storage.onChanged.addListener((result, areaName) => {
 
 // On install display the options page so the user can give permissions.
 chrome.runtime.onInstalled.addListener(async (details) => {
+  await restrictStorageAccess();
   await initializationCompletePromise;
   updateExtensionScripts();
   if (details.reason === 'install') {

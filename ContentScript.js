@@ -5,18 +5,18 @@ var Targets = new Set();
 
 var Elements = new Map();
 
-const docPiP =
+var docPiP =
   typeof DocumentPictureInPicture === 'function' &&
   window.documentPictureInPicture instanceof DocumentPictureInPicture
     ? window.documentPictureInPicture
     : null;
 
-const getPictureInPictureElement = Object.getOwnPropertyDescriptor(
+var getPictureInPictureElement = Object.getOwnPropertyDescriptor(
   Document.prototype,
   'pictureInPictureElement'
 )?.get;
 
-const getOpenOrClosedShadowRoot =
+var getOpenOrClosedShadowRoot =
   typeof chrome?.dom?.openOrClosedShadowRoot === 'function'
     ? (e) => chrome.dom.openOrClosedShadowRoot(e)
     : (() => {

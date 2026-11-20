@@ -105,7 +105,7 @@
   function next() {
     Elements.forEach((data, e) => {
       if (isPaused(e)) return;
-      e.currentTime = e.duration;
+      if (Number.isFinite(e.duration)) e.currentTime = e.duration;
     });
   }
 
@@ -178,6 +178,7 @@
     try {
       //  documentPictureInPicture window.top media is tracked by the opener
       if (
+        opener &&
         typeof DocumentPictureInPicture === 'function' &&
         opener.documentPictureInPicture instanceof
           opener.DocumentPictureInPicture &&
@@ -243,15 +244,25 @@
       'volumechange',
       async (event) => {
         if (!event.isTrusted) return;
-        if (validMedia(event.srcElement) && !isPaused(event.srcElement)) {
-          if (isMuted(event.srcElement)) await sleep(200);
-          onPlay(event.srcElement);
+        if (validMedia(event.srcElement)) {
+          let data = Elements.get(event.srcElement);
+          if (
+            event.srcElement.volume === 0 &&
+            !event.srcElement.muted &&
+            data?.wasPlaying
+          ) {
+            event.stopPropagation();
+            return;
+          }
+          if (!isPaused(event.srcElement)) {
+            if (isMuted(event.srcElement)) await sleep(200);
+            onPlay(event.srcElement);
+          }
         }
       },
       {
         signal: controller.signal,
-        capture: true,
-        passive: true
+        capture: true
       }
     );
 
@@ -368,7 +379,7 @@
       if (shadowDOM !== null) {
         checkShadow(shadowDOM);
         addListener(shadowDOM);
-        [...shadowDOM.querySelectorAll('*')].map((e) => {
+        [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
           if (!isPaused(e)) {
             if (validMedia(e)) {
               addMedia(e);
@@ -381,7 +392,7 @@
   }
 
   function checkDOM() {
-    for (const e of document.querySelectorAll('*')) {
+    for (const e of document.querySelectorAll('audio, video')) {
       if (!isPaused(e)) {
         if (validMedia(e)) {
           addMedia(e);

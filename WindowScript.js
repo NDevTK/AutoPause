@@ -12,7 +12,7 @@
   let div = null;
   window.HTMLMediaElement.prototype.play = function () {
     try {
-      if (this instanceof HTMLMediaElement && !this.isConnected) {
+      if (this instanceof HTMLMediaElement && !this.isConnected && !this.parentNode) {
         if (!document.contains(div)) {
           div = document.createElement('div');
           div.hidden = true;
@@ -22,7 +22,7 @@
             'pause',
             (event) => {
               const src = event.srcElement;
-              if (src instanceof HTMLMediaElement) {
+              if (src instanceof HTMLMediaElement && src.parentNode === div) {
                 div.removeChild(src);
               }
             },

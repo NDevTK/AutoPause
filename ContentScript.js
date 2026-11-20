@@ -22,6 +22,11 @@
     'pictureInPictureElement'
   )?.get;
 
+  const getMediaPaused = Object.getOwnPropertyDescriptor(
+    HTMLMediaElement.prototype,
+    'paused'
+  )?.get;
+
   const getOpenOrClosedShadowRoot =
     typeof chrome?.dom?.openOrClosedShadowRoot === 'function'
       ? (e) => chrome.dom.openOrClosedShadowRoot(e)
@@ -186,16 +191,15 @@
           opener.DocumentPictureInPicture &&
         opener.documentPictureInPicture.window === window
       )
-        return;
+        return false;
     } catch {}
 
-    return (
-      typeof e.play === 'function' &&
-      typeof e.pause === 'function' &&
-      typeof e.playbackRate === 'number' &&
-      typeof e.muted === 'boolean' &&
-      typeof e.paused === 'boolean'
-    );
+    if (!e || typeof getMediaPaused !== 'function') return false;
+    try {
+      return typeof getMediaPaused.call(e) === 'boolean';
+    } catch {
+      return false;
+    }
   }
 
   function addListener(src) {
@@ -325,8 +329,8 @@
   window.addEventListener(
     'autoPauseMedia',
     (event) => {
-      event.stopImmediatePropagation();
       if (!(event instanceof FocusEvent)) return;
+      event.stopImmediatePropagation();
       const target = event.relatedTarget;
       if (!target) return;
       if (validMedia(target)) {

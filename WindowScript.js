@@ -12,6 +12,10 @@
   const play = MediaElement.prototype.play;
   const FocusEventCtor = window.FocusEvent;
   const dispatchEvent = window.EventTarget.prototype.dispatchEvent;
+  const getMediaPaused = Object.getOwnPropertyDescriptor(
+    MediaElement.prototype,
+    'paused'
+  )?.get;
   const getIsConnected = Object.getOwnPropertyDescriptor(
     window.Node.prototype,
     'isConnected'
@@ -21,7 +25,8 @@
   MediaElement.prototype.play = function () {
     try {
       if (
-        this instanceof MediaElement &&
+        typeof getMediaPaused === 'function' &&
+        typeof getMediaPaused.call(this) === 'boolean' &&
         !(getIsConnected ? getIsConnected.call(this) : this.isConnected)
       ) {
         dispatchEvent.call(

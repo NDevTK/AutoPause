@@ -51,7 +51,7 @@ const unsupportedWindowScripts = ['https://*.netflix.com/*'];
 const unsupportedScripts = [];
 
 const matchPatternRegex =
-  /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
+  /^(?:(https?|ftp|\*):\/\/(\*|(?:\*\.)?[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*)|file:\/\/[^*/:\s]*)\/.*$/;
 
 function filterValidPatterns(patterns) {
   return patterns.filter(
@@ -675,53 +675,80 @@ function toggleOption(o) {
   });
 }
 
-function matchPatternToRegExp(pattern) {
+function wildcardMatch(pattern, text) {
+  const parts = pattern.split('*');
+  if (parts.length === 1) return text === pattern;
+  if (!text.startsWith(parts[0])) return false;
+  if (!text.endsWith(parts[parts.length - 1])) return false;
+  let pos = parts[0].length;
+  const end = text.length - parts[parts.length - 1].length;
+  if (pos > end) return false;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (part === '') continue;
+    const idx = text.indexOf(part, pos);
+    if (idx === -1 || idx + part.length > end) return false;
+    pos = idx + part.length;
+  }
+  return true;
+}
+
+function matchesPattern(pattern, url) {
   if (pattern === '<all_urls>') {
-    return /^(https?|file|ftp):\/\/.*/;
+    return /^(https?|file|ftp):\/\//.test(url);
   }
-  const match = /^(.*):\/\/([^/]+)(\/.*)$/.exec(pattern);
-  if (!match) {
-    console.error('Invalid pattern:', pattern);
-    return /^(?!)/; // Matches nothing
+  const match = /^(https?|file|ftp|\*):\/\/([^/]*?)(\/.*)$/.exec(pattern);
+  if (!match) return false;
+  const [, patternScheme, patternHost, patternPath] = match;
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
   }
-  const [, scheme, host, path] = match;
-  const specialChars = /[\\[\]\(\)\{\}\^\$\+\.\?]/g;
-  let re = '^';
-  if (scheme === '*') {
-    re += '(https?|ftp)';
-  } else {
-    re += scheme.replace(specialChars, '\\$&');
+
+  const urlScheme = parsed.protocol.slice(0, -1);
+  if (patternScheme === '*') {
+    if (urlScheme !== 'http' && urlScheme !== 'https') return false;
+  } else if (urlScheme !== patternScheme) {
+    return false;
   }
-  re += ':\\/\\/';
-  if (host === '*') {
-    re += '[^/]+';
-  } else if (host.startsWith('*.')) {
-    re += '([^/]+\\.)?';
-    re += host.substring(2).replace(specialChars, '\\$&');
-  } else {
-    re += host.replace(specialChars, '\\$&');
+
+  if (patternScheme !== 'file') {
+    if (!patternHost) return false;
+    const urlHost = parsed.hostname.toLowerCase();
+    const targetHost = patternHost.toLowerCase();
+    if (targetHost === '*') {
+      // Matches any host.
+    } else if (targetHost.startsWith('*.')) {
+      const baseHost = targetHost.slice(2);
+      if (
+        !baseHost ||
+        (urlHost !== baseHost && !urlHost.endsWith('.' + baseHost))
+      ) {
+        return false;
+      }
+    } else if (urlHost !== targetHost) {
+      return false;
+    }
   }
-  re += path.replace(specialChars, '\\$&').replace(/\*/g, '.*');
-  re += '$';
-  return new RegExp(re);
+
+  return wildcardMatch(patternPath, parsed.pathname + parsed.search);
 }
 
 function isUrlExcluded(url, extra = []) {
-  return exclude.concat(extra).some((pattern) => {
-    try {
-      return matchPatternToRegExp(pattern).test(url);
-    } catch (e) {
-      console.error('Error matching pattern:', pattern, e);
-      return false;
-    }
-  });
+  return exclude.concat(extra).some((pattern) => matchesPattern(pattern, url));
 }
 
-async function updateContentScripts() {
-  await initializationCompletePromise;
-  chrome.permissions.getAll(async (p) => {
+let scriptUpdateQueue = Promise.resolve();
+
+function updateContentScripts() {
+  const run = async () => {
+    await initializationCompletePromise;
+    const p = await chrome.permissions.getAll();
     await chrome.scripting.unregisterContentScripts();
-    if (p.origins.length < 1) return;
+    if (!p.origins || p.origins.length < 1) return;
     await chrome.scripting.registerContentScripts([
       {
         id: 'ContentScript',
@@ -744,7 +771,9 @@ async function updateContentScripts() {
         world: 'MAIN'
       }
     ]);
-  });
+  };
+  scriptUpdateQueue = scriptUpdateQueue.then(run, run);
+  return scriptUpdateQueue;
 }
 
 async function updateExtensionScripts() {

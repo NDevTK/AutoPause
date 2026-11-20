@@ -36,7 +36,7 @@ chrome.permissions.onAdded.addListener(getPermissions);
 chrome.permissions.onRemoved.addListener(getPermissions);
 
 const matchPatternRegex =
-  /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
+  /^(?:(https?|ftp|\*):\/\/(\*|(?:\*\.)?[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*)|file:\/\/[^*/:\s]*)\/.*$/;
 
 function filterValidPatterns(patterns) {
   return patterns.filter(

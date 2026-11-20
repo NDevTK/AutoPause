@@ -50,7 +50,31 @@ var exclude = [];
 const unsupportedWindowScripts = ['https://*.netflix.com/*'];
 const unsupportedScripts = [];
 
+const matchPatternRegex =
+  /^(https?|file|ftp|\*):\/\/(\*|\*\.[^*/]+|[^*/]+)\/.*$/;
+
+function filterValidPatterns(patterns) {
+  return patterns.filter(
+    (pattern) =>
+      typeof pattern === 'string' &&
+      (pattern === '<all_urls>' || matchPatternRegex.test(pattern))
+  );
+}
+
+async function restrictStorageAccess() {
+  const accessOptions = {accessLevel: 'TRUSTED_CONTEXTS'};
+  const areas = ['sync', 'local', 'managed', 'session'];
+  await Promise.allSettled(
+    areas.map(async (area) => {
+      if (typeof chrome.storage[area]?.setAccessLevel === 'function') {
+        await chrome.storage[area].setAccessLevel(accessOptions);
+      }
+    })
+  );
+}
+
 async function restore() {
+  await restrictStorageAccess();
   let result = await chrome.storage.session.get('state');
   if (typeof result.state === 'object' && result.state !== null) {
     // Support Set();
@@ -60,24 +84,31 @@ async function restore() {
     state = result.state;
   }
   let result2 = await chrome.storage.sync.get(['options', 'exclude']);
-  if (typeof result2.options === 'object' && result2.options !== null)
+  if (
+    typeof result2.options === 'object' &&
+    result2.options !== null &&
+    !Array.isArray(result2.options)
+  )
     options = result2.options;
-  if (Array.isArray(result2.exclude)) exclude = result2.exclude;
+  if (Array.isArray(result2.exclude))
+    exclude = filterValidPatterns(result2.exclude);
   resolveInitialization();
 }
 
 restore();
 
-// Security: chrome.storage.sync is not safe from website content scripts.
-chrome.storage.onChanged.addListener((result) => {
-  if (typeof result.options === 'object' && result.options !== null)
-    options = result.options.newValue;
+// Security: Storage areas are restricted to trusted contexts where supported
+// (Chrome 140+), but older Chrome and Firefox still expose sync to content scripts.
+chrome.storage.onChanged.addListener((result, areaName) => {
+  if (areaName !== 'sync') return;
   if (
-    typeof result.exclude === 'object' &&
-    result.exclude !== null &&
-    Array.isArray(result.exclude.newValue)
-  ) {
-    exclude = result.exclude.newValue;
+    typeof result.options?.newValue === 'object' &&
+    result.options.newValue !== null &&
+    !Array.isArray(result.options.newValue)
+  )
+    options = result.options.newValue;
+  if (Array.isArray(result.exclude?.newValue)) {
+    exclude = filterValidPatterns(result.exclude.newValue);
     updateContentScripts();
   }
 });

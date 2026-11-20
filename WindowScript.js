@@ -12,7 +12,11 @@
   let div = null;
   window.HTMLMediaElement.prototype.play = function () {
     try {
-      if (this instanceof HTMLMediaElement && !this.isConnected && !this.parentNode) {
+      if (
+        this instanceof HTMLMediaElement &&
+        !this.isConnected &&
+        !this.parentNode
+      ) {
         if (!document.contains(div)) {
           div = document.createElement('div');
           div.hidden = true;

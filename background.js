@@ -139,13 +139,18 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   await initializationCompletePromise;
   // Security: Messages are from untrusted website content scripts.
   if (
+    typeof message !== 'object' ||
+    message === null ||
+    !hasProperty(sender, 'tab') ||
+    state.ignoredTabs.has(sender.tab.id)
+  )
+    return;
+  if (
     state.autoPauseWindow !== null &&
     state.autoPauseWindow !== sender.tab.windowId
   )
     return;
   state.otherTabs.delete(sender.tab.id);
-  if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id))
-    return;
   switch (message.type) {
     case 'hidden':
       if (await visablePopup(sender.tab.id)) break;
@@ -161,21 +166,22 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
       }
       break;
     case 'play':
-      if (sender.tab.mutedInfo.muted) {
+      if (sender.tab.mutedInfo?.muted) {
         state.mutedMedia.add(sender.tab.id);
         onMute(sender.tab.id);
       } else {
         // Ignore short media (e.g. notification sounds) when option is enabled.
         if (
           hasProperty(options, 'ignoreshort') &&
-          isFinite(message.duration) &&
+          typeof message.duration === 'number' &&
+          Number.isFinite(message.duration) &&
           message.duration > 0 &&
           message.duration < shortMediaDuration
         )
           break;
         state.mutedMedia.delete(sender.tab.id);
         state.media.add(sender.tab.id);
-        onPlay(sender.tab, message.body, message.userActivation);
+        onPlay(sender.tab, message.body, message.userActivation === true);
       }
       break;
     case 'playMuted':
@@ -225,7 +231,11 @@ function onPlay(tab, id = '', userActivation = false) {
   if (hasProperty(options, 'muteonpause'))
     chrome.tabs.update(tab.id, {muted: false});
 
-  if (hasProperty(options, 'permediapause') && id.length === 36)
+  if (
+    hasProperty(options, 'permediapause') &&
+    typeof id === 'string' &&
+    id.length === 36
+  )
     send(tab.id, 'pauseOther', id);
 
   if (tab.id == state.activeTab) state.lastPlaying = null;

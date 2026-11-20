@@ -1,451 +1,457 @@
-'use strict';
 /* global chrome */
+(function () {
+  'use strict';
 
-var Targets = new Set();
+  const injected = Symbol.for('autoPauseContentScript');
+  if (globalThis[injected]) return;
+  globalThis[injected] = true;
 
-var Elements = new Map();
+  const Targets = new Set();
 
-var docPiP =
-  typeof DocumentPictureInPicture === 'function' &&
-  window.documentPictureInPicture instanceof DocumentPictureInPicture
-    ? window.documentPictureInPicture
-    : null;
+  const Elements = new Map();
 
-var getPictureInPictureElement = Object.getOwnPropertyDescriptor(
-  Document.prototype,
-  'pictureInPictureElement'
-)?.get;
+  const docPiP =
+    typeof DocumentPictureInPicture === 'function' &&
+    window.documentPictureInPicture instanceof DocumentPictureInPicture
+      ? window.documentPictureInPicture
+      : null;
 
-var getOpenOrClosedShadowRoot =
-  typeof chrome?.dom?.openOrClosedShadowRoot === 'function'
-    ? (e) => chrome.dom.openOrClosedShadowRoot(e)
-    : (() => {
-        const getter = Object.getOwnPropertyDescriptor(
-          Element.prototype,
-          'openOrClosedShadowRoot'
-        )?.get;
-        return getter ? (e) => getter.call(e) : () => null;
-      })();
+  const getPictureInPictureElement = Object.getOwnPropertyDescriptor(
+    Document.prototype,
+    'pictureInPictureElement'
+  )?.get;
 
-if (docPiP)
-  docPiP.addEventListener('enter', (event) => {
-    if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
-      // For the top documentPictureInPicture window we are sharing the opener tab audible value
-      addListener(event.window.document);
-      event.window.addEventListener('focus', (e) => {
-        if (e.isTrusted) send('tabFocus');
-      });
-    }
-  });
+  const getOpenOrClosedShadowRoot =
+    typeof chrome?.dom?.openOrClosedShadowRoot === 'function'
+      ? (e) => chrome.dom.openOrClosedShadowRoot(e)
+      : (() => {
+          const getter = Object.getOwnPropertyDescriptor(
+            Element.prototype,
+            'openOrClosedShadowRoot'
+          )?.get;
+          return getter ? (e) => getter.call(e) : () => null;
+        })();
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.type) {
-    case 'visablePopup':
-      if (!visablePopup()) break;
-      sendResponse('true');
-      break;
-    case 'toggleFastPlayback':
-      toggleRate();
-      break;
-    case 'Rewind':
-      Rewind();
-      break;
-    case 'allowplayback':
-      resume(false);
-      break;
-    case 'next':
-      next();
-      break;
-    case 'previous':
-      previous();
-      break;
-    case 'pause':
-      pause();
-      break;
-    case 'play':
-      // When there media already playing tell the background script.
-      if (isPlaying()) send('play');
-      resume(true);
-      break;
-    case 'audible':
-      checkShadow();
-      break;
-    case 'hidden':
-      checkVisibility();
-      break;
-    case 'isplaying':
-      if (!isPlaying()) break;
-      sendResponse('true');
-      break;
-    case 'pauseOther':
-      pauseOther(message.body);
-      break;
-    case 'new':
-      checkShadow();
-      checkDOM();
-      break;
-  }
-});
-
-function isPlaying() {
-  checkShadow();
-  const audibleElements = [...Elements].filter((e, data) => !isMuted(e[0]));
-  return audibleElements.length !== 0;
-}
-
-function isPaused(e) {
-  return e.paused || e.playbackRate === 0;
-}
-
-function next() {
-  Elements.forEach((data, e) => {
-    if (isPaused(e)) return;
-    e.currentTime = e.duration;
-  });
-}
-
-function previous() {
-  Elements.forEach((data, e) => {
-    if (isPaused(e)) return;
-    // Go to start of media
-    e.currentTime = 0;
-  });
-}
-
-// Controlled by global fast forward shortcut
-function toggleRate() {
-  Elements.forEach((data, e) => {
-    if (isPaused(e)) return;
-    if (e.playbackRate > 1) {
-      e.playbackRate = 1;
-    } else {
-      e.playbackRate = 2;
-    }
-  });
-}
-
-function pauseOther(id) {
-  Elements.forEach((data, e) => {
-    if (e.paused || isMuted(e)) return;
-    if (data.id !== id) e.pause();
-  });
-}
-
-// Controlled by global rewind shortcut
-function Rewind() {
-  Elements.forEach((data, e) => {
-    if (isPaused(e)) return;
-    e.currentTime -= 30;
-  });
-}
-
-function onPlay(e) {
-  if (isPaused(e)) return;
-  let data = Elements.get(e);
-  if (!data) return;
-  if (isMuted(e)) {
-    send('playMuted');
-    return;
-  }
-  // If duration is unknown, wait for metadata before reporting to background.
-  // This lets the background correctly identify short media (e.g. notification sounds).
-  if (isNaN(e.duration)) {
-    let sent = false;
-    const sendOnce = () => {
-      if (sent) return;
-      sent = true;
-      e.removeEventListener('durationchange', onDurationChange);
-      if (!isPaused(e) && !isMuted(e)) {
-        send('play', data.id, e.duration);
+  if (docPiP)
+    docPiP.addEventListener('enter', (event) => {
+      if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
+        // For the top documentPictureInPicture window we are sharing the opener tab audible value
+        addListener(event.window.document);
+        event.window.addEventListener('focus', (e) => {
+          if (e.isTrusted) send('tabFocus');
+        });
       }
-    };
-    const onDurationChange = (event) => {
-      if (event.isTrusted) sendOnce();
-    };
-    e.addEventListener('durationchange', onDurationChange);
-    setTimeout(sendOnce, 500);
-    return;
-  }
-  send('play', data.id, e.duration);
-}
+    });
 
-function validMedia(e) {
-  try {
-    //  documentPictureInPicture window.top media is tracked by the opener
-    if (
-      typeof DocumentPictureInPicture === 'function' &&
-      opener.documentPictureInPicture instanceof
-        opener.DocumentPictureInPicture &&
-      opener.documentPictureInPicture.window === window
-    )
-      return;
-  } catch {}
-
-  return (
-    typeof e.play === 'function' &&
-    typeof e.pause === 'function' &&
-    typeof e.playbackRate === 'number' &&
-    typeof e.muted === 'boolean' &&
-    typeof e.paused === 'boolean'
-  );
-}
-
-function addListener(src) {
-  if (Targets.has(src)) return;
-  Targets.add(src);
-  // On media play event
-  src.addEventListener(
-    'play',
-    function (event) {
-      if (!event.isTrusted) return;
-      if (validMedia(event.srcElement)) {
-        addMedia(event.srcElement);
-        onPlay(event.srcElement);
-      }
-    },
-    {
-      capture: true,
-      passive: true
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    switch (message.type) {
+      case 'visablePopup':
+        if (!visablePopup()) break;
+        sendResponse('true');
+        break;
+      case 'toggleFastPlayback':
+        toggleRate();
+        break;
+      case 'Rewind':
+        Rewind();
+        break;
+      case 'allowplayback':
+        resume(false);
+        break;
+      case 'next':
+        next();
+        break;
+      case 'previous':
+        previous();
+        break;
+      case 'pause':
+        pause();
+        break;
+      case 'play':
+        // When there media already playing tell the background script.
+        if (isPlaying()) send('play');
+        resume(true);
+        break;
+      case 'audible':
+        checkShadow();
+        break;
+      case 'hidden':
+        checkVisibility();
+        break;
+      case 'isplaying':
+        if (!isPlaying()) break;
+        sendResponse('true');
+        break;
+      case 'pauseOther':
+        pauseOther(message.body);
+        break;
+      case 'new':
+        checkShadow();
+        checkDOM();
+        break;
     }
-  );
-}
+  });
 
-function isMuted(e) {
-  if (e.muted) return true;
-  if (Elements.has(e)) {
+  function isPlaying() {
+    checkShadow();
+    const audibleElements = [...Elements].filter((e, data) => !isMuted(e[0]));
+    return audibleElements.length !== 0;
+  }
+
+  function isPaused(e) {
+    return e.paused || e.playbackRate === 0;
+  }
+
+  function next() {
+    Elements.forEach((data, e) => {
+      if (isPaused(e)) return;
+      e.currentTime = e.duration;
+    });
+  }
+
+  function previous() {
+    Elements.forEach((data, e) => {
+      if (isPaused(e)) return;
+      // Go to start of media
+      e.currentTime = 0;
+    });
+  }
+
+  // Controlled by global fast forward shortcut
+  function toggleRate() {
+    Elements.forEach((data, e) => {
+      if (isPaused(e)) return;
+      if (e.playbackRate > 1) {
+        e.playbackRate = 1;
+      } else {
+        e.playbackRate = 2;
+      }
+    });
+  }
+
+  function pauseOther(id) {
+    Elements.forEach((data, e) => {
+      if (e.paused || isMuted(e)) return;
+      if (data.id !== id) e.pause();
+    });
+  }
+
+  // Controlled by global rewind shortcut
+  function Rewind() {
+    Elements.forEach((data, e) => {
+      if (isPaused(e)) return;
+      e.currentTime -= 30;
+    });
+  }
+
+  function onPlay(e) {
+    if (isPaused(e)) return;
     let data = Elements.get(e);
-    if (data.wasPlaying) {
-      return data.wasVolume === 0;
+    if (!data) return;
+    if (isMuted(e)) {
+      send('playMuted');
+      return;
     }
-  }
-  return e.volume === 0;
-}
-
-function addMedia(src) {
-  if (Elements.has(src)) return;
-
-  let mediaID = '';
-  try {
-    mediaID = crypto.randomUUID();
-  } catch {
-    // On insecure website we cant have a ID :(
-  }
-
-  Elements.set(src, {id: mediaID});
-  let controller = new AbortController();
-
-  src.addEventListener(
-    'volumechange',
-    async (event) => {
-      if (!event.isTrusted) return;
-      if (validMedia(event.srcElement) && !isPaused(event.srcElement)) {
-        if (isMuted(event.srcElement)) await sleep(200);
-        onPlay(event.srcElement);
-      }
-    },
-    {
-      signal: controller.signal,
-      capture: true,
-      passive: true
-    }
-  );
-
-  src.addEventListener(
-    'pause',
-    (event) => {
-      if (!event.isTrusted) return;
-      let src = event.srcElement;
-      onPause(src, controller);
-    },
-    {
-      signal: controller.signal,
-      capture: true,
-      passive: true
-    }
-  );
-
-  src.addEventListener(
-    'abort',
-    (event) => {
-      if (!event.isTrusted) return;
-      onPause(event.srcElement, controller);
-    },
-    {
-      signal: controller.signal,
-      capture: true,
-      passive: true
-    }
-  );
-
-  // Dont tell the media please
-  src.addEventListener(
-    'ratechange',
-    function (event) {
-      if (!event.isTrusted) return;
-      if (validMedia(event.srcElement)) {
-        let data = Elements.has(event.srcElement)
-          ? Elements.get(event.srcElement)
-          : {};
-        if (event.srcElement.playbackRate === 0 && data.wasPlaying) {
-          event.stopPropagation();
+    // If duration is unknown, wait for metadata before reporting to background.
+    // This lets the background correctly identify short media (e.g. notification sounds).
+    if (isNaN(e.duration)) {
+      let sent = false;
+      const sendOnce = () => {
+        if (sent) return;
+        sent = true;
+        e.removeEventListener('durationchange', onDurationChange);
+        if (!isPaused(e) && !isMuted(e)) {
+          send('play', data.id, e.duration);
         }
-        if (!isPaused(event.srcElement)) {
+      };
+      const onDurationChange = (event) => {
+        if (event.isTrusted) sendOnce();
+      };
+      e.addEventListener('durationchange', onDurationChange);
+      setTimeout(sendOnce, 500);
+      return;
+    }
+    send('play', data.id, e.duration);
+  }
+
+  function validMedia(e) {
+    try {
+      //  documentPictureInPicture window.top media is tracked by the opener
+      if (
+        typeof DocumentPictureInPicture === 'function' &&
+        opener.documentPictureInPicture instanceof
+          opener.DocumentPictureInPicture &&
+        opener.documentPictureInPicture.window === window
+      )
+        return;
+    } catch {}
+
+    return (
+      typeof e.play === 'function' &&
+      typeof e.pause === 'function' &&
+      typeof e.playbackRate === 'number' &&
+      typeof e.muted === 'boolean' &&
+      typeof e.paused === 'boolean'
+    );
+  }
+
+  function addListener(src) {
+    if (Targets.has(src)) return;
+    Targets.add(src);
+    // On media play event
+    src.addEventListener(
+      'play',
+      function (event) {
+        if (!event.isTrusted) return;
+        if (validMedia(event.srcElement)) {
+          addMedia(event.srcElement);
           onPlay(event.srcElement);
         }
+      },
+      {
+        capture: true,
+        passive: true
       }
-    },
-    {
-      signal: controller.signal,
-      capture: true
+    );
+  }
+
+  function isMuted(e) {
+    if (e.muted) return true;
+    if (Elements.has(e)) {
+      let data = Elements.get(e);
+      if (data.wasPlaying) {
+        return data.wasVolume === 0;
+      }
     }
-  );
-}
+    return e.volume === 0;
+  }
 
-addListener(document);
+  function addMedia(src) {
+    if (Elements.has(src)) return;
 
-async function onPause(src, controller) {
-  await sleep(200);
-  if (validMedia(src) && src.paused) {
-    controller.abort();
-    normalPlayback(src);
-    Elements.delete(src);
-    // Check if all elements have paused.
-    if (!isPlaying()) {
-      send('pause');
+    let mediaID = '';
+    try {
+      mediaID = crypto.randomUUID();
+    } catch {
+      // On insecure website we cant have a ID :(
     }
-  }
-}
 
-function normalPlayback(src) {
-  let data = Elements.has(src) ? Elements.get(src) : {};
-  if (data.wasPlaying) {
-    src.volume = data.wasVolume;
-    src.playbackRate = data.wasPlaybackRate;
-    data.wasPlaying = false;
-  }
-}
+    Elements.set(src, {id: mediaID});
+    let controller = new AbortController();
 
-function pauseElement(e, data) {
-  // If media attempts to play when it should be paused dont change its old values.
-  if (!data.wasPlaying) {
-    data.wasVolume = e.volume;
-    data.wasPlaybackRate = e.playbackRate;
-  }
-  // Rate change event will stopPropagation.
-  data.wasPlaying = true;
-  e.playbackRate = 0;
-  e.volume = 0;
-  Elements.set(e, data);
-}
+    src.addEventListener(
+      'volumechange',
+      async (event) => {
+        if (!event.isTrusted) return;
+        if (validMedia(event.srcElement) && !isPaused(event.srcElement)) {
+          if (isMuted(event.srcElement)) await sleep(200);
+          onPlay(event.srcElement);
+        }
+      },
+      {
+        signal: controller.signal,
+        capture: true,
+        passive: true
+      }
+    );
 
-async function pause() {
-  Elements.forEach((data, e) => {
-    if (isPaused(e)) return;
-    pauseElement(e, data);
-  });
-}
+    src.addEventListener(
+      'pause',
+      (event) => {
+        if (!event.isTrusted) return;
+        let src = event.srcElement;
+        onPause(src, controller);
+      },
+      {
+        signal: controller.signal,
+        capture: true,
+        passive: true
+      }
+    );
 
-async function resume(shouldPlay) {
-  Elements.forEach((data, e) => {
-    if (!data.wasPlaying) return;
-    // Pause foreground media normaly
-    if (shouldPlay === false) e.pause();
-    normalPlayback(e);
-  });
-}
+    src.addEventListener(
+      'abort',
+      (event) => {
+        if (!event.isTrusted) return;
+        onPause(event.srcElement, controller);
+      },
+      {
+        signal: controller.signal,
+        capture: true,
+        passive: true
+      }
+    );
 
-function checkShadow(DOM = document) {
-  // If we are checking this document also check documentPictureInPicture
-  if (DOM === document && docPiP && docPiP.window)
-    checkShadow(docPiP.window.document);
-  [...DOM.querySelectorAll('*')].map((e) => {
-    let shadowDOM = shadow(e);
-    if (shadowDOM !== null) {
-      checkShadow(shadowDOM);
-      addListener(shadowDOM);
-      [...shadowDOM.querySelectorAll('*')].map((e) => {
-        if (!isPaused(e)) {
-          if (validMedia(e)) {
-            addMedia(e);
-            onPlay(e);
+    // Dont tell the media please
+    src.addEventListener(
+      'ratechange',
+      function (event) {
+        if (!event.isTrusted) return;
+        if (validMedia(event.srcElement)) {
+          let data = Elements.has(event.srcElement)
+            ? Elements.get(event.srcElement)
+            : {};
+          if (event.srcElement.playbackRate === 0 && data.wasPlaying) {
+            event.stopPropagation();
+          }
+          if (!isPaused(event.srcElement)) {
+            onPlay(event.srcElement);
           }
         }
-      });
-    }
-  });
-}
+      },
+      {
+        signal: controller.signal,
+        capture: true
+      }
+    );
+  }
 
-function checkDOM() {
-  for (const e of document.querySelectorAll('*')) {
-    if (!isPaused(e)) {
-      if (validMedia(e)) {
-        addMedia(e);
-        onPlay(e);
+  addListener(document);
+
+  async function onPause(src, controller) {
+    await sleep(200);
+    if (validMedia(src) && src.paused) {
+      controller.abort();
+      normalPlayback(src);
+      Elements.delete(src);
+      // Check if all elements have paused.
+      if (!isPlaying()) {
+        send('pause');
       }
     }
   }
-}
 
-function send(message, body = '', duration) {
-  const msg = {
-    type: message,
-    body: body,
-    userActivation: navigator.userActivation.isActive
-  };
-  if (duration !== undefined) msg.duration = duration;
-  chrome.runtime.sendMessage(msg);
-}
-
-window.addEventListener(
-  'pagehide',
-  (event) => {
-    if (event.isTrusted) send('pause');
-  },
-  {
-    passive: true
+  function normalPlayback(src) {
+    let data = Elements.has(src) ? Elements.get(src) : {};
+    if (data.wasPlaying) {
+      src.volume = data.wasVolume;
+      src.playbackRate = data.wasPlaybackRate;
+      data.wasPlaying = false;
+    }
   }
-);
 
-function visablePopup() {
-  if (docPiP && docPiP.window !== null) {
-    return true;
+  function pauseElement(e, data) {
+    // If media attempts to play when it should be paused dont change its old values.
+    if (!data.wasPlaying) {
+      data.wasVolume = e.volume;
+      data.wasPlaybackRate = e.playbackRate;
+    }
+    // Rate change event will stopPropagation.
+    data.wasPlaying = true;
+    e.playbackRate = 0;
+    e.volume = 0;
+    Elements.set(e, data);
   }
-  return (
-    document.visibilityState !== 'hidden' ||
-    Boolean(getPictureInPictureElement?.call(document))
+
+  async function pause() {
+    Elements.forEach((data, e) => {
+      if (isPaused(e)) return;
+      pauseElement(e, data);
+    });
+  }
+
+  async function resume(shouldPlay) {
+    Elements.forEach((data, e) => {
+      if (!data.wasPlaying) return;
+      // Pause foreground media normaly
+      if (shouldPlay === false) e.pause();
+      normalPlayback(e);
+    });
+  }
+
+  function checkShadow(DOM = document) {
+    // If we are checking this document also check documentPictureInPicture
+    if (DOM === document && docPiP && docPiP.window)
+      checkShadow(docPiP.window.document);
+    [...DOM.querySelectorAll('*')].map((e) => {
+      let shadowDOM = shadow(e);
+      if (shadowDOM !== null) {
+        checkShadow(shadowDOM);
+        addListener(shadowDOM);
+        [...shadowDOM.querySelectorAll('*')].map((e) => {
+          if (!isPaused(e)) {
+            if (validMedia(e)) {
+              addMedia(e);
+              onPlay(e);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  function checkDOM() {
+    for (const e of document.querySelectorAll('*')) {
+      if (!isPaused(e)) {
+        if (validMedia(e)) {
+          addMedia(e);
+          onPlay(e);
+        }
+      }
+    }
+  }
+
+  function send(message, body = '', duration) {
+    const msg = {
+      type: message,
+      body: body,
+      userActivation: navigator.userActivation.isActive
+    };
+    if (duration !== undefined) msg.duration = duration;
+    chrome.runtime.sendMessage(msg);
+  }
+
+  window.addEventListener(
+    'pagehide',
+    (event) => {
+      if (event.isTrusted) send('pause');
+    },
+    {
+      passive: true
+    }
   );
-}
 
-function checkVisibility() {
-  if (!visablePopup()) {
-    checkShadow();
-    send('hidden');
+  function visablePopup() {
+    if (docPiP && docPiP.window !== null) {
+      return true;
+    }
+    return (
+      document.visibilityState !== 'hidden' ||
+      Boolean(getPictureInPictureElement?.call(document))
+    );
   }
-}
 
-window.addEventListener(
-  'visibilitychange',
-  (event) => {
-    if (event.isTrusted) checkVisibility();
-  },
-  {
-    capture: true,
-    passive: true
+  function checkVisibility() {
+    if (!visablePopup()) {
+      checkShadow();
+      send('hidden');
+    }
   }
-);
 
-function hasProperty(value, key) {
-  return Object.prototype.hasOwnProperty.call(value, key);
-}
+  window.addEventListener(
+    'visibilitychange',
+    (event) => {
+      if (event.isTrusted) checkVisibility();
+    },
+    {
+      capture: true,
+      passive: true
+    }
+  );
 
-function shadow(e) {
-  try {
-    return getOpenOrClosedShadowRoot(e) ?? null;
-  } catch {
-    return null;
+  function hasProperty(value, key) {
+    return Object.prototype.hasOwnProperty.call(value, key);
   }
-}
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+  function shadow(e) {
+    try {
+      return getOpenOrClosedShadowRoot(e) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+})();

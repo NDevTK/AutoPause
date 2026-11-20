@@ -6,7 +6,8 @@
   if (globalThis[injected]) return;
   globalThis[injected] = true;
 
-  const Targets = new Set();
+  const Targets = new WeakSet();
+  const HandledPlayEvents = new WeakSet();
 
   const Elements = new Map();
 
@@ -74,6 +75,7 @@
         break;
       case 'audible':
         checkShadow();
+        checkDOM();
         break;
       case 'hidden':
         checkVisibility();
@@ -203,7 +205,8 @@
     src.addEventListener(
       'play',
       function (event) {
-        if (!event.isTrusted) return;
+        if (!event.isTrusted || HandledPlayEvents.has(event)) return;
+        HandledPlayEvents.add(event);
         if (validMedia(event.srcElement)) {
           addMedia(event.srcElement);
           onPlay(event.srcElement);
@@ -319,6 +322,28 @@
 
   addListener(document);
 
+  window.addEventListener(
+    'autoPauseMedia',
+    (event) => {
+      event.stopImmediatePropagation();
+      if (!(event instanceof FocusEvent)) return;
+      const target = event.relatedTarget;
+      if (!target) return;
+      if (validMedia(target)) {
+        addListener(target);
+      } else {
+        const shadowDOM = shadow(target);
+        if (shadowDOM !== null) {
+          addListener(shadowDOM);
+          checkShadow(shadowDOM);
+        }
+      }
+    },
+    {
+      capture: true
+    }
+  );
+
   async function onPause(src, controller) {
     await sleep(200);
     if (validMedia(src) && src.paused) {
@@ -379,8 +404,8 @@
       if (shadowDOM !== null) {
         checkShadow(shadowDOM);
         addListener(shadowDOM);
-        [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
-          if (!isPaused(e)) {
+        [...shadowDOM.querySelectorAll('*')].map((e) => {
+          if (e.paused === false && !isPaused(e)) {
             if (validMedia(e)) {
               addMedia(e);
               onPlay(e);
@@ -392,8 +417,8 @@
   }
 
   function checkDOM() {
-    for (const e of document.querySelectorAll('audio, video')) {
-      if (!isPaused(e)) {
+    for (const e of document.querySelectorAll('*')) {
+      if (e.paused === false && !isPaused(e)) {
         if (validMedia(e)) {
           addMedia(e);
           onPlay(e);

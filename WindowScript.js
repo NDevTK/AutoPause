@@ -1,5 +1,5 @@
 // Security: Code here is exposed to the website.
-// Automaticly add media elements to DOM.
+// Notify ContentScript about detached media elements without mutating the DOM.
 (function () {
   'use strict';
 
@@ -8,32 +8,31 @@
   if (window.autoPauseExtensionInjected) return;
   window.autoPauseExtensionInjected = true;
 
-  const play = window.HTMLMediaElement.prototype.play;
-  let div = null;
-  window.HTMLMediaElement.prototype.play = function () {
+  const MediaElement = window.HTMLMediaElement;
+  const play = MediaElement.prototype.play;
+  const FocusEventCtor = window.FocusEvent;
+  const dispatchEvent = window.EventTarget.prototype.dispatchEvent;
+  const getIsConnected = Object.getOwnPropertyDescriptor(
+    window.Node.prototype,
+    'isConnected'
+  )?.get;
+  const doc = document;
+
+  MediaElement.prototype.play = function () {
     try {
       if (
-        this instanceof HTMLMediaElement &&
-        !this.isConnected &&
-        !this.parentNode
+        this instanceof MediaElement &&
+        !(getIsConnected ? getIsConnected.call(this) : this.isConnected)
       ) {
-        if (!document.contains(div)) {
-          div = document.createElement('div');
-          div.hidden = true;
-          document.head.appendChild(div);
-          // If media gets paused remove it from the div
-          div.addEventListener(
-            'pause',
-            (event) => {
-              const src = event.srcElement;
-              if (src instanceof HTMLMediaElement && src.parentNode === div) {
-                div.removeChild(src);
-              }
-            },
-            {passive: true, capture: true}
-          );
-        }
-        div.appendChild(this);
+        dispatchEvent.call(
+          doc,
+          new FocusEventCtor('autoPauseMedia', {
+            relatedTarget: this,
+            bubbles: false,
+            cancelable: false,
+            composed: false
+          })
+        );
       }
     } catch {
       // Extension errors should not affect the API.

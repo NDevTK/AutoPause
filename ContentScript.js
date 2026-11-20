@@ -5,8 +5,30 @@ var Targets = new Set();
 
 var Elements = new Map();
 
-if (window.documentPictureInPicture)
-  documentPictureInPicture.addEventListener('enter', (event) => {
+const docPiP =
+  typeof DocumentPictureInPicture === 'function' &&
+  window.documentPictureInPicture instanceof DocumentPictureInPicture
+    ? window.documentPictureInPicture
+    : null;
+
+const getPictureInPictureElement = Object.getOwnPropertyDescriptor(
+  Document.prototype,
+  'pictureInPictureElement'
+)?.get;
+
+const getOpenOrClosedShadowRoot =
+  typeof chrome?.dom?.openOrClosedShadowRoot === 'function'
+    ? (e) => chrome.dom.openOrClosedShadowRoot(e)
+    : (() => {
+        const getter = Object.getOwnPropertyDescriptor(
+          Element.prototype,
+          'openOrClosedShadowRoot'
+        )?.get;
+        return getter ? (e) => getter.call(e) : () => null;
+      })();
+
+if (docPiP)
+  docPiP.addEventListener('enter', (event) => {
     if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
       // For the top documentPictureInPicture window we are sharing the opener tab audible value
       addListener(event.window.document);
@@ -118,7 +140,9 @@ function Rewind() {
 }
 
 function onPlay(e) {
+  if (isPaused(e)) return;
   let data = Elements.get(e);
+  if (!data) return;
   if (isMuted(e)) {
     send('playMuted');
     return;
@@ -130,11 +154,15 @@ function onPlay(e) {
     const sendOnce = () => {
       if (sent) return;
       sent = true;
+      e.removeEventListener('durationchange', onDurationChange);
       if (!isPaused(e) && !isMuted(e)) {
         send('play', data.id, e.duration);
       }
     };
-    e.addEventListener('durationchange', sendOnce, {once: true});
+    const onDurationChange = (event) => {
+      if (event.isTrusted) sendOnce();
+    };
+    e.addEventListener('durationchange', onDurationChange);
     setTimeout(sendOnce, 500);
     return;
   }
@@ -144,7 +172,13 @@ function onPlay(e) {
 function validMedia(e) {
   try {
     //  documentPictureInPicture window.top media is tracked by the opener
-    if (opener.documentPictureInPicture.window === window) return;
+    if (
+      typeof DocumentPictureInPicture === 'function' &&
+      opener.documentPictureInPicture instanceof
+        opener.DocumentPictureInPicture &&
+      opener.documentPictureInPicture.window === window
+    )
+      return;
   } catch {}
 
   return (
@@ -163,6 +197,7 @@ function addListener(src) {
   src.addEventListener(
     'play',
     function (event) {
+      if (!event.isTrusted) return;
       if (validMedia(event.srcElement)) {
         addMedia(event.srcElement);
         onPlay(event.srcElement);
@@ -202,6 +237,7 @@ function addMedia(src) {
   src.addEventListener(
     'volumechange',
     async (event) => {
+      if (!event.isTrusted) return;
       if (validMedia(event.srcElement) && !isPaused(event.srcElement)) {
         if (isMuted(event.srcElement)) await sleep(200);
         onPlay(event.srcElement);
@@ -217,6 +253,7 @@ function addMedia(src) {
   src.addEventListener(
     'pause',
     (event) => {
+      if (!event.isTrusted) return;
       let src = event.srcElement;
       onPause(src, controller);
     },
@@ -230,6 +267,7 @@ function addMedia(src) {
   src.addEventListener(
     'abort',
     (event) => {
+      if (!event.isTrusted) return;
       onPause(event.srcElement, controller);
     },
     {
@@ -243,6 +281,7 @@ function addMedia(src) {
   src.addEventListener(
     'ratechange',
     function (event) {
+      if (!event.isTrusted) return;
       if (validMedia(event.srcElement)) {
         let data = Elements.has(event.srcElement)
           ? Elements.get(event.srcElement)
@@ -317,12 +356,8 @@ async function resume(shouldPlay) {
 
 function checkShadow(DOM = document) {
   // If we are checking this document also check documentPictureInPicture
-  if (
-    DOM === document &&
-    window.documentPictureInPicture &&
-    documentPictureInPicture.window
-  )
-    checkShadow(documentPictureInPicture.window.document);
+  if (DOM === document && docPiP && docPiP.window)
+    checkShadow(docPiP.window.document);
   [...DOM.querySelectorAll('*')].map((e) => {
     let shadowDOM = shadow(e);
     if (shadowDOM !== null) {
@@ -363,8 +398,8 @@ function send(message, body = '', duration) {
 
 window.addEventListener(
   'pagehide',
-  () => {
-    send('pause');
+  (event) => {
+    if (event.isTrusted) send('pause');
   },
   {
     passive: true
@@ -372,11 +407,12 @@ window.addEventListener(
 );
 
 function visablePopup() {
-  if (window.documentPictureInPicture) {
-    if (documentPictureInPicture.window !== null) return true;
+  if (docPiP && docPiP.window !== null) {
+    return true;
   }
   return (
-    document.visibilityState !== 'hidden' || document.pictureInPictureElement
+    document.visibilityState !== 'hidden' ||
+    Boolean(getPictureInPictureElement?.call(document))
   );
 }
 
@@ -387,10 +423,16 @@ function checkVisibility() {
   }
 }
 
-window.addEventListener('visibilitychange', checkVisibility, {
-  capture: true,
-  passive: true
-});
+window.addEventListener(
+  'visibilitychange',
+  (event) => {
+    if (event.isTrusted) checkVisibility();
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
 
 function hasProperty(value, key) {
   return Object.prototype.hasOwnProperty.call(value, key);
@@ -398,11 +440,7 @@ function hasProperty(value, key) {
 
 function shadow(e) {
   try {
-    if ('openOrClosedShadowRoot' in e) {
-      return e.openOrClosedShadowRoot;
-    } else {
-      return chrome.dom.openOrClosedShadowRoot(e);
-    }
+    return getOpenOrClosedShadowRoot(e) ?? null;
   } catch {
     return null;
   }

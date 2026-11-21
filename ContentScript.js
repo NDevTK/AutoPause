@@ -90,7 +90,9 @@
             }
           });
           if (removed && !isPlaying()) {
-            send('pause');
+            send(Elements.size > 0 ? 'playMuted' : 'pause');
+          } else {
+            checkVisibility();
           }
         }, 200);
       },
@@ -143,7 +145,11 @@
         break;
       case 'normalPlayback':
         Elements.forEach((data, e) => {
-          if (data.wasPlaying && data.rateZeroed && !isPaused(e)) {
+          if (
+            data.wasPlaying &&
+            data.rateZeroed &&
+            (!isPaused(e) || (data.playRequested && !e.paused))
+          ) {
             normalPlayback(e);
           }
         });
@@ -221,12 +227,22 @@
     });
   }
 
+  function canNotifyPlay(e, data) {
+    return (
+      !isPaused(e) ||
+      (data?.wasPlaying === true &&
+        data.rateZeroed === true &&
+        data.playRequested === true &&
+        !e.paused)
+    );
+  }
+
   function onPlay(e) {
-    if (isPaused(e)) return;
     let data = Elements.get(e);
-    if (!data) return;
+    if (!data || !canNotifyPlay(e, data)) return;
     clearTimeout(data.pauseTimer);
     if (isMuted(e)) {
+      data.playRequested = false;
       send('playMuted');
       return;
     }
@@ -240,7 +256,11 @@
         data.pendingDuration = false;
         clearTimeout(data.durationTimer);
         e.removeEventListener('durationchange', onDurationChange);
-        if (!data.controller.signal.aborted && !isPaused(e) && !isMuted(e)) {
+        if (
+          !data.controller.signal.aborted &&
+          canNotifyPlay(e, data) &&
+          !isMuted(e)
+        ) {
           send(
             'play',
             data.id,
@@ -364,7 +384,17 @@
         const el = event.target;
         if (validMedia(el)) {
           addMedia(el);
-          clearTimeout(Elements.get(el)?.pauseTimer);
+          const data = Elements.get(el);
+          clearTimeout(data?.pauseTimer);
+          if (
+            data?.wasPlaying &&
+            data.rateZeroed &&
+            !el.paused &&
+            el.playbackRate === 0 &&
+            !isMuted(el)
+          ) {
+            data.playRequested = true;
+          }
           onPlay(el);
         }
       },
@@ -436,6 +466,17 @@
         }
       );
     }
+
+    src.addEventListener(
+      'leavepictureinpicture',
+      (event) => {
+        if (event.isTrusted) checkVisibility();
+      },
+      {
+        signal: controller.signal,
+        passive: true
+      }
+    );
   }
 
   addListener(window);
@@ -468,6 +509,7 @@
   function onPause(src, controller) {
     const data = Elements.get(src);
     if (!data || controller.signal.aborted) return;
+    data.playRequested = false;
     clearTimeout(data.pauseTimer);
     data.pauseTimer = setTimeout(() => {
       if (controller.signal.aborted) return;
@@ -492,6 +534,7 @@
       data.volumeZeroed = false;
       if (src.playbackRate === 0) src.playbackRate = data.wasPlaybackRate;
       data.rateZeroed = false;
+      data.playRequested = false;
       data.wasPlaying = false;
     }
   }
@@ -517,6 +560,7 @@
   async function pause() {
     if (docPiP && docPiP.window) checkShadow(docPiP.window.document, false);
     Elements.forEach((data, e) => {
+      data.playRequested = false;
       if (isPaused(e)) return;
       pauseElement(e, data);
     });
@@ -540,7 +584,7 @@
       if (shadowDOM !== null) {
         checkShadow(shadowDOM, notify);
         addListener(shadowDOM);
-        [...shadowDOM.querySelectorAll('*')].map((e) => {
+        [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
           if (e.paused === false && !isPaused(e)) {
             if (!Elements.has(e) && validMedia(e)) {
               addMedia(e);
@@ -555,7 +599,7 @@
   function checkDOM(DOM = document) {
     if (DOM === document && docPiP && docPiP.window)
       checkDOM(docPiP.window.document);
-    for (const e of DOM.querySelectorAll('*')) {
+    for (const e of DOM.querySelectorAll('audio, video')) {
       if (e.paused === false && !isPaused(e)) {
         if (!Elements.has(e) && validMedia(e)) {
           addMedia(e);
@@ -569,11 +613,13 @@
     const msg = {
       type: message,
       body: body,
-      userActivation: navigator.userActivation.isActive
+      userActivation: Boolean(navigator.userActivation?.isActive)
     };
     if (duration !== undefined) msg.duration = duration;
     if (wasPaused) msg.wasPaused = true;
-    chrome.runtime.sendMessage(msg);
+    try {
+      chrome.runtime.sendMessage(msg)?.catch?.(() => {});
+    } catch {}
   }
 
   window.addEventListener(

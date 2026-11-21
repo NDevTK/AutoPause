@@ -1,0 +1,69 @@
+name: E2E Tests
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions: {}
+
+jobs:
+  chrome:
+    name: Chromium E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install Chrome for Testing
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y xvfb
+          fi
+          CFT_URL=$(curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json \
+            | node -e "const d = JSON.parse(require('fs').readFileSync(0, 'utf8')); const u = d.channels.Stable.downloads.chrome.find((x) => x.platform === 'linux64')?.url; if (!u || !u.startsWith('https://storage.googleapis.com/')) process.exit(1); console.log(u);")
+          curl -fsSL "$CFT_URL" -o "$RUNNER_TEMP/chrome-for-testing.zip"
+          unzip -q "$RUNNER_TEMP/chrome-for-testing.zip" -d "$RUNNER_TEMP/cft"
+          "$RUNNER_TEMP/cft/chrome-linux64/chrome" --version
+
+      - name: Run Chrome E2E suite
+        env:
+          CHROME_BIN: ${{ runner.temp }}/cft/chrome-linux64/chrome
+        run: node tests/smoke_chrome.mjs
+
+  firefox:
+    name: Firefox E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install Firefox
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y xvfb
+          fi
+          mkdir -p "$RUNNER_TEMP/firefox"
+          curl -fsSL "https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US" \
+            | tar -xJ -C "$RUNNER_TEMP/firefox"
+          "$RUNNER_TEMP/firefox/firefox/firefox" --version
+
+      - name: Run Firefox E2E suite
+        env:
+          FIREFOX_BIN: ${{ runner.temp }}/firefox/firefox/firefox
+        run: node tests/smoke_firefox.mjs

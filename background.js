@@ -314,11 +314,7 @@ function sendNormalPlayback(tabId, sender) {
           ? {frameId: sender.frameId}
           : null;
     const req = target
-      ? chrome.tabs.sendMessage(
-          sender.tab.id,
-          {type: 'normalPlayback'},
-          target
-        )
+      ? chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'}, target)
       : chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'});
     req?.catch?.((err) => {
       if (

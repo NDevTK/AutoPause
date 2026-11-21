@@ -3859,7 +3859,8 @@ async function main() {
       await evalInSession(cdp, swSid, `options.checkidle = true; true`);
       await evalInSession(cdp, swSid, `checkIdle('locked')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
         5000
       );
       const idleLockedGuards = await evalInSession(
@@ -3892,7 +3893,8 @@ async function main() {
       });
       await evalInSession(cdp, swSid, `checkIdle('active')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
         5000
       );
       await sleep(350);
@@ -3903,11 +3905,16 @@ async function main() {
       );
       const idleBgMp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
       assert.deepEqual(idleBgUnlocked, {rate: 1, vol: 1});
-      assert.equal(idleBgMp, tab1Id, 'Unlocked background tab must stay mediaPlaying');
+      assert.equal(
+        idleBgMp,
+        tab1Id,
+        'Unlocked background tab must stay mediaPlaying'
+      );
       // Pause via togglePlayback before lock -> unlock must NOT unexpectedly blast audio
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
         5000
       );
       await evalInSession(cdp, swSid, `checkIdle('locked')`);
@@ -3928,12 +3935,14 @@ async function main() {
       // Resume tab1, lock, enable disableresume, unlock -> must stay paused AND remain in state.media
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
         5000
       );
       await evalInSession(cdp, swSid, `checkIdle('locked')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
         5000
       );
       await evalInSession(cdp, swSid, `options.disableresume = true; true`);
@@ -3955,12 +3964,14 @@ async function main() {
       await evalInSession(cdp, swSid, `options.noauto = true; true`);
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
         5000
       );
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
         5000
       );
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
@@ -4031,7 +4042,8 @@ async function main() {
       );
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
-        () => evalInSession(cdp, tab2.sessionId, `_gotoAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab2.sessionId, `_gotoAudio.playbackRate === 0`),
         5000
       );
       await sleep(300);
@@ -4095,7 +4107,11 @@ async function main() {
           swSid,
           `chrome.tabs.get(${tab2Id}).then((t) => ({muted: t.mutedInfo?.muted, ignored: state.ignoredTabs.has(${tab2Id})}))`
         );
-        return el.paused && el.rate === 1 && el.vol === 1 && !tabState.muted && tabState.ignored
+        return el.paused &&
+          el.rate === 1 &&
+          el.vol === 1 &&
+          !tabState.muted &&
+          tabState.ignored
           ? {...el, ...tabState}
           : null;
       }, 5000);
@@ -4276,7 +4292,11 @@ async function main() {
         tab2.sessionId,
         `({rate: _bothAudio.playbackRate, vol: _bothAudio.volume})`
       );
-      const bothOverrideMp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
+      const bothOverrideMp = await evalInSession(
+        cdp,
+        swSid,
+        `state.mediaPlaying`
+      );
       assert.deepEqual(bothOverrideDenied, {rate: 0, vol: 0});
       assert.equal(bothOverrideMp, null);
       // ignoreshort on already-tracked state.media tab2 (paused) must NOT pause playing background tab1!

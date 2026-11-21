@@ -198,11 +198,19 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
       if (await isPlaying(sender.tab.id)) break;
       remove(sender.tab.id);
       break;
-    case 'tabFocus':
+    case 'tabFocus': {
       // Security: Verify the action is actually a real tab activation (documentPictureInPicture)
       if (sender.frameId !== 0) break;
+      const focusedTabs = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true
+      });
+      if (focusedTabs.length !== 1) break;
+      const openerTab = await getDocPiPOpener(focusedTabs[0]);
+      if (openerTab?.id !== sender.tab.id) break;
       tabChange(sender.tab);
       break;
+    }
   }
   save();
 });
@@ -323,20 +331,20 @@ function getResumeTab(exclude) {
 chrome.windows.onFocusChanged.addListener(async (id) => {
   await initializationCompletePromise;
   if (id === chrome.windows.WINDOW_ID_NONE) return;
-  if (state.autoPauseWindow !== null && state.autoPauseWindow !== id) return;
-  setTimeout(() => {
-    chrome.tabs.query(
-      {
-        active: true,
-        currentWindow: true
-      },
-      (tabs) => {
-        if (tabs.length === 1) {
-          tabChange(tabs[0]);
-          save();
-        }
-      }
-    );
+  setTimeout(async () => {
+    const tabs = await chrome.tabs.query({
+      active: true,
+      lastFocusedWindow: true
+    });
+    if (tabs.length !== 1) return;
+    const targetTab = (await getDocPiPOpener(tabs[0])) || tabs[0];
+    if (
+      state.autoPauseWindow !== null &&
+      state.autoPauseWindow !== targetTab.windowId
+    )
+      return;
+    tabChange(targetTab);
+    save();
   }, 200);
 });
 
@@ -521,9 +529,38 @@ function remove(tabId) {
   onPause(tabId);
 }
 
+async function getDocPiPOpener(tab) {
+  if (
+    typeof tab?.id !== 'number' ||
+    typeof tab.openerTabId !== 'number' ||
+    (tab.url && tab.url !== 'about:blank')
+  ) {
+    return null;
+  }
+  try {
+    const isPiP = await chrome.tabs.sendMessage(
+      tab.id,
+      {type: 'isDocPiP'},
+      {frameId: 0}
+    );
+    if (isPiP !== 'true') return null;
+    return await chrome.tabs.get(tab.openerTabId);
+  } catch {
+    return null;
+  }
+}
+
 // Detect changes to audible status of tabs
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   await initializationCompletePromise;
+  if (hasProperty(changeInfo, 'audible')) {
+    const openerTab = await getDocPiPOpener(tab);
+    if (openerTab) {
+      if (!changeInfo.audible && openerTab.audible) return;
+      tabId = openerTab.id;
+      tab = {...openerTab, audible: changeInfo.audible};
+    }
+  }
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
   if (state.ignoredTabs.has(tabId)) return;

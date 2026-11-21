@@ -115,6 +115,9 @@
       case 'hidden':
         checkVisibility();
         break;
+      case 'isDocPiP':
+        if (isDocPiPChild()) sendResponse('true');
+        break;
       case 'isplaying':
         if (!isPlaying()) break;
         sendResponse('true');
@@ -226,18 +229,23 @@
     );
   }
 
-  function validMedia(e) {
+  function isDocPiPChild() {
     try {
-      //  documentPictureInPicture window.top media is tracked by the opener
-      if (
+      return Boolean(
         opener &&
         typeof DocumentPictureInPicture === 'function' &&
         opener.documentPictureInPicture instanceof
           opener.DocumentPictureInPicture &&
         opener.documentPictureInPicture.window === window
-      )
-        return false;
-    } catch {}
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function validMedia(e) {
+    //  documentPictureInPicture window.top media is tracked by the opener
+    if (isDocPiPChild()) return false;
 
     if (!e || typeof getMediaPaused !== 'function') return false;
     try {
@@ -538,7 +546,7 @@
         });
         Elements.clear();
       }
-      if (window === window.top || hadElements) {
+      if (!isDocPiPChild() && (window === window.top || hadElements)) {
         send('pause');
       }
     },

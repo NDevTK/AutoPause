@@ -4639,11 +4639,7 @@ async function main() {
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       await waitFor(
         () =>
-          evalInSession(
-            cdp,
-            tab2.sessionId,
-            `_msVolZeroUnmute.volume === 0`
-          ),
+          evalInSession(cdp, tab2.sessionId, `_msVolZeroUnmute.volume === 0`),
         5000
       );
       await evalInSession(

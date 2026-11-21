@@ -170,11 +170,7 @@
         data.pendingDuration = false;
         clearTimeout(data.durationTimer);
         e.removeEventListener('durationchange', onDurationChange);
-        if (
-          !data.controller.signal.aborted &&
-          !isPaused(e) &&
-          !isMuted(e)
-        ) {
+        if (!data.controller.signal.aborted && !isPaused(e) && !isMuted(e)) {
           send('play', data.id, e.duration);
         }
       };

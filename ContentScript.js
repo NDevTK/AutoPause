@@ -217,12 +217,26 @@
     data.lastMuted = el.muted;
     if (
       data.wasPlaying &&
-      data.wasVolume > 0 &&
+      data.volumeZeroed &&
       el.volume === 0 &&
       !mutedChanged
     ) {
       event.stopImmediatePropagation();
       return;
+    }
+    if (data.wasPlaying) {
+      if (
+        mutedChanged &&
+        !el.muted &&
+        el.volume > 0 &&
+        typeof el.srcObject?.getAudioTracks === 'function'
+      ) {
+        data.wasVolume = el.volume;
+        data.volumeZeroed = true;
+        el.volume = 0;
+      } else if (el.volume > 0) {
+        data.volumeZeroed = false;
+      }
     }
     clearTimeout(data.muteTimer);
     if (!isPaused(el)) {
@@ -279,11 +293,9 @@
 
   function isMuted(e) {
     if (e.muted) return true;
-    if (Elements.has(e)) {
-      let data = Elements.get(e);
-      if (data.wasPlaying) {
-        return data.wasVolume === 0;
-      }
+    const data = Elements.get(e);
+    if (data?.volumeZeroed) {
+      return data.wasVolume === 0;
     }
     return e.volume === 0;
   }
@@ -396,7 +408,10 @@
   function normalPlayback(src) {
     let data = Elements.has(src) ? Elements.get(src) : {};
     if (data.wasPlaying) {
-      if (src.volume === 0 && data.wasVolume > 0) src.volume = data.wasVolume;
+      if (data.volumeZeroed && src.volume === 0 && data.wasVolume > 0) {
+        src.volume = data.wasVolume;
+      }
+      data.volumeZeroed = false;
       src.playbackRate = data.wasPlaybackRate;
       data.wasPlaying = false;
     }
@@ -411,12 +426,16 @@
     // Rate and volume change events will stopImmediatePropagation.
     data.wasPlaying = true;
     e.playbackRate = 0;
-    if (!e.muted) e.volume = 0;
+    if (!e.muted && e.volume > 0) {
+      data.wasVolume = e.volume;
+      data.volumeZeroed = true;
+      e.volume = 0;
+    }
     Elements.set(e, data);
   }
 
   async function pause() {
-    checkShadow(document, false);
+    if (docPiP && docPiP.window) checkShadow(docPiP.window.document, false);
     Elements.forEach((data, e) => {
       if (isPaused(e)) return;
       pauseElement(e, data);

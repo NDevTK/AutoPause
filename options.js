@@ -302,14 +302,21 @@ function permissionUpdate(event) {
 
   if (remove.length > 0) {
     chrome.permissions.remove({origins: remove}, () => {
-      void chrome.runtime.lastError;
+      if (chrome.runtime.lastError) {
+        setStatus('Could not remove one or more site permissions.', true);
+        getPermissions();
+        return;
+      }
       getPermissions();
       if (add.length === 0) setStatus('Saved.');
     });
   }
 
   chrome.storage.sync.set({exclude: parsedExclude.valid}, () => {
-    void chrome.runtime.lastError;
+    if (chrome.runtime.lastError) {
+      setStatus('Could not save excluded sites.', true);
+      return;
+    }
     if (add.length === 0 && remove.length === 0) setStatus('Saved.');
   });
 }

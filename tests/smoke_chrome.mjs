@@ -3495,8 +3495,213 @@ async function main() {
       );
       assert.deepEqual(winToggle, {locked: true, unlocked: true});
 
+      // (j) Extension state-machine logic checks
+      // 1) Closing the autoPauseWindow-locked window resets state.autoPauseWindow to null
+      const winCloseReset = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          const w = await chrome.windows.create({url: 'about:blank', focused: false});
+          state.autoPauseWindow = w.id;
+          await chrome.windows.remove(w.id);
+          await new Promise((r) => setTimeout(r, 250));
+          return state.autoPauseWindow === null;
+        })()`
+      );
+      assert.equal(
+        winCloseReset,
+        true,
+        'Closing autoPauseWindow must reset state.autoPauseWindow to null'
+      );
+
+      // 2) onPause clears mediaPlaying to null (never false/stale), previoustab keeps mediaPlaying with 1 tab,
+      //    and togglePlayback resumes on first press even with disableresume enabled!
+      await evalInSession(
+        cdp,
+        swSid,
+        `state.media.clear(); state.legacyMedia.clear(); state.backgroundaudio.clear(); true`
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.play()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab3Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('previoustab')`);
+      const mpAfterSinglePrev = await evalInSession(
+        cdp,
+        swSid,
+        `state.mediaPlaying`
+      );
+      assert.equal(
+        mpAfterSinglePrev,
+        tab3Id,
+        'previoustab with only 1 tab must not wipe state.mediaPlaying'
+      );
+      await evalInSession(cdp, swSid, `options.disableresume = true; true`);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.pause(); true`);
+      const mpAfterPause = await waitFor(async () => {
+        const mp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
+        return mp === null ? {mp} : null;
+      }, 5000);
+      // Now start tab2 playing, pause it via tab3 playing (so tab2 stays in state.media while paused),
+      // then pause tab3 so mediaPlaying becomes null, and verify single togglePlayback resumes tab2 despite disableresume!
+      const tab2Id = await evalInSession(
+        cdp,
+        swSid,
+        `chrome.tabs.query({}).then((ts) => ts.find((t) => t.url?.includes('/shadow-and-clobber')).id)`
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.play()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab3Id}`),
+        5000
+      );
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.pause(); true`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === null`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      const toggledRate = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `window.getShadowState().playbackRate`
+        );
+        return r === 1 ? r : null;
+      }, 5000);
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await evalInSession(cdp, swSid, `delete options.disableresume; true`);
+      await sleep(300);
+
+      // 3) otherTabs survives 'hidden' when switching away from a pure Web Audio tab
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(150);
+      await evalInSession(cdp, swSid, `state.otherTabs.add(${tab3Id}); true`);
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(300);
+      const otherSurvivedHidden = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          const kept = state.otherTabs.has(${tab3Id});
+          state.otherTabs.delete(${tab3Id});
+          return kept;
+        })()`
+      );
+      assert.equal(
+        otherSurvivedHidden,
+        true,
+        'Switching away from an otherTabs Web Audio tab must not delete it from state.otherTabs on hidden'
+      );
+
+      // 4) getResumeTab skips media-less/muted backgroundaudio & respects toggling resumelimit off; checkIdle unlocks even if unchecked
+      const stateMachineChecks = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          const prevActive = state.activeTab;
+          state.activeTab = null;
+          state.media.clear();
+          state.legacyMedia.clear();
+          state.backgroundaudio.clear();
+          state.backgroundaudio.add(111);
+          const bgWithoutMedia = getResumeTab();
+          state.backgroundaudio.clear();
+
+          // resumelimit mid-session marks all tabs beyond limit; disabling resumelimit makes them resumable again
+          options.resumelimit = true;
+          for (const id of [1, 2, 3, 4, 5, 6, 7, 8]) state.media.add(id);
+          onPlay({id: 8, windowId: state.activeWindow, active: true, audible: false}, '', true);
+          const legacyCount = state.legacyMedia.size;
+          // Keep only legacy tab 1 in state.media so getResumeTab must return false while resumelimit=true and 1 when off
+          state.media = new Set([1]);
+          const blockedByLimit = getResumeTab();
+          delete options.resumelimit;
+          const resumedWhenLimitOff = getResumeTab();
+          state.media.clear();
+          state.legacyMedia.clear();
+          state.mediaPlaying = null;
+          state.activeTab = prevActive;
+
+          // checkIdle unlocks cleanly even if checkidle option is turned off while locked
+          options.checkidle = true;
+          await checkIdle('locked');
+          const wasLocked = state.locked;
+          delete options.checkidle;
+          await checkIdle('active');
+          const unlockedAfterDisable = !state.locked;
+
+          return {bgWithoutMedia, legacyCount, blockedByLimit, resumedWhenLimitOff, wasLocked, unlockedAfterDisable};
+        })()`
+      );
+      assert.deepEqual(stateMachineChecks, {
+        bgWithoutMedia: false,
+        legacyCount: 3,
+        blockedByLimit: false,
+        resumedWhenLimitOff: 1,
+        wasLocked: true,
+        unlockedAfterDisable: true
+      });
+
+      // 5) multipletabs + muteonpause unmutes resumed background tabs on autoResume
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(150);
+      await evalInSession(
+        cdp,
+        swSid,
+        `options.multipletabs = true; options.muteonpause = true; true`
+      );
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.media.has(${tab2Id})`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.play()`);
+      await waitFor(async () => {
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        return m === true;
+      }, 5000);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.pause(); true`);
+      const multiMuteResumed = await waitFor(async () => {
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        const r = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `window.getShadowState().playbackRate`
+        );
+        return m === false && r === 1 ? {muted: m, rate: r} : null;
+      }, 5000);
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.multipletabs; delete options.muteonpause; true`
+      );
+      await sleep(300);
+
       console.log(
-        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, and toggleable commands verified:',
+        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
           msAllowed,
           msAfterMuteCycle,
@@ -3515,7 +3720,13 @@ async function main() {
           denyClosedTab,
           bgToggle,
           ignoreAfterToggleOff,
-          winToggle
+          winToggle,
+          winCloseReset,
+          mpAfterPause,
+          toggledRate,
+          otherSurvivedHidden,
+          stateMachineChecks,
+          multiMuteResumed
         }
       );
 

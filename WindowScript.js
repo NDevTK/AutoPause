@@ -23,28 +23,46 @@
     MediaElement.prototype,
     'paused'
   )?.get;
+  const nodeProto = window.Node?.prototype || {};
   const getIsConnected = Object.getOwnPropertyDescriptor(
-    window.Node?.prototype || {},
+    nodeProto,
     'isConnected'
   )?.get;
+  const getOwnerDocument = Object.getOwnPropertyDescriptor(
+    nodeProto,
+    'ownerDocument'
+  )?.get;
+  const getRootNode =
+    typeof nodeProto.getRootNode === 'function' ? nodeProto.getRootNode : null;
   const doc = document;
 
   MediaElement.prototype.play = function () {
     try {
       if (
         typeof getMediaPaused === 'function' &&
-        typeof getMediaPaused.call(this) === 'boolean' &&
-        !(getIsConnected ? getIsConnected.call(this) : this.isConnected)
+        typeof getMediaPaused.call(this) === 'boolean'
       ) {
-        dispatchEvent.call(
-          doc,
-          new FocusEventCtor('autoPauseMedia', {
-            relatedTarget: this,
-            bubbles: false,
-            cancelable: false,
-            composed: false
-          })
-        );
+        const connected = getIsConnected
+          ? getIsConnected.call(this)
+          : this.isConnected;
+        const inShadow =
+          connected &&
+          getRootNode &&
+          (getOwnerDocument
+            ? getOwnerDocument.call(this)
+            : this.ownerDocument) === doc &&
+          getRootNode.call(this) !== doc;
+        if (!connected || inShadow) {
+          dispatchEvent.call(
+            doc,
+            new FocusEventCtor('autoPauseMedia', {
+              relatedTarget: this,
+              bubbles: false,
+              cancelable: false,
+              composed: false
+            })
+          );
+        }
       }
     } catch {
       // Extension errors should not affect the API.

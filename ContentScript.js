@@ -42,10 +42,33 @@
     docPiP.addEventListener('enter', (event) => {
       if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
         // For the top documentPictureInPicture window we are sharing the opener tab audible value
-        addListener(event.window);
-        event.window.addEventListener('focus', (e) => {
+        const pipWin = event.window;
+        const pipDoc = pipWin.document;
+        addListener(pipWin);
+        pipWin.addEventListener('focus', (e) => {
           if (e.isTrusted) send('tabFocus');
         });
+        pipWin.addEventListener(
+          'pagehide',
+          (e) => {
+            if (!e.isTrusted) return;
+            setTimeout(() => {
+              let removed = false;
+              Elements.forEach((data, el) => {
+                if (el.ownerDocument === pipDoc) {
+                  data.controller.abort();
+                  normalPlayback(el);
+                  Elements.delete(el);
+                  removed = true;
+                }
+              });
+              if (removed && !isPlaying()) {
+                send('pause');
+              }
+            }, 200);
+          },
+          {once: true, passive: true}
+        );
       }
     });
 
@@ -482,7 +505,7 @@
         addListener(shadowDOM);
         [...shadowDOM.querySelectorAll('*')].map((e) => {
           if (e.paused === false && !isPaused(e)) {
-            if (validMedia(e)) {
+            if (!Elements.has(e) && validMedia(e)) {
               addMedia(e);
               if (notify) onPlay(e);
             }
@@ -495,7 +518,7 @@
   function checkDOM() {
     for (const e of document.querySelectorAll('*')) {
       if (e.paused === false && !isPaused(e)) {
-        if (validMedia(e)) {
+        if (!Elements.has(e) && validMedia(e)) {
           addMedia(e);
           onPlay(e);
         }
@@ -517,7 +540,18 @@
   window.addEventListener(
     'pagehide',
     (event) => {
-      if (event.isTrusted) send('pause');
+      if (!event.isTrusted) return;
+      const hadElements = Elements.size > 0;
+      if (hadElements) {
+        Elements.forEach((data, e) => {
+          data.controller.abort();
+          normalPlayback(e);
+        });
+        Elements.clear();
+      }
+      if (window === window.top || hadElements) {
+        send('pause');
+      }
     },
     {
       passive: true

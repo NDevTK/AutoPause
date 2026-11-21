@@ -38,6 +38,23 @@
           return getter ? (e) => getter.call(e) : () => null;
         })();
 
+  const pipTokenSym = Symbol.for('autoPauseDocPiPToken');
+  const pipHandshakeSym = Symbol.for('autoPauseDocPiPHandshake');
+
+  if (window === window.top) {
+    window[pipHandshakeSym] = (token) => {
+      if (typeof token === 'string' && isDocPiPChild()) {
+        delete window[pipTokenSym];
+        send('docPiPChild', token);
+      }
+    };
+    if (typeof window[pipTokenSym] === 'string' && isDocPiPChild()) {
+      const token = window[pipTokenSym];
+      delete window[pipTokenSym];
+      send('docPiPChild', token);
+    }
+  }
+
   if (docPiP)
     docPiP.addEventListener('enter', (event) => {
       if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
@@ -48,6 +65,14 @@
         pipWin.addEventListener('autoPauseMedia', onAutoPauseMedia, {
           capture: true
         });
+        try {
+          const token = crypto.randomUUID();
+          send('docPiPOpen', token);
+          pipWin[pipTokenSym] = token;
+          if (typeof pipWin[pipHandshakeSym] === 'function') {
+            pipWin[pipHandshakeSym](token);
+          }
+        } catch {}
         pipWin.addEventListener('focus', (e) => {
           if (e.isTrusted) send('tabFocus');
         });
@@ -76,6 +101,7 @@
     });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (isDocPiPChild()) return;
     switch (message.type) {
       case 'visablePopup':
         if (!visablePopup()) break;
@@ -117,9 +143,6 @@
         break;
       case 'hidden':
         checkVisibility();
-        break;
-      case 'isDocPiP':
-        if (isDocPiPChild()) sendResponse('true');
         break;
       case 'isplaying':
         if (!isPlaying()) break;

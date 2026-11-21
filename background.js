@@ -6,6 +6,7 @@ const resumelimit = 5;
 const shortMediaDuration = 3; // seconds
 const shortMediaDebounce = 5000; // ms, for tabs without content script access
 const pendingAudible = new Map();
+const pendingPipTokens = new Map();
 const setItems = [
   'media',
   'backgroundaudio',
@@ -30,6 +31,7 @@ state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
 state.locked = false;
+state.pipTabs = {}; // Map of Document PiP tabId -> openerTabId.
 
 let resolveInitialization;
 const initializationCompletePromise = new Promise((resolve) => {
@@ -79,6 +81,13 @@ async function restore() {
     // Support Set();
     for (let value of setItems) {
       result.state[value] = new Set(result.state[value]);
+    }
+    if (
+      typeof result.state.pipTabs !== 'object' ||
+      result.state.pipTabs === null ||
+      Array.isArray(result.state.pipTabs)
+    ) {
+      result.state.pipTabs = {};
     }
     state = result.state;
   }
@@ -141,34 +150,45 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (
     typeof message !== 'object' ||
     message === null ||
-    !hasProperty(sender, 'tab') ||
-    state.ignoredTabs.has(sender.tab.id)
+    !hasProperty(sender, 'tab')
   )
     return;
-  if (
-    state.autoPauseWindow !== null &&
-    state.autoPauseWindow !== sender.tab.windowId
-  )
+  if (message.type === 'docPiPOpen') {
+    registerDocPiPToken('opener', message.body, sender);
     return;
-  state.otherTabs.delete(sender.tab.id);
+  }
+  if (message.type === 'docPiPChild') {
+    registerDocPiPToken('child', message.body, sender);
+    return;
+  }
+  const openerTab = await getDocPiPOpener(sender.tab);
+  const tab = openerTab
+    ? sender.tab.audible
+      ? {...openerTab, audible: true}
+      : openerTab
+    : sender.tab;
+  if (state.ignoredTabs.has(tab.id)) return;
+  if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
+    return;
+  state.otherTabs.delete(tab.id);
   switch (message.type) {
     case 'hidden':
-      if (await visablePopup(sender.tab.id)) break;
-      if (state.mutedTabs.has(sender.tab.id)) {
+      if (await visablePopup(tab.id)) break;
+      if (state.mutedTabs.has(tab.id)) {
         if (
           hasProperty(options, 'muteonpause') &&
-          state.mutedMedia.has(sender.tab.id)
+          state.mutedMedia.has(tab.id)
         ) {
-          state.media.add(sender.tab.id);
+          state.media.add(tab.id);
         }
         // Pause hidden muted tabs.
-        pause(sender.tab.id);
+        pause(tab.id);
       }
       break;
     case 'play':
-      if (sender.tab.mutedInfo?.muted) {
-        state.mutedMedia.add(sender.tab.id);
-        onMute(sender.tab.id);
+      if (tab.mutedInfo?.muted) {
+        state.mutedMedia.add(tab.id);
+        onMute(tab.id);
       } else {
         // Ignore short media (e.g. notification sounds) when option is enabled.
         if (
@@ -179,10 +199,10 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
           message.duration < shortMediaDuration
         )
           break;
-        state.mutedMedia.delete(sender.tab.id);
-        state.media.add(sender.tab.id);
+        state.mutedMedia.delete(tab.id);
+        state.media.add(tab.id);
         onPlay(
-          sender.tab,
+          tab,
           message.body,
           message.userActivation === true,
           message.wasPaused === true
@@ -190,25 +210,25 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
       }
       break;
     case 'playMuted':
-      if (await isPlaying(sender.tab.id)) break;
-      state.mutedMedia.delete(sender.tab.id);
-      onMute(sender.tab.id);
+      if (await isPlaying(tab.id)) break;
+      state.mutedMedia.delete(tab.id);
+      onMute(tab.id);
       break;
     case 'pause':
-      if (await isPlaying(sender.tab.id)) break;
-      remove(sender.tab.id);
+      if (await isPlaying(tab.id)) break;
+      remove(tab.id);
       break;
     case 'tabFocus': {
       // Security: Verify the action is actually a real tab activation (documentPictureInPicture)
-      if (sender.frameId !== 0) break;
+      if (sender.frameId !== 0 || openerTab) break;
       const focusedTabs = await chrome.tabs.query({
         active: true,
         lastFocusedWindow: true
       });
       if (focusedTabs.length !== 1) break;
-      const openerTab = await getDocPiPOpener(focusedTabs[0]);
-      if (openerTab?.id !== sender.tab.id) break;
-      tabChange(sender.tab);
+      const focusedOpener = await getDocPiPOpener(focusedTabs[0]);
+      if (focusedOpener?.id !== tab.id) break;
+      tabChange(tab);
       break;
     }
   }
@@ -516,6 +536,11 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 });
 
 function remove(tabId) {
+  let pipOpenerId = null;
+  if (hasProperty(state.pipTabs, tabId)) {
+    pipOpenerId = state.pipTabs[tabId];
+    delete state.pipTabs[tabId];
+  }
   state.media.delete(tabId);
   state.mutedMedia.delete(tabId);
   state.otherTabs.delete(tabId);
@@ -527,25 +552,72 @@ function remove(tabId) {
     pendingAudible.delete(tabId);
   }
   onPause(tabId);
+  if (pipOpenerId !== null) {
+    (async () => {
+      if (state.media.has(pipOpenerId) && !(await isPlaying(pipOpenerId))) {
+        remove(pipOpenerId);
+        save();
+      }
+    })();
+  }
+}
+
+function getDocPiPChildIds(openerTabId) {
+  const ids = [];
+  for (const [pipId, openerId] of Object.entries(state.pipTabs)) {
+    if (openerId === openerTabId) ids.push(Number(pipId));
+  }
+  return ids;
+}
+
+function registerDocPiPToken(role, token, sender) {
+  if (
+    sender.frameId !== 0 ||
+    typeof token !== 'string' ||
+    token.length !== 36 ||
+    typeof sender.origin !== 'string' ||
+    sender.origin === 'null'
+  ) {
+    return;
+  }
+  if (role === 'child' && sender.url !== 'about:blank') return;
+  if (
+    role === 'opener' &&
+    state.autoPauseWindow !== null &&
+    state.autoPauseWindow !== sender.tab.windowId
+  ) {
+    return;
+  }
+  let entry = pendingPipTokens.get(token);
+  if (!entry) {
+    if (pendingPipTokens.size >= 50) return;
+    entry = {
+      timer: setTimeout(() => pendingPipTokens.delete(token), 5000)
+    };
+    pendingPipTokens.set(token, entry);
+  }
+  entry[role] = {tabId: sender.tab.id, origin: sender.origin};
+  if (entry.opener && entry.child) {
+    clearTimeout(entry.timer);
+    pendingPipTokens.delete(token);
+    if (
+      entry.opener.origin === entry.child.origin &&
+      entry.opener.tabId !== entry.child.tabId
+    ) {
+      state.pipTabs[entry.child.tabId] = entry.opener.tabId;
+      save();
+    }
+  }
 }
 
 async function getDocPiPOpener(tab) {
-  if (
-    typeof tab?.id !== 'number' ||
-    typeof tab.openerTabId !== 'number' ||
-    (tab.url && tab.url !== 'about:blank')
-  ) {
+  if (typeof tab?.id !== 'number' || !hasProperty(state.pipTabs, tab.id)) {
     return null;
   }
   try {
-    const isPiP = await chrome.tabs.sendMessage(
-      tab.id,
-      {type: 'isDocPiP'},
-      {frameId: 0}
-    );
-    if (isPiP !== 'true') return null;
-    return await chrome.tabs.get(tab.openerTabId);
+    return await chrome.tabs.get(state.pipTabs[tab.id]);
   } catch {
+    delete state.pipTabs[tab.id];
     return null;
   }
 }
@@ -677,9 +749,16 @@ async function Broadcast(message) {
 }
 
 async function send(id, message, body = '') {
-  try {
-    return await chrome.tabs.sendMessage(id, {type: message, body: body});
-  } catch {}
+  const pipIds = getDocPiPChildIds(id);
+  const sendOne = async (tabId) => {
+    try {
+      return await chrome.tabs.sendMessage(tabId, {type: message, body: body});
+    } catch {}
+  };
+  const response = await sendOne(id);
+  if (pipIds.length === 0) return response;
+  const pipResponses = await Promise.all(pipIds.map(sendOne));
+  return response ?? pipResponses.find((r) => r !== undefined);
 }
 
 async function tabTest(id, test) {

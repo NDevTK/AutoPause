@@ -272,11 +272,14 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         );
       }
       break;
-    case 'playMuted':
+    case 'playMuted': {
       if (await isPlaying(tab.id)) break;
+      const wasInMedia = state.media.has(tab.id);
       state.mutedMedia.delete(tab.id);
       onMute(tab.id);
+      if (wasInMedia) unmuteIfOwned(tab.id, getDocPiPChildIds(tab.id));
       break;
+    }
     case 'pause':
       if (await isPlaying(tab.id)) break;
       remove(tab.id);

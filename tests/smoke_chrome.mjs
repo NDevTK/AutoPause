@@ -5031,6 +5031,61 @@ async function main() {
       );
       await sleep(300);
 
+      // 18) muteonpause tab mute must be released when a paused state.media tab transitions directly to playMuted
+      await evalInSession(cdp, swSid, `options.muteonpause = true; true`);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const a1 = document.createElement('audio');
+          a1.src = '/tone.wav?pmAudible';
+          a1.loop = true;
+          const a2 = document.createElement('audio');
+          a2.src = '/tone.wav?pmMuted';
+          a2.loop = true;
+          a2.muted = true;
+          document.body.append(a1, a2);
+          window._pmAudible = a1;
+          window._pmMuted = a2;
+          await a1.play();
+          await a2.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab3Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `chrome.tabs.get(${tab3Id}).then((t) => t.mutedInfo?.muted === true && t.mutedInfo?.extensionId === chrome.runtime.id)`
+          ),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_pmAudible.pause(); _pmAudible.remove(); true`
+      );
+      const mopPlayMutedUnmuted = await waitFor(async () => {
+        const res = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab3Id}).then((t) => ({muted: Boolean(t.mutedInfo?.muted), inMedia: state.media.has(${tab3Id}), inMutedTabs: state.mutedTabs.has(${tab3Id})}))`
+        );
+        return !res.muted && !res.inMedia && res.inMutedTabs ? res : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_pmMuted.pause(); _pmMuted.remove(); true`
+      );
+      await evalInSession(cdp, swSid, `delete options.muteonpause; true`);
+      await sleep(300);
+
       console.log(
         '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
@@ -5084,7 +5139,8 @@ async function main() {
           mtMopNewPlay,
           mtMopToggledPaused,
           crossWinMovedToWin1: crossWinCheck.movedToWin1,
-          staleDurResumed
+          staleDurResumed,
+          mopPlayMutedUnmuted
         }
       );
 

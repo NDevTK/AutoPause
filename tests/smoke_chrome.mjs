@@ -2951,12 +2951,70 @@ async function main() {
         true,
         `muteonpause bypassed disableresume! ${JSON.stringify(mopDisableResume)}`
       );
+      // muteonpause + muted tab playing muted autoplay media (state.mutedTabs only): switching away & back must NOT unmute!
+      await evalInSession(cdp, swSid, `delete options.disableresume; true`);
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await sleep(300);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?mopMutedTab';
+          a.loop = true;
+          a.muted = true;
+          document.body.appendChild(a);
+          window._mopMutedTabAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `state.mutedTabs.has(${tab3Id}) && !state.mutedMedia.has(${tab3Id})`
+          ),
+        5000
+      );
       await evalInSession(
         cdp,
         swSid,
-        `delete options.muteonpause; delete options.disableresume; setTabMuted(${tab3Id}, false); true`
+        `chrome.tabs.update(${tab3Id}, {muted: true})`
       );
-      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await sleep(150);
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(250);
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(250);
+      const mopMutedTabStayedMuted = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          const t = await chrome.tabs.get(${tab3Id});
+          return {muted: t.mutedInfo?.muted, activeTabIsTab3: state.activeTab === ${tab3Id}};
+        })()`
+      );
+      assert.equal(
+        mopMutedTabStayedMuted.activeTabIsTab3,
+        true,
+        'Expected tab3 to be active after switching back'
+      );
+      assert.equal(
+        mopMutedTabStayedMuted.muted,
+        true,
+        `muteonpause unmuted a muted tab after playMuted! ${JSON.stringify(mopMutedTabStayedMuted)}`
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_mopMutedTabAudio.pause(); _mopMutedTabAudio.remove(); true`
+      );
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.muteonpause; setTabMuted(${tab3Id}, false); true`
+      );
       await sleep(350);
 
       // (c) Audible pauses while muted video remains -> must stay in state.mutedTabs and pause on hide!
@@ -3305,6 +3363,7 @@ async function main() {
           mopAutoResumed,
           mopManualResumed,
           mopDisableResume,
+          mopMutedTabStayedMuted,
           stayMutedPaused,
           dragWhileUnmuted,
           dragAfterZero,

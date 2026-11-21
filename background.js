@@ -548,7 +548,7 @@ function pause(id, checkHidden) {
 function play(id, force) {
   // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
   if (state.locked) return;
-  if (hasProperty(options, 'muteonpause') && !state.mutedMedia.has(id))
+  if (hasProperty(options, 'muteonpause') && !state.mutedTabs.has(id))
     setTabMuted(id, false);
   if (hasProperty(options, 'disableresume') && !force) {
     send(id, 'allowplayback');
@@ -839,6 +839,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     ) {
       if (!state.locked) {
         state.mutedMedia.delete(tabId);
+        state.mutedTabs.delete(tabId);
         state.mediaPlaying = tabId;
         play(tabId, true);
       }
@@ -1105,7 +1106,9 @@ async function updateExtensionScripts() {
   const tabs = await chrome.tabs.query({});
   tabs.forEach(async (tab) => {
     if (!tab.url || !tab.id) return;
-    chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
+    chrome.tabs
+      .sendMessage(tab.id, {type: 'hi ya!'}, {frameId: 0})
+      .catch(async () => {
       if (isUrlExcluded(tab.url, unsupportedScripts)) return;
       try {
         await chrome.scripting.executeScript({

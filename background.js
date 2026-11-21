@@ -431,7 +431,7 @@ chrome.tabs.onDetached.addListener(async (id) => {
 });
 
 // Handle keyboard shortcuts.
-chrome.commands.onCommand.addListener(async (command) => {
+async function handleCommand(command) {
   await initializationCompletePromise;
   // Security: Websites might trick the user into running commands.
   switch (command) {
@@ -492,35 +492,65 @@ chrome.commands.onCommand.addListener(async (command) => {
     case 'pauseoninactive':
       toggleOption('pauseoninactive');
       break;
-    case 'backgroundaudio':
-      // Currently only has one tab
-      state.backgroundaudio.clear();
-      state.backgroundaudio.add(state.activeTab);
+    case 'backgroundaudio': {
+      const targetTab = await getFocusedTargetTab();
+      const tabId = targetTab ? targetTab.id : state.activeTab;
+      if (typeof tabId !== 'number') break;
+      if (state.backgroundaudio.has(tabId)) {
+        state.backgroundaudio.delete(tabId);
+      } else {
+        // Currently only has one tab
+        state.backgroundaudio.clear();
+        state.backgroundaudio.add(tabId);
+      }
       break;
-    case 'ignoretab':
-      state.ignoredTabs.add(state.activeTab);
-      remove(state.activeTab);
+    }
+    case 'ignoretab': {
+      const targetTab = await getFocusedTargetTab();
+      const tabId = targetTab ? targetTab.id : state.activeTab;
+      if (typeof tabId !== 'number') break;
+      if (state.ignoredTabs.has(tabId)) {
+        state.ignoredTabs.delete(tabId);
+        if (targetTab) {
+          state.activeTab = targetTab.id;
+          state.activeWindow = targetTab.windowId;
+        }
+        send(tabId, 'new');
+        if (targetTab?.audible) send(tabId, 'play');
+      } else {
+        state.ignoredTabs.add(tabId);
+        remove(tabId);
+      }
       break;
+    }
     case 'previoustab':
       state.lastPlaying = null;
       switchMedia();
       break;
     case 'autopausewindow': {
-      const tabs = await chrome.tabs.query({
-        active: true,
-        lastFocusedWindow: true
-      });
-      if (tabs.length === 1) {
-        const targetTab = (await getDocPiPOpener(tabs[0])) || tabs[0];
-        if (targetTab.windowId !== chrome.windows.WINDOW_ID_NONE) {
-          state.autoPauseWindow = targetTab.windowId;
-        }
+      const targetTab = await getFocusedTargetTab();
+      if (targetTab && targetTab.windowId !== chrome.windows.WINDOW_ID_NONE) {
+        state.autoPauseWindow =
+          state.autoPauseWindow === targetTab.windowId
+            ? null
+            : targetTab.windowId;
       }
       break;
     }
   }
   save();
-});
+}
+
+chrome.commands.onCommand.addListener(handleCommand);
+
+async function getFocusedTargetTab() {
+  const tabs = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true
+  });
+  if (tabs.length !== 1) return null;
+  return (await getDocPiPOpener(tabs[0])) || tabs[0];
+}
 
 function setTabMuted(id, muted) {
   chrome.tabs.update(id, {muted}, () => void chrome.runtime.lastError);

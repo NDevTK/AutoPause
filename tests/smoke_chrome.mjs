@@ -826,8 +826,11 @@ async function main() {
         `(() => ({
         bg: getComputedStyle(document.body).backgroundColor,
         color: getComputedStyle(document.body).color,
+        overflowY: getComputedStyle(document.body).overflowY,
+        noHorizOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         chromeOnlyHidden: document.getElementById('chromeonly').hidden,
-        shortcutButtons: document.querySelectorAll('#shortcuts button').length
+        shortcutButtons: document.querySelectorAll('#shortcuts button').length,
+        shortcutRows: document.querySelectorAll('#shortcuts .shortcut-row').length
       }))()`
       );
       console.log('3. Options page computed state:', optState);
@@ -842,6 +845,16 @@ async function main() {
         'options.css color must apply under CSP'
       );
       assert.equal(
+        optState.overflowY,
+        'auto',
+        'options.css must allow vertical scrolling'
+      );
+      assert.equal(
+        optState.noHorizOverflow,
+        true,
+        'options page must not overflow horizontally'
+      );
+      assert.equal(
         optState.chromeOnlyHidden,
         false,
         'options-chrome.js must unhide #chromeonly'
@@ -851,6 +864,49 @@ async function main() {
         1,
         'options-chrome.js must add Edit shortcuts button'
       );
+      assert.equal(
+        optState.shortcutRows,
+        12,
+        'options-chrome.js must list all 12 commands'
+      );
+
+      // Verify validation, hostname normalization on submit, and dependent option dimming
+      const optUx = await evalInSession(
+        cdp,
+        optSid,
+        `(async () => {
+          const ui = document.getElementById('userinput');
+          const ex = document.getElementById('exclude');
+          const form = document.getElementById('permissions-form');
+          const st = document.getElementById('permissions-status');
+          ui.value = 'not_a_domain';
+          form.requestSubmit();
+          const invalidKept = ui.classList.contains('is-invalid') && ui.value === 'not_a_domain' && st.classList.contains('error');
+          ui.value = '';
+          ex.value = 'zoom meet.google.com https://discord.com';
+          form.requestSubmit();
+          await new Promise((r) => setTimeout(r, 150));
+          const normalizedEx = ex.value;
+          const storedEx = (await chrome.storage.sync.get('exclude')).exclude;
+          document.getElementById('disableresume').click();
+          await new Promise((r) => setTimeout(r, 100));
+          const dimmedNoAuto = document.querySelector('label[for="noauto"]').classList.contains('is-dimmed') && !document.getElementById('noauto').disabled;
+          document.getElementById('disableresume').click();
+          return {invalidKept, normalizedEx, storedEx, dimmedNoAuto};
+        })()`
+      );
+      assert.equal(optUx.invalidKept, true, 'Invalid entry must show inline error and keep value');
+      assert.equal(
+        optUx.normalizedEx,
+        'https://*.zoom.us/* https://meet.google.com/* https://discord.com/*',
+        `Expected normalized exclude patterns, got ${optUx.normalizedEx}`
+      );
+      assert.deepEqual(optUx.storedEx, [
+        'https://*.zoom.us/*',
+        'https://meet.google.com/*',
+        'https://discord.com/*'
+      ]);
+      assert.equal(optUx.dimmedNoAuto, true, 'disableresume must visually dim noauto without disabling input');
 
       // Toggle an option checkbox and verify sync storage + background.js picks it up
       await evalInSession(
@@ -870,7 +926,7 @@ async function main() {
         'background.js must receive muteonpause option change from sync storage'
       );
       console.log(
-        '4. Options checkbox -> chrome.storage.sync -> background.js verified!'
+        '4. Options checkbox, validation, hostname normalization, dimming -> chrome.storage.sync -> background.js verified!'
       );
 
       assert.equal(swErrors.length, 0, `SW errors: ${swErrors}`);
@@ -3355,8 +3411,59 @@ async function main() {
         `Expected denyPause on closed tab to return true, got ${denyClosedTab}`
       );
 
+      // (i) Toggleable commands: backgroundaudio, ignoretab (even after tab switch), and autopausewindow
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      const bgToggle = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          await handleCommand('backgroundaudio');
+          const on = state.backgroundaudio.has(${tab3Id});
+          await handleCommand('backgroundaudio');
+          const off = !state.backgroundaudio.has(${tab3Id});
+          return {on, off};
+        })()`
+      );
+      assert.deepEqual(bgToggle, {on: true, off: true});
+      await evalInSession(cdp, swSid, `handleCommand('ignoretab')`);
+      const ignoredOn = await evalInSession(
+        cdp,
+        swSid,
+        `state.ignoredTabs.has(${tab3Id})`
+      );
+      assert.equal(ignoredOn, true);
+      // Switch to tab2 then back to ignored tab3 (state.activeTab stayed tab2!) -> ignoretab must still un-ignore tab3!
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(cdp, swSid, `handleCommand('ignoretab')`);
+      const ignoreAfterToggleOff = await evalInSession(
+        cdp,
+        swSid,
+        `({tab3Ignored: state.ignoredTabs.has(${tab3Id}), ignoredSize: state.ignoredTabs.size, activeTabIsTab3: state.activeTab === ${tab3Id}})`
+      );
+      assert.deepEqual(ignoreAfterToggleOff, {
+        tab3Ignored: false,
+        ignoredSize: 0,
+        activeTabIsTab3: true
+      });
+      const winToggle = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          await handleCommand('autopausewindow');
+          const locked = typeof state.autoPauseWindow === 'number';
+          await handleCommand('autopausewindow');
+          const unlocked = state.autoPauseWindow === null;
+          return {locked, unlocked};
+        })()`
+      );
+      assert.deepEqual(winToggle, {locked: true, unlocked: true});
+
       console.log(
-        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, and denyPause closed-tab verified:',
+        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, and toggleable commands verified:',
         {
           msAllowed,
           msAfterMuteCycle,
@@ -3372,7 +3479,10 @@ async function main() {
           declShadowPaused,
           unmuteClickRate,
           docOpenPaused,
-          denyClosedTab
+          denyClosedTab,
+          bgToggle,
+          ignoreAfterToggleOff,
+          winToggle
         }
       );
 

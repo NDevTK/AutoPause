@@ -1109,30 +1109,30 @@ async function updateExtensionScripts() {
     chrome.tabs
       .sendMessage(tab.id, {type: 'hi ya!'}, {frameId: 0})
       .catch(async () => {
-      if (isUrlExcluded(tab.url, unsupportedScripts)) return;
-      try {
-        await chrome.scripting.executeScript({
-          target: {
-            tabId: tab.id,
-            allFrames: true
-          },
-          files: ['ContentScript.js'],
-          injectImmediately: true
-        });
-        if (!isUrlExcluded(tab.url, unsupportedWindowScripts)) {
+        if (isUrlExcluded(tab.url, unsupportedScripts)) return;
+        try {
           await chrome.scripting.executeScript({
             target: {
               tabId: tab.id,
               allFrames: true
             },
-            files: ['WindowScript.js'],
-            world: 'MAIN',
+            files: ['ContentScript.js'],
             injectImmediately: true
           });
-        }
-        send(tab.id, 'new');
-      } catch {}
-    });
+          if (!isUrlExcluded(tab.url, unsupportedWindowScripts)) {
+            await chrome.scripting.executeScript({
+              target: {
+                tabId: tab.id,
+                allFrames: true
+              },
+              files: ['WindowScript.js'],
+              world: 'MAIN',
+              injectImmediately: true
+            });
+          }
+          send(tab.id, 'new');
+        } catch {}
+      });
   });
 }
 

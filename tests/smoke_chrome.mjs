@@ -4466,7 +4466,8 @@ async function main() {
         })()`
       );
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_handoff1.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_handoff1.playbackRate === 0`),
         5000
       );
       await cdp.send('Target.activateTarget', {targetId: tab3.targetId});

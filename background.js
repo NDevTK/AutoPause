@@ -303,7 +303,11 @@ function onPlay(
             ? {frameId: sender.frameId}
             : null;
       const req = target
-        ? chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'}, target)
+        ? chrome.tabs.sendMessage(
+            sender.tab.id,
+            {type: 'normalPlayback'},
+            target
+          )
         : chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'});
       req?.catch?.(() => {});
     } else {

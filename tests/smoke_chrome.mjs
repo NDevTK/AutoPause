@@ -4843,12 +4843,7 @@ async function main() {
       }, 5000);
       await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
       const mtMopToggledPaused = await waitFor(
-        () =>
-          evalInSession(
-            cdp,
-            tab2.sessionId,
-            `_mtMop2.playbackRate === 0`
-          ),
+        () => evalInSession(cdp, tab2.sessionId, `_mtMop2.playbackRate === 0`),
         5000
       );
       await evalInSession(

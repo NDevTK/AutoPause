@@ -1425,11 +1425,7 @@ async function main() {
         );
         return !s.paused && s.rate === 0 && s.vol === 0 ? s : null;
       }, 5000);
-      await evalBiDi(
-        bidi,
-        tab1,
-        `_ffMop.pause(); _ffDeclShadow.pause(); true`
-      );
+      await evalBiDi(bidi, tab1, `_ffMop.pause(); _ffDeclShadow.pause(); true`);
       await evalBiDi(bidi, tab2, `window.pauseShadow()`);
       console.log(
         '10d. Firefox muteonpause (extensionId + disableresume), audible->playMuted, and declarative shadow autoplay verified:',

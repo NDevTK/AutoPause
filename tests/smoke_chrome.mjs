@@ -2772,11 +2772,7 @@ async function main() {
         `Active MediaStream self-muted after volume raise + mute toggle! ${JSON.stringify(msAfterMuteCycle)}`
       );
       // Clean up MediaStream elements
-      await evalInSession(
-        cdp,
-        swSid,
-        `delete options.ignoretabchange; true`
-      );
+      await evalInSession(cdp, swSid, `delete options.ignoretabchange; true`);
       await evalInSession(
         cdp,
         tab3.sessionId,
@@ -2884,7 +2880,8 @@ async function main() {
       await sleep(250);
       await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
       await waitFor(
-        () => evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
         5000
       );
       await evalInSession(cdp, swSid, `options.ignoretabchange = true; true`);
@@ -2938,7 +2935,8 @@ async function main() {
       await sleep(200);
       await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
       await waitFor(
-        () => evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
         5000
       );
       await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
@@ -3129,7 +3127,8 @@ async function main() {
       await sleep(200);
       await evalInSession(cdp, swSid, `pause(${t1PlayingId}); true`);
       await waitFor(
-        () => evalInSession(cdp, tab1.sessionId, `_unmuteVid.playbackRate === 0`),
+        () =>
+          evalInSession(cdp, tab1.sessionId, `_unmuteVid.playbackRate === 0`),
         5000
       );
       const hadActBeforeScript = await evalInSession(
@@ -3143,7 +3142,11 @@ async function main() {
         'Expected tab1 userActivation.isActive to be false before script unmute'
       );
       // Script unmute without userActivation must stay frozen at playbackRate === 0
-      await evalInSession(cdp, tab1.sessionId, `_unmuteVid.muted = false; true`);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_unmuteVid.muted = false; true`
+      );
       await sleep(250);
       const unmuteScriptRate = await evalInSession(
         cdp,

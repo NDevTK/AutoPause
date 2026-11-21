@@ -202,7 +202,8 @@ function hasProperty(value, key) {
 }
 
 function toggleOption(o) {
-  if (hasProperty(options, o)) {
+  const wasEnabled = hasProperty(options, o);
+  if (wasEnabled) {
     delete options[o];
   } else {
     options[o] = true;
@@ -214,6 +215,15 @@ function toggleOption(o) {
         options
       },
       function (result) {
+        if (chrome.runtime.lastError) {
+          if (wasEnabled) {
+            options[o] = true;
+          } else {
+            delete options[o];
+          }
+          applyChanges();
+          setStatus('Could not save option.', true);
+        }
         resolve(result);
       }
     );
@@ -287,6 +297,18 @@ function permissionUpdate(event) {
   const add = parsedAllow.valid.filter((p) => !permissions.includes(p));
   const remove = permissions.filter((p) => !parsedAllow.valid.includes(p));
 
+  const applyRemove = () => {
+    chrome.permissions.remove({origins: remove}, () => {
+      if (chrome.runtime.lastError) {
+        setStatus('Could not remove one or more site permissions.', true);
+        getPermissions();
+        return;
+      }
+      getPermissions();
+      setStatus('Saved.');
+    });
+  };
+
   // Request new permissions synchronously inside the user gesture handler (required in Firefox).
   if (add.length > 0) {
     chrome.permissions.request({origins: add}, (granted) => {
@@ -295,21 +317,20 @@ function permissionUpdate(event) {
         getPermissions();
         return;
       }
-      getPermissions();
-      setStatus(granted ? 'Saved.' : 'Permission request canceled.', !granted);
-    });
-  }
-
-  if (remove.length > 0) {
-    chrome.permissions.remove({origins: remove}, () => {
-      if (chrome.runtime.lastError) {
-        setStatus('Could not remove one or more site permissions.', true);
+      if (!granted) {
         getPermissions();
+        setStatus('Permission request canceled.', true);
         return;
       }
-      getPermissions();
-      if (add.length === 0) setStatus('Saved.');
+      if (remove.length > 0) {
+        applyRemove();
+      } else {
+        getPermissions();
+        setStatus('Saved.');
+      }
     });
+  } else if (remove.length > 0) {
+    applyRemove();
   }
 
   chrome.storage.sync.set({exclude: parsedExclude.valid}, () => {

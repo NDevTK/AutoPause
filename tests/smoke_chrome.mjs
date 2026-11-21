@@ -51,6 +51,7 @@ function makeWav(seconds = 5, sampleRate = 8000, freq = 440) {
 }
 
 const WAV_BUF = makeWav(10);
+const SHORT_WAV_BUF = makeWav(0.6);
 
 class CDPClient {
   constructor(wsUrl) {
@@ -212,6 +213,14 @@ function startTestServer() {
         'Content-Length': WAV_BUF.length
       });
       res.end(WAV_BUF);
+      return;
+    }
+    if (url.pathname === '/short.wav') {
+      res.writeHead(200, {
+        'Content-Type': 'audio/wav',
+        'Content-Length': SHORT_WAV_BUF.length
+      });
+      res.end(SHORT_WAV_BUF);
       return;
     }
     if (url.pathname === '/normal') {
@@ -3819,6 +3828,517 @@ async function main() {
       );
       await sleep(300);
 
+      // 7) checkIdle lock/unlock: background tab stays playing on unlock, locked guards block togglePlayback/switchMedia/multipletabs,
+      //    resumeOnUnlock=false prevents waking already-paused media, and disableresume is respected on unlock
+      const tab1Id = await evalInSession(
+        cdp,
+        swSid,
+        `chrome.tabs.query({}).then((ts) => ts.find((t) => t.url?.includes('/normal')).id)`
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab1.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?idleBg';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._idleBgAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab1Id}`),
+        5000
+      );
+      // Switch to silent tab2 so tab1 is playing in the background
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, swSid, `options.checkidle = true; true`);
+      await evalInSession(cdp, swSid, `checkIdle('locked')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        5000
+      );
+      const idleLockedGuards = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          const resumeFlagOnLock = state.resumeOnUnlock;
+          await handleCommand('togglePlayback');
+          const afterToggle = state.mediaPlaying;
+          switchMedia(true);
+          const afterSwitch = state.mediaPlaying;
+          options.multipletabs = true;
+          let pausedUnderMultiLock = false;
+          const origPause = pause;
+          pause = (id, ch) => { if (id === ${tab1Id}) pausedUnderMultiLock = true; return origPause(id, ch); };
+          try {
+            onPlay({id: ${tab1Id}, windowId: state.activeWindow, active: false, audible: true}, '', false, false);
+          } finally {
+            pause = origPause;
+            delete options.multipletabs;
+          }
+          return {resumeFlagOnLock, afterToggle, afterSwitch, pausedUnderMultiLock};
+        })()`
+      );
+      assert.deepEqual(idleLockedGuards, {
+        resumeFlagOnLock: true,
+        afterToggle: null,
+        afterSwitch: null,
+        pausedUnderMultiLock: true
+      });
+      await evalInSession(cdp, swSid, `checkIdle('active')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        5000
+      );
+      await sleep(350);
+      const idleBgUnlocked = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `({rate: _idleBgAudio.playbackRate, vol: _idleBgAudio.volume})`
+      );
+      const idleBgMp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
+      assert.deepEqual(idleBgUnlocked, {rate: 1, vol: 1});
+      assert.equal(idleBgMp, tab1Id, 'Unlocked background tab must stay mediaPlaying');
+      // Pause via togglePlayback before lock -> unlock must NOT unexpectedly blast audio
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `checkIdle('locked')`);
+      const noResumeWhenAlreadyPaused = await evalInSession(
+        cdp,
+        swSid,
+        `state.resumeOnUnlock`
+      );
+      assert.equal(noResumeWhenAlreadyPaused, false);
+      await evalInSession(cdp, swSid, `checkIdle('active')`);
+      await sleep(300);
+      const stayedPausedOnUnlock = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_idleBgAudio.playbackRate`
+      );
+      assert.equal(stayedPausedOnUnlock, 0);
+      // Resume tab1, lock, enable disableresume, unlock -> must stay paused AND remain in state.media
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `checkIdle('locked')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `options.disableresume = true; true`);
+      await evalInSession(cdp, swSid, `checkIdle('active')`);
+      await sleep(300);
+      const idleDisableResume = await evalInSession(
+        cdp,
+        swSid,
+        `({inMedia: state.media.has(${tab1Id}), mp: state.mediaPlaying})`
+      );
+      assert.deepEqual(idleDisableResume, {inMedia: true, mp: null});
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.disableresume; delete options.checkidle; true`
+      );
+
+      // 8) Manual hotkeys under noauto/pauseoninactive/resumelimit + backgroundaudio exempt from resumelimit + gotoaudible
+      await evalInSession(cdp, swSid, `options.noauto = true; true`);
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 1`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_idleBgAudio.playbackRate === 0`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      const noautoToggleResumed = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab1.sessionId,
+          `_idleBgAudio.playbackRate`
+        );
+        return r === 1 ? r : null;
+      }, 5000);
+      const manualResumeMatrix = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          const prevNoauto = options.noauto;
+          const prevPoi = options.pauseoninactive;
+          const prevLim = options.resumelimit;
+          const prevBg = new Set(state.backgroundaudio);
+          const prevLeg = new Set(state.legacyMedia);
+          try {
+            options.noauto = true;
+            const noautoAuto = getResumeTab(undefined, false);
+            const noautoManual = getResumeTab(undefined, true);
+            delete options.noauto;
+            options.pauseoninactive = true;
+            const poiAuto = getResumeTab(undefined, false);
+            const poiManual = getResumeTab(undefined, true);
+            delete options.pauseoninactive;
+            options.resumelimit = true;
+            state.legacyMedia.add(${tab1Id});
+            state.backgroundaudio.add(${tab1Id});
+            const bgExemptFromLimit = getResumeTab(undefined, false);
+            return {noautoAuto, noautoManual, poiAuto, poiManual, bgExemptFromLimit};
+          } finally {
+            if (!prevNoauto) delete options.noauto;
+            if (!prevPoi) delete options.pauseoninactive;
+            if (!prevLim) delete options.resumelimit;
+            state.backgroundaudio = prevBg;
+            state.legacyMedia = prevLeg;
+          }
+        })()`
+      );
+      assert.deepEqual(manualResumeMatrix, {
+        noautoAuto: false,
+        noautoManual: tab1Id,
+        poiAuto: false,
+        poiManual: tab1Id,
+        bgExemptFromLimit: tab1Id
+      });
+      await evalInSession(cdp, swSid, `delete options.noauto; true`);
+      // gotoaudible while active tab2 is paused in state.media and tab1 is paused in state.media -> activates tab1 (not tab2!)
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?gotoCheck';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._gotoAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () => evalInSession(cdp, tab2.sessionId, `_gotoAudio.playbackRate === 0`),
+        5000
+      );
+      await sleep(300);
+      await evalInSession(cdp, swSid, `handleCommand('gotoaudible')`);
+      const gotoActivatedTab1 = await waitFor(async () => {
+        const a = await evalInSession(cdp, swSid, `state.activeTab`);
+        return a === tab1Id ? a : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_idleBgAudio.pause(); _idleBgAudio.remove(); true`
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_gotoAudio.pause(); _gotoAudio.remove(); true`
+      );
+      await sleep(350);
+
+      // 9) releaseTab (ignoretab + autopausewindow) & muteonpause cleanup (remove() + disabling muteonpause)
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, swSid, `options.muteonpause = true; true`);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?releaseTest';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._relAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted === true)`
+          ),
+        5000
+      );
+      // ignoretab on AutoPause-paused & muted tab must unfreeze (allowplayback) AND unmute it!
+      await evalInSession(cdp, swSid, `handleCommand('ignoretab')`);
+      const ignoredReleased = await waitFor(async () => {
+        const el = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `({paused: _relAudio.paused, rate: _relAudio.playbackRate, vol: _relAudio.volume})`
+        );
+        const tabState = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab2Id}).then((t) => ({muted: t.mutedInfo?.muted, ignored: state.ignoredTabs.has(${tab2Id})}))`
+        );
+        return el.paused && el.rate === 1 && el.vol === 1 && !tabState.muted && tabState.ignored
+          ? {...el, ...tabState}
+          : null;
+      }, 5000);
+      await evalInSession(cdp, swSid, `handleCommand('ignoretab')`);
+      await sleep(250);
+      // Stopping media while muted by muteonpause (remove()) must unmute the tab!
+      await evalInSession(cdp, tab2.sessionId, `_relAudio.play()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted === true)`
+          ),
+        5000
+      );
+      await evalInSession(cdp, tab2.sessionId, `_relAudio.pause(); true`);
+      const unmutedOnRemove = await waitFor(async () => {
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        return m === false ? true : null;
+      }, 5000);
+      // Disabling muteonpause via storage.sync must unmute extension-muted tabs!
+      await evalInSession(
+        cdp,
+        swSid,
+        `new Promise((r) => chrome.storage.sync.set({options: {muteonpause: true}}, r))`
+      );
+      await sleep(150);
+      await evalInSession(cdp, tab2.sessionId, `_relAudio.play()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted === true)`
+          ),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        swSid,
+        `new Promise((r) => chrome.storage.sync.set({options: {}}, r))`
+      );
+      const unmutedOnOptionOff = await waitFor(async () => {
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab2Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        return m === false ? true : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_relAudio.pause(); _relAudio.remove(); true`
+      );
+      await sleep(300);
+      // autopausewindow releases tracked tabs from other windows
+      const winReleaseOutside = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          const w = await chrome.windows.create({url: 'about:blank', focused: false});
+          const outTabId = w.tabs[0].id;
+          state.media.add(outTabId);
+          await chrome.tabs.update(outTabId, {muted: true});
+          await handleCommand('autopausewindow');
+          await new Promise((r) => setTimeout(r, 200));
+          const inMediaAfter = state.media.has(outTabId);
+          const outMutedAfter = (await chrome.tabs.get(outTabId)).mutedInfo?.muted;
+          await handleCommand('autopausewindow');
+          await chrome.windows.remove(w.id);
+          return {inMediaAfter, outMutedAfter, unlocked: state.autoPauseWindow === null};
+        })()`
+      );
+      assert.deepEqual(winReleaseOutside, {
+        inMediaAfter: false,
+        outMutedAfter: false,
+        unlocked: true
+      });
+
+      // 10) Stale lastPlaying clearing, simultaneous rate+volume script override (deniedAudible),
+      //     ignoreshort on already-tracked state.media tab, and nopermission checkHidden order
+      const lastPlayingAndNoperm = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          const prevMp = state.mediaPlaying;
+          const prevLp = state.lastPlaying;
+          const prevNoperm = options.nopermission;
+          let discardedOnCheckHidden = false;
+          const origDiscard = chrome.tabs.discard.bind(chrome.tabs);
+          chrome.tabs.discard = (...a) => { discardedOnCheckHidden = true; return origDiscard(...a); };
+          try {
+            state.lastPlaying = ${tab1Id};
+            state.mediaPlaying = ${tab1Id};
+            onPlay({id: ${tab1Id}, windowId: state.activeWindow, active: false, audible: true}, '', false, false);
+            const clearedOnResume = state.lastPlaying === null;
+            state.lastPlaying = ${tab1Id};
+            onPlay({id: ${tab3Id}, windowId: state.activeWindow, active: false, audible: false}, '', true, false);
+            const clearedOnUserAct = state.lastPlaying === null;
+            options.nopermission = true;
+            pause(${tab2Id}, true);
+            return {clearedOnResume, clearedOnUserAct, discardedOnCheckHidden};
+          } finally {
+            chrome.tabs.discard = origDiscard;
+            state.mediaPlaying = prevMp;
+            state.lastPlaying = prevLp;
+            if (!prevNoperm) delete options.nopermission;
+          }
+        })()`
+      );
+      assert.deepEqual(lastPlayingAndNoperm, {
+        clearedOnResume: true,
+        clearedOnUserAct: true,
+        discardedOnCheckHidden: false
+      });
+      // Simultaneous playbackRate=1 + volume=1 script override on togglePlayback-paused active tab2 must stay frozen!
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?bothOverride';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._bothAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `_bothAudio.playbackRate === 0 && _bothAudio.volume === 0`
+          ),
+        5000
+      );
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `!navigator.userActivation.isActive`
+          ),
+        6000
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_bothAudio.playbackRate = 1; _bothAudio.volume = 1; true`
+      );
+      await sleep(350);
+      const bothOverrideDenied = await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `({rate: _bothAudio.playbackRate, vol: _bothAudio.volume})`
+      );
+      const bothOverrideMp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
+      assert.deepEqual(bothOverrideDenied, {rate: 0, vol: 0});
+      assert.equal(bothOverrideMp, null);
+      // ignoreshort on already-tracked state.media tab2 (paused) must NOT pause playing background tab1!
+      await evalInSession(cdp, swSid, `options.ignoreshort = true; true`);
+      await cdp.send('Target.activateTarget', {targetId: tab1.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?shortBg';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._shortBgAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab1Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `options.ignoretabchange = true; true`);
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      // tab2 is still in state.media (paused _bothAudio), active; play a 0.6s notification sound on tab2
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const s = document.createElement('audio');
+          s.src = '/short.wav?notif';
+          document.body.appendChild(s);
+          await s.play();
+          await new Promise((r) => s.addEventListener('ended', r, {once: true}));
+          s.remove();
+        })()`
+      );
+      await sleep(300);
+      const bgSurvivedShortOnMediaTab = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `({rate: _shortBgAudio.playbackRate, vol: _shortBgAudio.volume})`
+      );
+      assert.deepEqual(bgSurvivedShortOnMediaTab, {rate: 1, vol: 1});
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.ignoreshort; delete options.ignoretabchange; true`
+      );
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_shortBgAudio.pause(); _shortBgAudio.remove(); true`
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_bothAudio.pause(); _bothAudio.remove(); true`
+      );
+      await sleep(300);
+
       console.log(
         '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
@@ -3848,7 +4368,20 @@ async function main() {
           multiMuteResumed,
           activeToggleScriptDenied,
           denyPlayMatrix,
-          activeToggleClickResumed
+          activeToggleClickResumed,
+          idleLockedGuards,
+          idleBgUnlocked,
+          idleDisableResume,
+          noautoToggleResumed,
+          manualResumeMatrix,
+          gotoActivatedTab1,
+          ignoredReleased,
+          unmutedOnRemove,
+          unmutedOnOptionOff,
+          winReleaseOutside,
+          lastPlayingAndNoperm,
+          bothOverrideDenied,
+          bgSurvivedShortOnMediaTab
         }
       );
 

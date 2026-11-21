@@ -244,7 +244,7 @@
       // On insecure website we cant have a ID :(
     }
 
-    Elements.set(src, {id: mediaID});
+    Elements.set(src, {id: mediaID, lastMuted: src.muted});
     let controller = new AbortController();
 
     src.addEventListener(
@@ -252,18 +252,22 @@
       async (event) => {
         if (!event.isTrusted) return;
         if (validMedia(event.srcElement)) {
-          let data = Elements.get(event.srcElement);
+          const el = event.srcElement;
+          const data = Elements.get(el);
+          const mutedChanged = data && el.muted !== data.lastMuted;
+          if (data) data.lastMuted = el.muted;
           if (
-            event.srcElement.volume === 0 &&
-            !event.srcElement.muted &&
-            data?.wasPlaying
+            data?.wasPlaying &&
+            data.wasVolume > 0 &&
+            el.volume === 0 &&
+            !mutedChanged
           ) {
             event.stopPropagation();
             return;
           }
-          if (!isPaused(event.srcElement)) {
-            if (isMuted(event.srcElement)) await sleep(200);
-            onPlay(event.srcElement);
+          if (!isPaused(el)) {
+            if (isMuted(el)) await sleep(200);
+            onPlay(el);
           }
         }
       },
@@ -364,7 +368,7 @@
   function normalPlayback(src) {
     let data = Elements.has(src) ? Elements.get(src) : {};
     if (data.wasPlaying) {
-      src.volume = data.wasVolume;
+      if (src.volume === 0 && data.wasVolume > 0) src.volume = data.wasVolume;
       src.playbackRate = data.wasPlaybackRate;
       data.wasPlaying = false;
     }
@@ -376,10 +380,10 @@
       data.wasVolume = e.volume;
       data.wasPlaybackRate = e.playbackRate;
     }
-    // Rate change event will stopPropagation.
+    // Rate and volume change events will stopPropagation.
     data.wasPlaying = true;
     e.playbackRate = 0;
-    e.volume = 0;
+    if (!e.muted) e.volume = 0;
     Elements.set(e, data);
   }
 

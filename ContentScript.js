@@ -45,6 +45,9 @@
         const pipWin = event.window;
         const pipDoc = pipWin.document;
         addListener(pipWin);
+        pipWin.addEventListener('autoPauseMedia', onAutoPauseMedia, {
+          capture: true
+        });
         pipWin.addEventListener('focus', (e) => {
           if (e.isTrusted) send('tabFocus');
         });
@@ -403,27 +406,30 @@
 
   addListener(window);
 
-  window.addEventListener(
-    'autoPauseMedia',
-    (event) => {
-      if (!(event instanceof FocusEvent)) return;
-      event.stopImmediatePropagation();
-      const target = event.relatedTarget;
-      if (!target) return;
-      if (validMedia(target)) {
-        addListener(target);
-      } else {
-        const shadowDOM = shadow(target);
-        if (shadowDOM !== null) {
-          addListener(shadowDOM);
-          checkShadow(shadowDOM);
-        }
-      }
-    },
-    {
-      capture: true
+  function onAutoPauseMedia(event) {
+    const FocusEventCtor = event.currentTarget?.FocusEvent || FocusEvent;
+    if (!(event instanceof FocusEventCtor)) return;
+    if (isDocPiPChild()) {
+      event.stopPropagation();
+      return;
     }
-  );
+    event.stopImmediatePropagation();
+    const target = event.relatedTarget;
+    if (!target) return;
+    if (validMedia(target)) {
+      addListener(target);
+    } else {
+      const shadowDOM = shadow(target);
+      if (shadowDOM !== null) {
+        addListener(shadowDOM);
+        checkShadow(shadowDOM);
+      }
+    }
+  }
+
+  window.addEventListener('autoPauseMedia', onAutoPauseMedia, {
+    capture: true
+  });
 
   function onPause(src, controller) {
     const data = Elements.get(src);
@@ -512,8 +518,10 @@
     });
   }
 
-  function checkDOM() {
-    for (const e of document.querySelectorAll('*')) {
+  function checkDOM(DOM = document) {
+    if (DOM === document && docPiP && docPiP.window)
+      checkDOM(docPiP.window.document);
+    for (const e of DOM.querySelectorAll('*')) {
       if (e.paused === false && !isPaused(e)) {
         if (!Elements.has(e) && validMedia(e)) {
           addMedia(e);

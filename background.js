@@ -283,7 +283,7 @@ function onPlay(
   if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab)
     return;
   // Dont allow a diffrent tab to hijack active media.
-  if (denyPlay(tab, userActivation)) {
+  if (denyPlay(tab, userActivation, wasPaused)) {
     return pause(tab.id);
   }
   state.mediaPlaying = tab.id;
@@ -417,6 +417,11 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
     if (
       state.autoPauseWindow !== null &&
       state.autoPauseWindow !== targetTab.windowId
+    )
+      return;
+    if (
+      targetTab.id === state.activeTab &&
+      targetTab.windowId === state.activeWindow
     )
       return;
     state.activeWindow = targetTab.windowId;
@@ -960,13 +965,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   save();
 });
 
-function denyPlay(tab, userActivation = false) {
+function denyPlay(tab, userActivation = false, wasPaused = false) {
   // Security: Logic used to determine if videos are not allowed to play.
   if (state.locked) return true;
   if (userActivation) return false;
+  if (tab.id === state.mediaPlaying) return false;
+  if (wasPaused) return true;
   if (tab.id === state.activeTab) return false;
   if (tab.id === state.lastPlaying) return false;
-  if (tab.id === state.mediaPlaying) return false;
   if (hasProperty(options, 'allowactive') && tab.active) return false;
   return true;
 }

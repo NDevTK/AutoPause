@@ -3700,6 +3700,125 @@ async function main() {
       );
       await sleep(300);
 
+      // 6) Active tab paused via togglePlayback: script rate/play override (wasPaused=true, userActivation=false)
+      //    is denied by denyPlay even on activeTab & allowactive, while real user click resumes it!
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      const t2NoAct = await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `navigator.userActivation.isActive`
+      );
+      assert.equal(
+        t2NoAct,
+        false,
+        'Expected tab2 userActivation.isActive to be false before script override check'
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?activeToggle';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._t2ToggleAudio = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `_t2ToggleAudio.playbackRate === 0 && _t2ToggleAudio.volume === 0`
+          ),
+        5000
+      );
+      // Script rate nudge without userActivation must stay frozen at rate=0, vol=0!
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_t2ToggleAudio.playbackRate = 1.05; true`
+      );
+      await sleep(250);
+      const activeToggleScriptDenied = await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `({rate: _t2ToggleAudio.playbackRate, vol: _t2ToggleAudio.volume})`
+      );
+      assert.deepEqual(
+        activeToggleScriptDenied,
+        {rate: 0, vol: 0},
+        `Script override woke active tab paused by togglePlayback! ${JSON.stringify(activeToggleScriptDenied)}`
+      );
+      // Verify denyPlay matrix with allowactive=true: wasPaused=true denied, wasPaused=false allowed
+      const denyPlayMatrix = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          options.allowactive = true;
+          try {
+            return {
+              wasPausedDenied: denyPlay({id: ${tab2Id}, active: true}, false, true),
+              newPlayAllowed: denyPlay({id: ${tab2Id}, active: true}, false, false),
+              userGestureAllowed: denyPlay({id: ${tab2Id}, active: true}, true, true)
+            };
+          } finally {
+            delete options.allowactive;
+          }
+        })()`
+      );
+      assert.deepEqual(denyPlayMatrix, {
+        wasPausedDenied: true,
+        newPlayAllowed: false,
+        userGestureAllowed: false
+      });
+      // Real user click setting playbackRate=1 resumes the paused active tab!
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(() => {
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', () => {
+            btn.remove();
+            _t2ToggleAudio.playbackRate = 1;
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      const activeToggleClickResumed = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `({rate: _t2ToggleAudio.playbackRate, vol: _t2ToggleAudio.volume})`
+        );
+        return s.rate === 1 && s.vol === 1 ? s : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_t2ToggleAudio.pause(); _t2ToggleAudio.remove(); true`
+      );
+      await sleep(300);
+
       console.log(
         '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
@@ -3726,7 +3845,10 @@ async function main() {
           toggledRate,
           otherSurvivedHidden,
           stateMachineChecks,
-          multiMuteResumed
+          multiMuteResumed,
+          activeToggleScriptDenied,
+          denyPlayMatrix,
+          activeToggleClickResumed
         }
       );
 

@@ -684,6 +684,52 @@ function startTestServer() {
   });
 }
 
+async function attachAutoPauseSW(cdp) {
+  const skipped = new Set();
+  return waitFor(async () => {
+    const {targetInfos} = await cdp.send('Target.getTargets');
+    const candidates = targetInfos.filter(
+      (t) =>
+        t.type === 'service_worker' &&
+        t.url.endsWith('/background.js') &&
+        !skipped.has(t.targetId)
+    );
+    for (const candidate of candidates) {
+      const {sessionId} = await cdp.send('Target.attachToTarget', {
+        targetId: candidate.targetId,
+        flatten: true
+      });
+      let name;
+      try {
+        name = await evalInSession(
+          cdp,
+          sessionId,
+          `chrome.runtime?.getManifest?.().name`,
+          false
+        );
+      } catch {}
+      if (name === 'AutoPause') {
+        const swErrors = [];
+        cdp.on(
+          'Runtime.exceptionThrown',
+          (p) => swErrors.push(p.exceptionDetails?.text),
+          sessionId
+        );
+        await cdp.send('Runtime.enable', {}, sessionId);
+        return {
+          swTarget: candidate,
+          swSid: sessionId,
+          extId: new URL(candidate.url).hostname,
+          swErrors
+        };
+      }
+      if (typeof name === 'string') skipped.add(candidate.targetId);
+      await cdp.send('Target.detachFromTarget', {sessionId}).catch(() => {});
+    }
+    return null;
+  }, 15000);
+}
+
 async function main() {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'autopause-chrome-'));
   try {
@@ -702,27 +748,9 @@ async function main() {
     );
     try {
       const {cdp} = browserA;
-      // Wait for AutoPause service worker
-      const swTarget = await waitFor(async () => {
-        const {targetInfos} = await cdp.send('Target.getTargets');
-        return targetInfos.find(
-          (t) => t.type === 'service_worker' && t.url.endsWith('/background.js')
-        );
-      }, 10000);
-      const extId = new URL(swTarget.url).hostname;
+      // Wait for AutoPause service worker (skip built-in component extensions)
+      const {swTarget, swSid, extId, swErrors} = await attachAutoPauseSW(cdp);
       console.log('1. Extension SW loaded:', swTarget.url);
-
-      const {sessionId: swSid} = await cdp.send('Target.attachToTarget', {
-        targetId: swTarget.targetId,
-        flatten: true
-      });
-      const swErrors = [];
-      cdp.on(
-        'Runtime.exceptionThrown',
-        (p) => swErrors.push(p.exceptionDetails?.text),
-        swSid
-      );
-      await cdp.send('Runtime.enable', {}, swSid);
 
       // Wait for initialization & onInstalled (which opens options.html!)
       let optionsTarget;
@@ -732,7 +760,9 @@ async function main() {
             filter: [{exclude: false}]
           });
           return targetInfos.find(
-            (t) => t.url === `chrome-extension://${extId}/options.html`
+            (t) =>
+              (t.type === 'webview' || t.type === 'page') &&
+              t.url === `chrome-extension://${extId}/options.html`
           );
         }, 15000);
       } catch (err) {
@@ -871,23 +901,7 @@ async function main() {
     );
     try {
       const {cdp} = browserB;
-      const swTarget = await waitFor(async () => {
-        const {targetInfos} = await cdp.send('Target.getTargets');
-        return targetInfos.find(
-          (t) => t.type === 'service_worker' && t.url.endsWith('/background.js')
-        );
-      }, 10000);
-      const {sessionId: swSid} = await cdp.send('Target.attachToTarget', {
-        targetId: swTarget.targetId,
-        flatten: true
-      });
-      const swErrors = [];
-      cdp.on(
-        'Runtime.exceptionThrown',
-        (p) => swErrors.push(p.exceptionDetails?.text),
-        swSid
-      );
-      await cdp.send('Runtime.enable', {}, swSid);
+      const {swSid, swErrors} = await attachAutoPauseSW(cdp);
 
       // Wait for registerContentScripts to finish
       await waitFor(async () => {

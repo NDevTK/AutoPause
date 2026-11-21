@@ -782,8 +782,7 @@ function registerDocPiPToken(role, token, sender) {
   entry[role] = {
     tabId: sender.tab.id,
     origin: sender.origin,
-    documentId:
-      typeof sender.documentId === 'string' ? sender.documentId : null
+    documentId: typeof sender.documentId === 'string' ? sender.documentId : null
   };
   if (entry.opener && entry.child) {
     clearTimeout(entry.timer);

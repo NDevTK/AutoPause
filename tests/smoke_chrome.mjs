@@ -4543,6 +4543,150 @@ async function main() {
       );
       await sleep(300);
 
+      // 13) User-gesture Mute->Unmute on a volumeZeroed AutoPause-paused element resumes playback cleanly
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?volZeroUnmute';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._volZeroUnmute = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `_volZeroUnmute.playbackRate === 0 && _volZeroUnmute.volume === 0`
+          ),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(() => {
+          _volZeroUnmute.muted = true;
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', () => {
+            btn.remove();
+            _volZeroUnmute.muted = false;
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await sleep(100);
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      const volZeroUnmuteResumed = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `({rate: _volZeroUnmute.playbackRate, vol: _volZeroUnmute.volume, muted: _volZeroUnmute.muted})`
+        );
+        return s.rate === 1 && s.vol === 1 && !s.muted ? s : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_volZeroUnmute.pause(); _volZeroUnmute.remove(); true`
+      );
+      await sleep(300);
+
+      // MediaStream (rateZeroed=false, volumeZeroed=true) Mute->Unmute with user gesture also resumes cleanly
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const ac = new AudioContext();
+          const osc = ac.createOscillator();
+          const dest = ac.createMediaStreamDestination();
+          osc.connect(dest);
+          osc.start();
+          const a = document.createElement('audio');
+          a.srcObject = dest.stream;
+          a.volume = 0.75;
+          document.body.appendChild(a);
+          window._msVolZeroAc = ac;
+          window._msVolZeroUnmute = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab2Id}`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `handleCommand('togglePlayback')`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `_msVolZeroUnmute.volume === 0`
+          ),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(() => {
+          _msVolZeroUnmute.muted = true;
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', () => {
+            btn.remove();
+            _msVolZeroUnmute.muted = false;
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await sleep(100);
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab2.sessionId
+      );
+      const msVolZeroUnmuteResumed = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `({vol: _msVolZeroUnmute.volume, muted: _msVolZeroUnmute.muted})`
+        );
+        return s.vol === 0.75 && !s.muted ? s : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_msVolZeroUnmute.pause(); _msVolZeroUnmute.remove(); _msVolZeroAc.close(); true`
+      );
+      await sleep(300);
+
       console.log(
         '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
@@ -4588,7 +4732,9 @@ async function main() {
           bgSurvivedShortOnMediaTab,
           mpHandedToOther,
           otherHandoffResumed,
-          mutedWhilePausedSkipped
+          mutedWhilePausedSkipped,
+          volZeroUnmuteResumed,
+          msVolZeroUnmuteResumed
         }
       );
 

@@ -389,7 +389,7 @@
       if (
         mutedChanged &&
         !el.muted &&
-        data.rateZeroed &&
+        (data.rateZeroed || data.volumeZeroed) &&
         !el.paused &&
         !isMuted(el) &&
         navigator.userActivation?.isActive
@@ -398,7 +398,7 @@
       }
     }
     clearTimeout(data.muteTimer);
-    if (canNotifyPlay(el, data) && !data.volumeZeroed) {
+    if (canNotifyPlay(el, data) && (!data.volumeZeroed || data.playRequested)) {
       if (isMuted(el)) {
         if (!data.reportedMuted) {
           data.muteTimer = setTimeout(() => {

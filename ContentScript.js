@@ -66,9 +66,10 @@
     try {
       const token = crypto.randomUUID();
       send('docPiPOpen', token);
-      pipWin[pipTokenSym] = token;
       if (typeof pipWin[pipHandshakeSym] === 'function') {
         pipWin[pipHandshakeSym](token);
+      } else {
+        pipWin[pipTokenSym] = token;
       }
     } catch {}
     pipWin.addEventListener('focus', (e) => {

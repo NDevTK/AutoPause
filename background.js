@@ -89,34 +89,6 @@ async function restore() {
       Array.isArray(result.state.pipTabs)
     ) {
       result.state.pipTabs = {};
-    } else {
-      const normalized = {};
-      for (const [pipId, entry] of Object.entries(result.state.pipTabs)) {
-        if (typeof entry === 'number') {
-          normalized[pipId] = {
-            openerTabId: entry,
-            openerDocumentId: null,
-            pipDocumentId: null
-          };
-        } else if (
-          typeof entry === 'object' &&
-          entry !== null &&
-          typeof entry.openerTabId === 'number'
-        ) {
-          normalized[pipId] = {
-            openerTabId: entry.openerTabId,
-            openerDocumentId:
-              typeof entry.openerDocumentId === 'string'
-                ? entry.openerDocumentId
-                : null,
-            pipDocumentId:
-              typeof entry.pipDocumentId === 'string'
-                ? entry.pipDocumentId
-                : null
-          };
-        }
-      }
-      result.state.pipTabs = normalized;
     }
     if (typeof result.state.activeWindow !== 'number') {
       result.state.activeWindow = null;
@@ -182,7 +154,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (
     typeof message !== 'object' ||
     message === null ||
-    !hasProperty(sender, 'tab') ||
+    typeof sender.tab?.id !== 'number' ||
     (sender.documentLifecycle && sender.documentLifecycle !== 'active')
   )
     return;
@@ -329,10 +301,11 @@ function onPlay(
           ? {documentId: sender.documentId}
           : typeof sender.frameId === 'number'
             ? {frameId: sender.frameId}
-            : undefined;
-      chrome.tabs
-        .sendMessage(sender.tab.id, {type: 'normalPlayback'}, target)
-        .catch(() => {});
+            : null;
+      const req = target
+        ? chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'}, target)
+        : chrome.tabs.sendMessage(sender.tab.id, {type: 'normalPlayback'});
+      req?.catch?.(() => {});
     } else {
       send(tab.id, 'normalPlayback');
     }
@@ -434,6 +407,7 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
       state.autoPauseWindow !== targetTab.windowId
     )
       return;
+    state.activeWindow = targetTab.windowId;
     tabChange(targetTab);
     save();
   }, 200);
@@ -530,13 +504,19 @@ chrome.commands.onCommand.addListener(async (command) => {
       state.lastPlaying = null;
       switchMedia();
       break;
-    case 'autopausewindow':
-      chrome.windows.getCurrent((w) => {
-        if (w.id === chrome.windows.WINDOW_ID_NONE) return;
-        state.autoPauseWindow = w.id;
-        save();
+    case 'autopausewindow': {
+      const tabs = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true
       });
+      if (tabs.length === 1) {
+        const targetTab = (await getDocPiPOpener(tabs[0])) || tabs[0];
+        if (targetTab.windowId !== chrome.windows.WINDOW_ID_NONE) {
+          state.autoPauseWindow = targetTab.windowId;
+        }
+      }
       break;
+    }
   }
   save();
 });
@@ -620,9 +600,9 @@ chrome.tabs.onActivated.addListener(async (info) => {
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   await initializationCompletePromise;
-  const hadPipLinks = Object.keys(state.pipTabs).length > 0;
+  const pipCountBefore = Object.keys(state.pipTabs).length;
   const pipOpenerId = deleteDocPiPLinksForTab(tabId);
-  if (hadPipLinks) save();
+  if (Object.keys(state.pipTabs).length !== pipCountBefore) save();
   setTimeout(() => {
     state.ignoredTabs.delete(tabId);
     remove(tabId, pipOpenerId);

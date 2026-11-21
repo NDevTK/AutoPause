@@ -88,15 +88,15 @@ function normalizeEntry(raw, originOnly = false) {
       }
     } catch {}
   }
+  if (schemeTrailingSlashRegex.test(noHash)) {
+    const candidate = noHash + '*';
+    if (matchPatternRegex.test(candidate)) return candidate;
+  }
   if (matchPatternRegex.test(noHash)) {
     if (!originOnly || !noHash.includes('?')) return noHash;
   }
   if (schemeNoPathRegex.test(noHash)) {
     const candidate = noHash + '/*';
-    if (matchPatternRegex.test(candidate)) return candidate;
-  }
-  if (schemeTrailingSlashRegex.test(noHash)) {
-    const candidate = noHash + '*';
     if (matchPatternRegex.test(candidate)) return candidate;
   }
   const stripped = lower.endsWith('/') ? lower.slice(0, -1) : lower;
@@ -147,6 +147,7 @@ exclude.addEventListener('input', () => clearFieldValidity(exclude));
 // Security: Storage areas are restricted to trusted contexts where supported
 // (Chrome 140+), but older Chrome and Firefox still expose sync to content scripts.
 chrome.storage.sync.get(['options', 'exclude'], (result) => {
+  if (chrome.runtime.lastError || !result) return;
   if (
     typeof result.options === 'object' &&
     result.options !== null &&

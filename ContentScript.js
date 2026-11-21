@@ -268,13 +268,22 @@
     );
   }
 
+  function clearPendingDuration(data) {
+    if (!data) return;
+    if (typeof data.cleanupDuration === 'function') {
+      data.cleanupDuration();
+    } else {
+      clearTimeout(data.durationTimer);
+      data.pendingDuration = false;
+    }
+  }
+
   function onPlay(e) {
     let data = Elements.get(e);
     if (!data || !canNotifyPlay(e, data)) return;
     clearTimeout(data.pauseTimer);
     if (isMuted(e)) {
-      clearTimeout(data.durationTimer);
-      data.pendingDuration = false;
+      clearPendingDuration(data);
       data.playRequested = false;
       data.reportedMuted = true;
       send('playMuted');
@@ -286,11 +295,15 @@
       if (data.pendingDuration) return;
       data.pendingDuration = true;
       const hadActivation = Boolean(navigator.userActivation?.isActive);
-      const sendOnce = () => {
-        if (!data.pendingDuration) return;
+      const cleanup = () => {
         data.pendingDuration = false;
+        data.cleanupDuration = null;
         clearTimeout(data.durationTimer);
         e.removeEventListener('durationchange', onDurationChange);
+      };
+      const sendOnce = () => {
+        if (!data.pendingDuration) return;
+        cleanup();
         if (
           !data.controller.signal.aborted &&
           canNotifyPlay(e, data) &&
@@ -307,16 +320,16 @@
         }
       };
       const onDurationChange = (event) => {
-        if (event.isTrusted) sendOnce();
+        if (event.isTrusted && !isNaN(e.duration)) sendOnce();
       };
+      data.cleanupDuration = cleanup;
       e.addEventListener('durationchange', onDurationChange, {
         signal: data.controller.signal
       });
       data.durationTimer = setTimeout(sendOnce, 500);
       return;
     }
-    clearTimeout(data.durationTimer);
-    data.pendingDuration = false;
+    clearPendingDuration(data);
     data.reportedMuted = false;
     send('play', data.id, e.duration, data.wasPlaying === true);
   }
@@ -499,8 +512,7 @@
       () => {
         clearTimeout(data.pauseTimer);
         clearTimeout(data.muteTimer);
-        clearTimeout(data.durationTimer);
-        data.pendingDuration = false;
+        clearPendingDuration(data);
       },
       {once: true}
     );
@@ -574,8 +586,7 @@
     const data = Elements.get(src);
     if (!data || controller.signal.aborted) return;
     data.playRequested = false;
-    clearTimeout(data.durationTimer);
-    data.pendingDuration = false;
+    clearPendingDuration(data);
     clearTimeout(data.pauseTimer);
     data.pauseTimer = setTimeout(() => {
       if (controller.signal.aborted) return;

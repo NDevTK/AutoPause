@@ -354,25 +354,23 @@ function onPlay(
   if (hasProperty(options, 'ignoreother') && state.otherTabs.has(tab.id))
     return;
 
-  if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab) {
+  const isMultipleBackground =
+    hasProperty(options, 'multipletabs') && tab.id !== state.activeTab;
+
+  if (isMultipleBackground) {
     if (state.locked || (wasPaused && !userActivation)) {
       if (wasPaused) markDeniedAudible(tab.id);
       return pause(tab.id);
     }
-    if (wasPaused) {
-      clearDeniedAudible(tab.id);
-      if (hasProperty(options, 'muteonpause')) setTabMuted(tab.id, false);
-      sendNormalPlayback(tab.id, sender);
-    }
-    return;
-  }
-  // Dont allow a diffrent tab to hijack active media.
-  if (denyPlay(tab, userActivation, wasPaused)) {
+  } else if (denyPlay(tab, userActivation, wasPaused)) {
+    // Dont allow a diffrent tab to hijack active media.
     if (wasPaused) markDeniedAudible(tab.id);
     return pause(tab.id);
   }
   clearDeniedAudible(tab.id);
-  state.mediaPlaying = tab.id;
+  if (!isMultipleBackground || state.mediaPlaying === null) {
+    state.mediaPlaying = tab.id;
+  }
 
   if (hasProperty(options, 'muteonpause')) setTabMuted(tab.id, false);
 
@@ -407,7 +405,7 @@ function onPlay(
     }
   }
   // Pause all other media.
-  if (tab.audible) pauseOther(tab.id);
+  if (!isMultipleBackground && tab.audible) pauseOther(tab.id);
   save();
 }
 
@@ -634,6 +632,14 @@ async function handleCommand(command) {
       if (state.backgroundaudio.has(tabId)) {
         state.backgroundaudio.delete(tabId);
       } else {
+        if (state.ignoredTabs.has(tabId)) break;
+        if (
+          state.autoPauseWindow !== null &&
+          targetTab &&
+          targetTab.windowId !== state.autoPauseWindow
+        ) {
+          break;
+        }
         // Currently only has one tab
         state.backgroundaudio.clear();
         state.backgroundaudio.add(tabId);
@@ -646,12 +652,27 @@ async function handleCommand(command) {
       if (typeof tabId !== 'number') break;
       if (state.ignoredTabs.has(tabId)) {
         state.ignoredTabs.delete(tabId);
-        if (targetTab) {
-          state.activeTab = targetTab.id;
-          state.activeWindow = targetTab.windowId;
+        const inScope =
+          state.autoPauseWindow === null ||
+          !targetTab ||
+          targetTab.windowId === state.autoPauseWindow;
+        if (inScope) {
+          if (targetTab) {
+            state.activeTab = targetTab.id;
+            state.activeWindow = targetTab.windowId;
+          }
+          await send(tabId, 'new');
+          if (targetTab && (await isGroupAudible(targetTab))) {
+            if (await isPlaying(tabId)) {
+              send(tabId, 'play');
+            } else if (!state.media.has(tabId)) {
+              state.otherTabs.add(tabId);
+              onPlay(
+                targetTab.audible ? targetTab : {...targetTab, audible: true}
+              );
+            }
+          }
         }
-        send(tabId, 'new');
-        if (targetTab?.audible) send(tabId, 'play');
       } else {
         state.ignoredTabs.add(tabId);
         releaseTab(tabId);
@@ -669,6 +690,19 @@ async function handleCommand(command) {
           state.autoPauseWindow = null;
         } else {
           state.autoPauseWindow = targetTab.windowId;
+          state.activeWindow = targetTab.windowId;
+          if (!state.ignoredTabs.has(targetTab.id)) {
+            state.activeTab = targetTab.id;
+          } else if (state.activeTab !== null) {
+            try {
+              const prevActive = await chrome.tabs.get(state.activeTab);
+              if (prevActive.windowId !== state.autoPauseWindow) {
+                state.activeTab = null;
+              }
+            } catch {
+              state.activeTab = null;
+            }
+          }
           const trackedIds = new Set([
             ...state.media,
             ...state.mutedTabs,
@@ -1136,37 +1170,61 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       save();
       return;
     }
-    // If has not got a play message from the content script assume theres no permission.
-    if (!state.media.has(tabId)) {
-      // Allow the media to check its shadow dom.
-      send(tabId, 'audible');
-      state.otherTabs.add(tabId);
-      if (hasProperty(options, 'ask'))
-        chrome.permissions
-          ?.addHostAccessRequest?.({tabId: tabId})
-          ?.catch?.((err) =>
-            console.debug('AutoPause addHostAccessRequest:', err)
-          );
-    }
     // Debounce unconfirmed/otherTabs audio when ignoreshort is enabled to filter notification sounds.
     if (
       hasProperty(options, 'ignoreshort') &&
-      (state.otherTabs.has(tabId) || tabId !== state.mediaPlaying)
+      (!state.media.has(tabId) || tabId !== state.mediaPlaying)
     ) {
+      if (!state.media.has(tabId)) {
+        // Allow the media to check its shadow dom.
+        send(tabId, 'audible');
+      }
       if (pendingAudible.has(tabId)) clearTimeout(pendingAudible.get(tabId));
       pendingAudible.set(
         tabId,
-        setTimeout(() => {
+        setTimeout(async () => {
           pendingAudible.delete(tabId);
-          if (
-            !state.ignoredTabs.has(tabId) &&
-            (state.otherTabs.has(tabId) || state.media.has(tabId))
-          ) {
-            onPlay(tab);
+          if (state.ignoredTabs.has(tabId)) return;
+          if (deniedAudible.has(tabId) && tabId !== state.mediaPlaying) return;
+          let freshTab;
+          try {
+            freshTab = await chrome.tabs.get(tabId);
+          } catch {
+            return;
           }
+          if (
+            state.autoPauseWindow !== null &&
+            state.autoPauseWindow !== freshTab.windowId
+          ) {
+            return;
+          }
+          if (!(await isGroupAudible(freshTab))) return;
+          if (!state.media.has(tabId)) {
+            state.otherTabs.add(tabId);
+            if (hasProperty(options, 'ask'))
+              chrome.permissions
+                ?.addHostAccessRequest?.({tabId: tabId})
+                ?.catch?.((err) =>
+                  console.debug('AutoPause addHostAccessRequest:', err)
+                );
+          }
+          onPlay(freshTab.audible ? freshTab : {...freshTab, audible: true});
+          save();
         }, shortMediaDebounce)
       );
     } else {
+      // If has not got a play message from the content script assume theres no permission.
+      if (!state.media.has(tabId)) {
+        // Allow the media to check its shadow dom.
+        send(tabId, 'audible');
+        state.otherTabs.add(tabId);
+        if (hasProperty(options, 'ask'))
+          chrome.permissions
+            ?.addHostAccessRequest?.({tabId: tabId})
+            ?.catch?.((err) =>
+              console.debug('AutoPause addHostAccessRequest:', err)
+            );
+      }
       onPlay(tab);
     }
   } else {
@@ -1287,7 +1345,8 @@ function hasProperty(value, key) {
 
 // Saves options to storage
 function toggleOption(o) {
-  if (hasProperty(options, o)) {
+  const wasEnabled = hasProperty(options, o);
+  if (wasEnabled) {
     delete options[o];
   } else {
     options[o] = true;
@@ -1299,6 +1358,11 @@ function toggleOption(o) {
       },
       function (result) {
         if (chrome.runtime.lastError) {
+          if (wasEnabled) {
+            options[o] = true;
+          } else {
+            delete options[o];
+          }
           console.warn(
             'AutoPause toggleOption:',
             chrome.runtime.lastError.message

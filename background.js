@@ -103,6 +103,16 @@ async function restore() {
       result.state[value] = new Set(result.state[value]);
     }
     state = result.state;
+  } else {
+    try {
+      const focusedTab = await getFocusedTargetTab();
+      if (focusedTab) {
+        state.activeTab = focusedTab.id;
+        state.activeWindow = focusedTab.windowId;
+      }
+    } catch (err) {
+      console.debug('AutoPause initial activeTab:', err);
+    }
   }
   let result2 = await chrome.storage.sync.get(['options', 'exclude']);
   if (
@@ -406,7 +416,14 @@ function onPause(id) {
   if (id === state.mediaPlaying) {
     state.lastPlaying = id;
     autoResume(id);
-    if (state.mediaPlaying === id) state.mediaPlaying = null;
+    if (state.mediaPlaying === id) {
+      state.mediaPlaying =
+        !state.locked &&
+        !hasProperty(options, 'ignoreother') &&
+        state.otherTabs.size > 0
+          ? [...state.otherTabs].pop()
+          : null;
+    }
   }
   save();
 }
@@ -849,6 +866,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   if (Object.keys(state.pipTabs).length !== pipCountBefore) save();
   setTimeout(() => {
     state.ignoredTabs.delete(tabId);
+    if (state.activeTab === tabId) state.activeTab = null;
     remove(tabId, pipOpenerId, false);
     save();
   }, 200);

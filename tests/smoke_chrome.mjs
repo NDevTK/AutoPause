@@ -763,6 +763,21 @@ async function main() {
       // Wait for AutoPause service worker (skip built-in component extensions)
       const {swTarget, swSid, extId, swErrors} = await attachAutoPauseSW(cdp);
       console.log('1. Extension SW loaded:', swTarget.url);
+      const initialActive = await evalInSession(
+        cdp,
+        swSid,
+        `initializationCompletePromise.then(() => ({activeTab: state.activeTab, activeWindow: state.activeWindow}))`
+      );
+      assert.equal(
+        typeof initialActive.activeTab,
+        'number',
+        `Expected restore() to initialize state.activeTab on fresh session, got ${JSON.stringify(initialActive)}`
+      );
+      assert.equal(
+        typeof initialActive.activeWindow,
+        'number',
+        `Expected restore() to initialize state.activeWindow on fresh session, got ${JSON.stringify(initialActive)}`
+      );
 
       // Wait for initialization & onInstalled (which opens options.html!)
       let optionsTarget;
@@ -4359,6 +4374,174 @@ async function main() {
       );
       await sleep(300);
 
+      // 11) Overlapping otherTabs handoff: when mediaPlaying stops while an otherTab is audible,
+      //     state.mediaPlaying hands off to the otherTab so paused media resumes once that otherTab stops
+      await cdp.send('Target.activateTarget', {targetId: tab1.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?handoff1';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._handoff1 = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab1Id}`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?handoff2';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._handoff2 = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab1.sessionId,
+            `_handoff1.playbackRate === 0 && _handoff1.volume === 0`
+          ),
+        5000
+      );
+      // Simulate an audible unpermitted background tab (999001) while tab2 stops
+      await evalInSession(cdp, swSid, `state.otherTabs.add(999001); true`);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_handoff2.pause(); _handoff2.remove(); true`
+      );
+      const mpHandedToOther = await waitFor(async () => {
+        const mp = await evalInSession(cdp, swSid, `state.mediaPlaying`);
+        return mp === 999001 ? mp : null;
+      }, 5000);
+      const tab1StillPausedWhileOther = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_handoff1.playbackRate`
+      );
+      assert.equal(tab1StillPausedWhileOther, 0);
+      // When the last otherTab stops, tab1 MUST auto-resume!
+      await evalInSession(
+        cdp,
+        swSid,
+        `state.otherTabs.delete(999001); onPause(999001); true`
+      );
+      const otherHandoffResumed = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab1.sessionId,
+          `({rate: _handoff1.playbackRate, vol: _handoff1.volume})`
+        );
+        return s.rate === 1 && s.vol === 1 ? s : null;
+      }, 5000);
+
+      // 12) Media muted while paused by AutoPause: resuming sends playMuted -> moves to mutedTabs
+      //     (re-pausing hidden muted tab) and auto-resumes the next real audible tab instead of getting stuck!
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?mutePausedMid';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._mutePausedMid = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_handoff1.playbackRate === 0`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?mutePausedTop';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._mutePausedTop = a;
+          await a.play();
+        })()`
+      );
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab2.sessionId,
+            `_mutePausedMid.playbackRate === 0 && _mutePausedMid.volume === 0`
+          ),
+        5000
+      );
+      // Mute tab2's media while hidden and paused by AutoPause
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_mutePausedMid.muted = true; true`
+      );
+      await sleep(150);
+      // Pause tab3 -> autoResume tries tab2 -> tab2 reports playMuted -> tab2 moves to mutedTabs & stays paused, tab1 resumes!
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_mutePausedTop.pause(); _mutePausedTop.remove(); true`
+      );
+      const mutedWhilePausedSkipped = await waitFor(async () => {
+        const t1 = await evalInSession(
+          cdp,
+          tab1.sessionId,
+          `({rate: _handoff1.playbackRate, vol: _handoff1.volume})`
+        );
+        const t2 = await evalInSession(
+          cdp,
+          tab2.sessionId,
+          `({rate: _mutePausedMid.playbackRate, muted: _mutePausedMid.muted})`
+        );
+        const sw = await evalInSession(
+          cdp,
+          swSid,
+          `({mp: state.mediaPlaying, t2InMuted: state.mutedTabs.has(${tab2Id}), t2InMedia: state.media.has(${tab2Id})})`
+        );
+        return t1.rate === 1 &&
+          t1.vol === 1 &&
+          t2.rate === 0 &&
+          sw.mp === tab1Id &&
+          sw.t2InMuted &&
+          !sw.t2InMedia
+          ? {t1, t2, sw}
+          : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_handoff1.pause(); _handoff1.remove(); true`
+      );
+      await evalInSession(
+        cdp,
+        tab2.sessionId,
+        `_mutePausedMid.pause(); _mutePausedMid.remove(); true`
+      );
+      await sleep(300);
+
       console.log(
         '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, denyPause closed-tab, toggleable commands, and state-machine fixes verified:',
         {
@@ -4401,7 +4584,10 @@ async function main() {
           winReleaseOutside,
           lastPlayingAndNoperm,
           bothOverrideDenied,
-          bgSurvivedShortOnMediaTab
+          bgSurvivedShortOnMediaTab,
+          mpHandedToOther,
+          otherHandoffResumed,
+          mutedWhilePausedSkipped
         }
       );
 

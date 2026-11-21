@@ -167,11 +167,16 @@
       case 'pause':
         pause();
         break;
-      case 'play':
+      case 'play': {
         // When there media already playing tell the background script.
-        if (isPlaying()) send('play');
+        const playing = isPlaying();
+        if (playing) send('play');
         resume(true);
+        if (!playing && [...Elements.keys()].some((el) => !el.paused)) {
+          send('playMuted');
+        }
         break;
+      }
       case 'normalPlayback':
         Elements.forEach((data, e) => {
           if (

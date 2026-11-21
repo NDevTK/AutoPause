@@ -7,7 +7,7 @@
   globalThis[injected] = true;
 
   const Targets = new WeakSet();
-  const HandledPlayEvents = new WeakSet();
+  const HandledEvents = new WeakSet();
 
   const Elements = new Map();
 
@@ -42,7 +42,7 @@
     docPiP.addEventListener('enter', (event) => {
       if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
         // For the top documentPictureInPicture window we are sharing the opener tab audible value
-        addListener(event.window.document);
+        addListener(event.window);
         event.window.addEventListener('focus', (e) => {
           if (e.isTrusted) send('tabFocus');
         });
@@ -155,6 +155,7 @@
     if (isPaused(e)) return;
     let data = Elements.get(e);
     if (!data) return;
+    clearTimeout(data.pauseTimer);
     if (isMuted(e)) {
       send('playMuted');
       return;
@@ -162,20 +163,28 @@
     // If duration is unknown, wait for metadata before reporting to background.
     // This lets the background correctly identify short media (e.g. notification sounds).
     if (isNaN(e.duration)) {
-      let sent = false;
+      if (data.pendingDuration) return;
+      data.pendingDuration = true;
       const sendOnce = () => {
-        if (sent) return;
-        sent = true;
+        if (!data.pendingDuration) return;
+        data.pendingDuration = false;
+        clearTimeout(data.durationTimer);
         e.removeEventListener('durationchange', onDurationChange);
-        if (!isPaused(e) && !isMuted(e)) {
+        if (
+          !data.controller.signal.aborted &&
+          !isPaused(e) &&
+          !isMuted(e)
+        ) {
           send('play', data.id, e.duration);
         }
       };
       const onDurationChange = (event) => {
         if (event.isTrusted) sendOnce();
       };
-      e.addEventListener('durationchange', onDurationChange);
-      setTimeout(sendOnce, 500);
+      e.addEventListener('durationchange', onDurationChange, {
+        signal: data.controller.signal
+      });
+      data.durationTimer = setTimeout(sendOnce, 500);
       return;
     }
     send('play', data.id, e.duration);
@@ -202,6 +211,51 @@
     }
   }
 
+  function onVolumeChange(event) {
+    if (!event.isTrusted || HandledEvents.has(event)) return;
+    const el = event.target;
+    const data = Elements.get(el);
+    if (!data) return;
+    HandledEvents.add(event);
+    const mutedChanged = el.muted !== data.lastMuted;
+    data.lastMuted = el.muted;
+    if (
+      data.wasPlaying &&
+      data.wasVolume > 0 &&
+      el.volume === 0 &&
+      !mutedChanged
+    ) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    clearTimeout(data.muteTimer);
+    if (!isPaused(el)) {
+      if (isMuted(el)) {
+        data.muteTimer = setTimeout(() => {
+          if (!data.controller.signal.aborted) onPlay(el);
+        }, 200);
+      } else {
+        onPlay(el);
+      }
+    }
+  }
+
+  // Dont tell the media please
+  function onRateChange(event) {
+    if (!event.isTrusted || HandledEvents.has(event)) return;
+    const el = event.target;
+    const data = Elements.get(el);
+    if (!data) return;
+    HandledEvents.add(event);
+    if (el.playbackRate === 0 && data.wasPlaying) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!isPaused(el)) {
+      onPlay(el);
+    }
+  }
+
   function addListener(src) {
     if (Targets.has(src)) return;
     Targets.add(src);
@@ -209,11 +263,13 @@
     src.addEventListener(
       'play',
       function (event) {
-        if (!event.isTrusted || HandledPlayEvents.has(event)) return;
-        HandledPlayEvents.add(event);
-        if (validMedia(event.srcElement)) {
-          addMedia(event.srcElement);
-          onPlay(event.srcElement);
+        if (!event.isTrusted || HandledEvents.has(event)) return;
+        HandledEvents.add(event);
+        const el = event.target;
+        if (validMedia(el)) {
+          addMedia(el);
+          clearTimeout(Elements.get(el)?.pauseTimer);
+          onPlay(el);
         }
       },
       {
@@ -221,6 +277,8 @@
         passive: true
       }
     );
+    src.addEventListener('volumechange', onVolumeChange, {capture: true});
+    src.addEventListener('ratechange', onRateChange, {capture: true});
   }
 
   function isMuted(e) {
@@ -244,45 +302,37 @@
       // On insecure website we cant have a ID :(
     }
 
-    Elements.set(src, {id: mediaID, lastMuted: src.muted});
     let controller = new AbortController();
+    const data = {id: mediaID, lastMuted: src.muted, controller};
+    Elements.set(src, data);
 
-    src.addEventListener(
-      'volumechange',
-      async (event) => {
-        if (!event.isTrusted) return;
-        if (validMedia(event.srcElement)) {
-          const el = event.srcElement;
-          const data = Elements.get(el);
-          const mutedChanged = data && el.muted !== data.lastMuted;
-          if (data) data.lastMuted = el.muted;
-          if (
-            data?.wasPlaying &&
-            data.wasVolume > 0 &&
-            el.volume === 0 &&
-            !mutedChanged
-          ) {
-            event.stopPropagation();
-            return;
-          }
-          if (!isPaused(el)) {
-            if (isMuted(el)) await sleep(200);
-            onPlay(el);
-          }
-        }
+    controller.signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(data.pauseTimer);
+        clearTimeout(data.muteTimer);
+        clearTimeout(data.durationTimer);
+        data.pendingDuration = false;
       },
-      {
+      {once: true}
+    );
+
+    if (!Targets.has(src)) {
+      src.addEventListener('volumechange', onVolumeChange, {
         signal: controller.signal,
         capture: true
-      }
-    );
+      });
+      src.addEventListener('ratechange', onRateChange, {
+        signal: controller.signal,
+        capture: true
+      });
+    }
 
     src.addEventListener(
       'pause',
       (event) => {
         if (!event.isTrusted) return;
-        let src = event.srcElement;
-        onPause(src, controller);
+        onPause(event.target, controller);
       },
       {
         signal: controller.signal,
@@ -295,7 +345,7 @@
       'abort',
       (event) => {
         if (!event.isTrusted) return;
-        onPause(event.srcElement, controller);
+        onPause(event.target, controller);
       },
       {
         signal: controller.signal,
@@ -303,32 +353,9 @@
         passive: true
       }
     );
-
-    // Dont tell the media please
-    src.addEventListener(
-      'ratechange',
-      function (event) {
-        if (!event.isTrusted) return;
-        if (validMedia(event.srcElement)) {
-          let data = Elements.has(event.srcElement)
-            ? Elements.get(event.srcElement)
-            : {};
-          if (event.srcElement.playbackRate === 0 && data.wasPlaying) {
-            event.stopPropagation();
-          }
-          if (!isPaused(event.srcElement)) {
-            onPlay(event.srcElement);
-          }
-        }
-      },
-      {
-        signal: controller.signal,
-        capture: true
-      }
-    );
   }
 
-  addListener(document);
+  addListener(window);
 
   window.addEventListener(
     'autoPauseMedia',
@@ -352,17 +379,22 @@
     }
   );
 
-  async function onPause(src, controller) {
-    await sleep(200);
-    if (validMedia(src) && src.paused) {
-      controller.abort();
-      normalPlayback(src);
-      Elements.delete(src);
-      // Check if all elements have paused.
-      if (!isPlaying()) {
-        send('pause');
+  function onPause(src, controller) {
+    const data = Elements.get(src);
+    if (!data || controller.signal.aborted) return;
+    clearTimeout(data.pauseTimer);
+    data.pauseTimer = setTimeout(() => {
+      if (controller.signal.aborted) return;
+      if (validMedia(src) && src.paused) {
+        controller.abort();
+        normalPlayback(src);
+        Elements.delete(src);
+        // Check if all elements have paused.
+        if (!isPlaying()) {
+          send('pause');
+        }
       }
-    }
+    }, 200);
   }
 
   function normalPlayback(src) {
@@ -380,7 +412,7 @@
       data.wasVolume = e.volume;
       data.wasPlaybackRate = e.playbackRate;
     }
-    // Rate and volume change events will stopPropagation.
+    // Rate and volume change events will stopImmediatePropagation.
     data.wasPlaying = true;
     e.playbackRate = 0;
     if (!e.muted) e.volume = 0;
@@ -388,6 +420,7 @@
   }
 
   async function pause() {
+    checkShadow(document, false);
     Elements.forEach((data, e) => {
       if (isPaused(e)) return;
       pauseElement(e, data);
@@ -403,20 +436,20 @@
     });
   }
 
-  function checkShadow(DOM = document) {
+  function checkShadow(DOM = document, notify = true) {
     // If we are checking this document also check documentPictureInPicture
     if (DOM === document && docPiP && docPiP.window)
-      checkShadow(docPiP.window.document);
+      checkShadow(docPiP.window.document, notify);
     [...DOM.querySelectorAll('*')].map((e) => {
       let shadowDOM = shadow(e);
       if (shadowDOM !== null) {
-        checkShadow(shadowDOM);
+        checkShadow(shadowDOM, notify);
         addListener(shadowDOM);
         [...shadowDOM.querySelectorAll('*')].map((e) => {
           if (e.paused === false && !isPaused(e)) {
             if (validMedia(e)) {
               addMedia(e);
-              onPlay(e);
+              if (notify) onPlay(e);
             }
           }
         });
@@ -493,9 +526,5 @@
     } catch {
       return null;
     }
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 })();

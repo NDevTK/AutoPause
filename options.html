@@ -27,8 +27,7 @@
               type="text"
               autocomplete="off"
               spellcheck="false"
-              placeholder="e.g. youtube spotify.com or <all_urls>"
-            />
+              placeholder="e.g. youtube spotify.com or <all_urls>" />
             <p class="hint">
               Site permission is required to pause, resume, and fast-forward
               media. Audio on sites without permission is still detected unless
@@ -42,15 +41,18 @@
               type="text"
               autocomplete="off"
               spellcheck="false"
-              placeholder="e.g. zoom meet.google.com discord.com"
-            />
+              placeholder="e.g. zoom meet.google.com discord.com" />
           </div>
           <div class="actions">
             <button type="submit" id="save-permissions" class="primary">
               Save sites
             </button>
             <button type="button" id="allow-all">Allow all sites</button>
-            <span id="permissions-status" class="status" role="status" aria-live="polite"></span>
+            <span
+              id="permissions-status"
+              class="status"
+              role="status"
+              aria-live="polite"></span>
           </div>
         </form>
       </section>
@@ -65,22 +67,32 @@
           <label
             class="option"
             for="noauto"
-            data-dim-when="disableresume pauseoninactive"
-          >
+            data-dim-when="disableresume pauseoninactive">
             <input type="checkbox" id="noauto" />
-            <span>Only auto-resume the active tab or the Background Audio tab</span>
+            <span
+              >Only auto-resume the active tab or the Background Audio tab</span
+            >
           </label>
           <label class="option" for="resumelimit" data-dim-when="disableresume">
             <input type="checkbox" id="resumelimit" />
             <span>Don't resume media older than 5 plays ago</span>
           </label>
-          <label class="option" for="multipletabs" data-dim-when="disableresume">
+          <label
+            class="option"
+            for="multipletabs"
+            data-dim-when="disableresume">
             <input type="checkbox" id="multipletabs" />
             <span>Resume all paused tabs at once instead of one</span>
           </label>
-          <label class="option" for="permediapause" data-dim-when="nopermission">
+          <label
+            class="option"
+            for="permediapause"
+            data-dim-when="nopermission">
             <input type="checkbox" id="permediapause" />
-            <span>Pause other media within the same tab (may break some sites)</span>
+            <span
+              >Pause other media within the same tab (may break some
+              sites)</span
+            >
           </label>
         </div>
       </section>
@@ -91,8 +103,7 @@
           <label
             class="option"
             for="pauseoninactive"
-            data-dim-when="ignoretabchange"
-          >
+            data-dim-when="ignoretabchange">
             <input type="checkbox" id="pauseoninactive" />
             <span
               >Pause media on tab switch and only resume the active or
@@ -126,13 +137,16 @@
           </label>
           <label class="option" for="ignoreshort">
             <input type="checkbox" id="ignoreshort" />
-            <span>Ignore short media under 3 seconds (e.g. notification sounds)</span>
+            <span
+              >Ignore short media under 3 seconds (e.g. notification
+              sounds)</span
+            >
           </label>
           <label class="option" for="nopermission">
             <input type="checkbox" id="nopermission" />
             <span
-              >No-permission mode: discard tabs instead of pausing (reloads
-              tabs when revisited)</span
+              >No-permission mode: discard tabs instead of pausing (reloads tabs
+              when revisited)</span
             >
           </label>
         </div>

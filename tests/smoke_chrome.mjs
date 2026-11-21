@@ -895,7 +895,11 @@ async function main() {
           return {invalidKept, normalizedEx, storedEx, dimmedNoAuto};
         })()`
       );
-      assert.equal(optUx.invalidKept, true, 'Invalid entry must show inline error and keep value');
+      assert.equal(
+        optUx.invalidKept,
+        true,
+        'Invalid entry must show inline error and keep value'
+      );
       assert.equal(
         optUx.normalizedEx,
         'https://*.zoom.us/* https://meet.google.com/* https://discord.com/*',
@@ -906,7 +910,11 @@ async function main() {
         'https://meet.google.com/*',
         'https://discord.com/*'
       ]);
-      assert.equal(optUx.dimmedNoAuto, true, 'disableresume must visually dim noauto without disabling input');
+      assert.equal(
+        optUx.dimmedNoAuto,
+        true,
+        'disableresume must visually dim noauto without disabling input'
+      );
 
       // Toggle an option checkbox and verify sync storage + background.js picks it up
       await evalInSession(

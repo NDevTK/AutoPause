@@ -279,10 +279,7 @@ function permissionUpdate(event) {
         return;
       }
       getPermissions();
-      setStatus(
-        granted ? 'Saved.' : 'Permission request canceled.',
-        !granted
-      );
+      setStatus(granted ? 'Saved.' : 'Permission request canceled.', !granted);
     });
   }
 

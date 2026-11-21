@@ -181,7 +181,12 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
           break;
         state.mutedMedia.delete(sender.tab.id);
         state.media.add(sender.tab.id);
-        onPlay(sender.tab, message.body, message.userActivation === true);
+        onPlay(
+          sender.tab,
+          message.body,
+          message.userActivation === true,
+          message.wasPaused === true
+        );
       }
       break;
     case 'playMuted':
@@ -212,7 +217,7 @@ chrome.tabs.onReplaced.addListener(async (newId, oldId) => {
   save();
 });
 
-function onPlay(tab, id = '', userActivation = false) {
+function onPlay(tab, id = '', userActivation = false, wasPaused = false) {
   // Security: userActivation is from untrusted website content scripts however the isolated world should prevent attacks.
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
@@ -237,6 +242,8 @@ function onPlay(tab, id = '', userActivation = false) {
     id.length === 36
   )
     send(tab.id, 'pauseOther', id);
+
+  if (wasPaused) send(tab.id, 'normalPlayback');
 
   if (tab.id == state.activeTab) state.lastPlaying = null;
   if (state.media.has(tab.id)) {

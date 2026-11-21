@@ -78,6 +78,13 @@
         if (isPlaying()) send('play');
         resume(true);
         break;
+      case 'normalPlayback':
+        Elements.forEach((data, e) => {
+          if (data.wasPlaying && data.rateZeroed && !isPaused(e)) {
+            normalPlayback(e);
+          }
+        });
+        break;
       case 'audible':
         checkShadow();
         checkDOM();
@@ -171,7 +178,12 @@
         clearTimeout(data.durationTimer);
         e.removeEventListener('durationchange', onDurationChange);
         if (!data.controller.signal.aborted && !isPaused(e) && !isMuted(e)) {
-          send('play', data.id, e.duration);
+          send(
+            'play',
+            data.id,
+            e.duration,
+            data.wasPlaying === true && data.rateZeroed === true
+          );
         }
       };
       const onDurationChange = (event) => {
@@ -183,7 +195,12 @@
       data.durationTimer = setTimeout(sendOnce, 500);
       return;
     }
-    send('play', data.id, e.duration);
+    send(
+      'play',
+      data.id,
+      e.duration,
+      data.wasPlaying === true && data.rateZeroed === true
+    );
   }
 
   function validMedia(e) {
@@ -234,12 +251,13 @@
         data.wasVolume = el.volume;
         data.volumeZeroed = true;
         el.volume = 0;
+        return;
       } else if (el.volume > 0) {
         data.volumeZeroed = false;
       }
     }
     clearTimeout(data.muteTimer);
-    if (!isPaused(el)) {
+    if (!isPaused(el) && !data.volumeZeroed) {
       if (isMuted(el)) {
         data.muteTimer = setTimeout(() => {
           if (!data.controller.signal.aborted) onPlay(el);
@@ -412,7 +430,8 @@
         src.volume = data.wasVolume;
       }
       data.volumeZeroed = false;
-      src.playbackRate = data.wasPlaybackRate;
+      if (src.playbackRate === 0) src.playbackRate = data.wasPlaybackRate;
+      data.rateZeroed = false;
       data.wasPlaying = false;
     }
   }
@@ -426,6 +445,7 @@
     // Rate and volume change events will stopImmediatePropagation.
     data.wasPlaying = true;
     e.playbackRate = 0;
+    data.rateZeroed = e.playbackRate === 0;
     if (!e.muted && e.volume > 0) {
       data.wasVolume = e.volume;
       data.volumeZeroed = true;
@@ -483,13 +503,14 @@
     }
   }
 
-  function send(message, body = '', duration) {
+  function send(message, body = '', duration, wasPaused = false) {
     const msg = {
       type: message,
       body: body,
       userActivation: navigator.userActivation.isActive
     };
     if (duration !== undefined) msg.duration = duration;
+    if (wasPaused) msg.wasPaused = true;
     chrome.runtime.sendMessage(msg);
   }
 

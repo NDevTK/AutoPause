@@ -532,7 +532,7 @@ function setTabMuted(id, muted) {
 function pause(id, checkHidden) {
   // Security: Leaks to websites that a different tab is audible or shotcut usage, Boring DoS.
   if (hasProperty(options, 'nopermission')) {
-    chrome.tabs.discard(id);
+    chrome.tabs.discard(id)?.catch?.(() => {});
     return;
   }
   if (state.otherTabs.has(id)) return;
@@ -857,7 +857,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       send(tabId, 'audible');
       state.otherTabs.add(tabId);
       if (hasProperty(options, 'ask'))
-        chrome.permissions.addHostAccessRequest({tabId: tabId});
+        chrome.permissions
+          ?.addHostAccessRequest?.({tabId: tabId})
+          ?.catch?.(() => {});
     }
     // Debounce otherTabs when ignoreshort is enabled to filter notification sounds.
     if (hasProperty(options, 'ignoreshort') && state.otherTabs.has(tabId)) {
@@ -902,8 +904,12 @@ async function denyPause(id, exclude, skipLast, allowbg, auto) {
   if (allowbg && state.backgroundaudio.has(id)) return true;
   if (skipLast && id === state.lastPlaying) return true;
   if (hasProperty(options, 'allowactive') && auto) {
-    const tab = await chrome.tabs.get(id);
-    if (tab.active) return true;
+    try {
+      const tab = await chrome.tabs.get(id);
+      if (tab.active) return true;
+    } catch {
+      return true;
+    }
   }
   return false;
 }

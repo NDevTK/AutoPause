@@ -413,11 +413,14 @@
     const data = Elements.get(el);
     if (!data) return;
     HandledEvents.add(event);
-    if (el.playbackRate === 0 && data.wasPlaying) {
+    const rate = el.playbackRate;
+    const wasZero = data.lastRate === 0;
+    data.lastRate = rate;
+    if (rate === 0 && data.wasPlaying) {
       event.stopImmediatePropagation();
       return;
     }
-    if (!isPaused(el)) {
+    if (!isPaused(el) && ((data.wasPlaying && data.rateZeroed) || wasZero)) {
       onPlay(el);
     }
   }
@@ -480,6 +483,7 @@
     const data = {
       id: mediaID,
       lastMuted: src.muted,
+      lastRate: src.playbackRate,
       reportedMuted: false,
       controller
     };
@@ -591,6 +595,7 @@
       }
       data.volumeZeroed = false;
       if (src.playbackRate === 0) src.playbackRate = data.wasPlaybackRate;
+      data.lastRate = src.playbackRate;
       data.rateZeroed = false;
       data.playRequested = false;
       data.wasPlaying = false;
@@ -617,6 +622,7 @@
 
   async function pause() {
     checkShadow(document, false);
+    checkDOM(document, false);
     Elements.forEach((data, e) => {
       data.playRequested = false;
       if (isPaused(e)) return;
@@ -654,14 +660,14 @@
     }
   }
 
-  function checkDOM(DOM = document) {
+  function checkDOM(DOM = document, notify = true) {
     if (DOM === document && docPiP && docPiP.window)
-      checkDOM(docPiP.window.document);
+      checkDOM(docPiP.window.document, notify);
     for (const e of queryAll(DOM, 'audio, video')) {
       if (e.paused === false && !isPaused(e)) {
         if (!Elements.has(e) && validMedia(e)) {
           addMedia(e);
-          onPlay(e);
+          if (notify) onPlay(e);
         }
       }
     }

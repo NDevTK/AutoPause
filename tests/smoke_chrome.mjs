@@ -3068,6 +3068,60 @@ async function main() {
         `Expected exactly 1 play IPC after unmuting from 0, got ${dragAfterZero}`
       );
 
+      // (d2) Live-stream playbackRate catch-up nudges send 0 play IPCs; 0->1 site resume sends 1
+      await evalInSession(
+        cdp,
+        swSid,
+        `globalThis._ratePlayCount = 0;
+        globalThis._rateListener = (m, s) => { if (s?.tab?.id === ${tab3Id} && m?.type === 'play') globalThis._ratePlayCount++; };
+        chrome.runtime.onMessage.addListener(globalThis._rateListener);
+        true`
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          for (const r of [1.03, 1.05, 1.02, 1.0, 0.98, 1.0]) {
+            _mopAudio.playbackRate = r;
+            await new Promise((res) => setTimeout(res, 15));
+          }
+        })()`
+      );
+      await sleep(150);
+      const rateNudgePlays = await evalInSession(
+        cdp,
+        swSid,
+        `globalThis._ratePlayCount`
+      );
+      assert.equal(
+        rateNudgePlays,
+        0,
+        `Live playbackRate catch-up nudges spammed ${rateNudgePlays} play IPCs!`
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          _mopAudio.playbackRate = 0;
+          await new Promise((res) => setTimeout(res, 60));
+          _mopAudio.playbackRate = 1;
+        })()`
+      );
+      await sleep(150);
+      const rateResumePlays = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          chrome.runtime.onMessage.removeListener(globalThis._rateListener);
+          return globalThis._ratePlayCount;
+        })()`
+      );
+      assert.equal(
+        rateResumePlays,
+        1,
+        `Expected exactly 1 play IPC on 0->1 rate resume, got ${rateResumePlays}`
+      );
+
       // (e) Declarative closed ShadowRoot <audio autoplay> (NO .play() call!) caught by pause() while tab already in state.media!
       await evalInSession(
         cdp,
@@ -3194,8 +3248,57 @@ async function main() {
       }, 5000);
       await evalInSession(cdp, tab1.sessionId, `_unmuteVid.pause(); true`);
       await sleep(300);
+
+      // (g) document.open() wipes window listeners; pause() still catches light-DOM audio via checkDOM(document, false)
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(async () => {
+          document.open();
+          document.write('<!doctype html><body></body>');
+          document.close();
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?docOpen10i';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._docOpenAudio = a;
+          await a.play();
+        })()`
+      );
+      await sleep(150);
+      await evalInSession(cdp, swSid, `pause(${t1PlayingId}); true`);
+      const docOpenPaused = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab1.sessionId,
+          `({paused: _docOpenAudio.paused, rate: _docOpenAudio.playbackRate, vol: _docOpenAudio.volume})`
+        );
+        return !s.paused && s.rate === 0 && s.vol === 0 ? s : null;
+      }, 5000);
+      await evalInSession(cdp, tab1.sessionId, `_docOpenAudio.pause(); true`);
+      await sleep(250);
+
+      // (h) denyPause handles closed/nonexistent tab IDs without throwing under allowactive
+      const denyClosedTab = await evalInSession(
+        cdp,
+        swSid,
+        `(async () => {
+          options.allowactive = true;
+          try {
+            return await denyPause(999999999, false, false, false, true);
+          } finally {
+            delete options.allowactive;
+          }
+        })()`
+      );
+      assert.equal(
+        denyClosedTab,
+        true,
+        `Expected denyPause on closed tab to return true, got ${denyClosedTab}`
+      );
+
       console.log(
-        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume drag dedup, declarative shadow autoplay, and click-unmute verified:',
+        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume/rate dedup, declarative shadow autoplay, click-unmute, doc.open pause, and denyPause closed-tab verified:',
         {
           msAllowed,
           msAfterMuteCycle,
@@ -3205,8 +3308,12 @@ async function main() {
           stayMutedPaused,
           dragWhileUnmuted,
           dragAfterZero,
+          rateNudgePlays,
+          rateResumePlays,
           declShadowPaused,
-          unmuteClickRate
+          unmuteClickRate,
+          docOpenPaused,
+          denyClosedTab
         }
       );
 

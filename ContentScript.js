@@ -377,31 +377,20 @@
       });
     }
 
-    src.addEventListener(
-      'pause',
-      (event) => {
-        if (!event.isTrusted) return;
-        onPause(event.target, controller);
-      },
-      {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-      }
-    );
-
-    src.addEventListener(
-      'abort',
-      (event) => {
-        if (!event.isTrusted) return;
-        onPause(event.target, controller);
-      },
-      {
-        signal: controller.signal,
-        capture: true,
-        passive: true
-      }
-    );
+    for (const type of ['pause', 'abort', 'emptied']) {
+      src.addEventListener(
+        type,
+        (event) => {
+          if (!event.isTrusted) return;
+          onPause(event.target, controller);
+        },
+        {
+          signal: controller.signal,
+          capture: true,
+          passive: true
+        }
+      );
+    }
   }
 
   addListener(window);

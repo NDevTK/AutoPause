@@ -55,50 +55,60 @@
     }
   }
 
-  if (docPiP)
+  function attachDocPiP(pipWin) {
+    if (!pipWin || Targets.has(pipWin)) return;
+    // For the top documentPictureInPicture window we are sharing the opener tab audible value
+    const pipDoc = pipWin.document;
+    addListener(pipWin);
+    pipWin.addEventListener('autoPauseMedia', onAutoPauseMedia, {
+      capture: true
+    });
+    try {
+      const token = crypto.randomUUID();
+      send('docPiPOpen', token);
+      pipWin[pipTokenSym] = token;
+      if (typeof pipWin[pipHandshakeSym] === 'function') {
+        pipWin[pipHandshakeSym](token);
+      }
+    } catch {}
+    pipWin.addEventListener('focus', (e) => {
+      if (e.isTrusted) send('tabFocus');
+    });
+    pipWin.addEventListener(
+      'pagehide',
+      (e) => {
+        if (!e.isTrusted) return;
+        setTimeout(() => {
+          let removed = false;
+          Elements.forEach((data, el) => {
+            if (el.ownerDocument === pipDoc) {
+              data.controller.abort();
+              normalPlayback(el);
+              Elements.delete(el);
+              removed = true;
+            }
+          });
+          if (removed && !isPlaying()) {
+            send('pause');
+          }
+        }, 200);
+      },
+      {once: true, passive: true}
+    );
+    checkShadow(pipDoc);
+    checkDOM(pipDoc);
+  }
+
+  if (docPiP) {
     docPiP.addEventListener('enter', (event) => {
       if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
-        // For the top documentPictureInPicture window we are sharing the opener tab audible value
-        const pipWin = event.window;
-        const pipDoc = pipWin.document;
-        addListener(pipWin);
-        pipWin.addEventListener('autoPauseMedia', onAutoPauseMedia, {
-          capture: true
-        });
-        try {
-          const token = crypto.randomUUID();
-          send('docPiPOpen', token);
-          pipWin[pipTokenSym] = token;
-          if (typeof pipWin[pipHandshakeSym] === 'function') {
-            pipWin[pipHandshakeSym](token);
-          }
-        } catch {}
-        pipWin.addEventListener('focus', (e) => {
-          if (e.isTrusted) send('tabFocus');
-        });
-        pipWin.addEventListener(
-          'pagehide',
-          (e) => {
-            if (!e.isTrusted) return;
-            setTimeout(() => {
-              let removed = false;
-              Elements.forEach((data, el) => {
-                if (el.ownerDocument === pipDoc) {
-                  data.controller.abort();
-                  normalPlayback(el);
-                  Elements.delete(el);
-                  removed = true;
-                }
-              });
-              if (removed && !isPlaying()) {
-                send('pause');
-              }
-            }, 200);
-          },
-          {once: true, passive: true}
-        );
+        attachDocPiP(event.window);
       }
     });
+    if (docPiP.window) {
+      attachDocPiP(docPiP.window);
+    }
+  }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (isDocPiPChild()) return;
@@ -606,7 +616,7 @@
   window.addEventListener(
     'visibilitychange',
     (event) => {
-      if (event.isTrusted) checkVisibility();
+      if (event.isTrusted && !isDocPiPChild()) checkVisibility();
     },
     {
       capture: true,

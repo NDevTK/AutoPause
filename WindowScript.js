@@ -45,13 +45,14 @@
         const connected = getIsConnected
           ? getIsConnected.call(this)
           : this.isConnected;
+        const ownerDoc = getOwnerDocument
+          ? getOwnerDocument.call(this)
+          : this.ownerDocument;
         const inShadow =
           connected &&
           getRootNode &&
-          (getOwnerDocument
-            ? getOwnerDocument.call(this)
-            : this.ownerDocument) === doc &&
-          getRootNode.call(this) !== doc;
+          ownerDoc &&
+          getRootNode.call(this) !== ownerDoc;
         if (!connected || inShadow) {
           dispatchEvent.call(
             doc,

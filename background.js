@@ -23,6 +23,7 @@ state.media = new Set(); // List of tabs with media.
 state.backgroundaudio = new Set();
 state.mediaPlaying = null; // Tab ID of active media.
 state.activeTab = null;
+state.activeWindow = null;
 state.lastPlaying = null;
 state.otherTabs = new Set(); // Tab IDs of media with no permission to access.
 state.mutedTabs = new Set(); // Tab IDs of all muted media.
@@ -31,7 +32,7 @@ state.mutedMedia = new Set(); // Tab IDs of resumable muted media.
 state.legacyMedia = new Set(); // Tab IDs of old media.
 state.autoPauseWindow = null;
 state.locked = false;
-state.pipTabs = {}; // Map of Document PiP tabId -> openerTabId.
+state.pipTabs = {}; // Map of Document PiP tabId -> {openerTabId, openerDocumentId, pipDocumentId}.
 
 let resolveInitialization;
 const initializationCompletePromise = new Promise((resolve) => {
@@ -88,6 +89,37 @@ async function restore() {
       Array.isArray(result.state.pipTabs)
     ) {
       result.state.pipTabs = {};
+    } else {
+      const normalized = {};
+      for (const [pipId, entry] of Object.entries(result.state.pipTabs)) {
+        if (typeof entry === 'number') {
+          normalized[pipId] = {
+            openerTabId: entry,
+            openerDocumentId: null,
+            pipDocumentId: null
+          };
+        } else if (
+          typeof entry === 'object' &&
+          entry !== null &&
+          typeof entry.openerTabId === 'number'
+        ) {
+          normalized[pipId] = {
+            openerTabId: entry.openerTabId,
+            openerDocumentId:
+              typeof entry.openerDocumentId === 'string'
+                ? entry.openerDocumentId
+                : null,
+            pipDocumentId:
+              typeof entry.pipDocumentId === 'string'
+                ? entry.pipDocumentId
+                : null
+          };
+        }
+      }
+      result.state.pipTabs = normalized;
+    }
+    if (typeof result.state.activeWindow !== 'number') {
+      result.state.activeWindow = null;
     }
     state = result.state;
   }
@@ -150,9 +182,11 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (
     typeof message !== 'object' ||
     message === null ||
-    !hasProperty(sender, 'tab')
+    !hasProperty(sender, 'tab') ||
+    (sender.documentLifecycle && sender.documentLifecycle !== 'active')
   )
     return;
+  invalidateMismatchedDocPiPLinks(sender);
   if (message.type === 'docPiPOpen') {
     registerDocPiPToken('opener', message.body, sender);
     return;
@@ -201,11 +235,16 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
           break;
         state.mutedMedia.delete(tab.id);
         state.media.add(tab.id);
+        const playTab =
+          !tab.audible && (await isGroupAudible(tab))
+            ? {...tab, audible: true}
+            : tab;
         onPlay(
-          tab,
+          playTab,
           message.body,
           message.userActivation === true,
-          message.wasPaused === true
+          message.wasPaused === true,
+          sender
         );
       }
       break;
@@ -226,8 +265,14 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
         lastFocusedWindow: true
       });
       if (focusedTabs.length !== 1) break;
-      const focusedOpener = await getDocPiPOpener(focusedTabs[0]);
-      if (focusedOpener?.id !== tab.id) break;
+      const pipEntry = getDocPiPEntry(focusedTabs[0].id);
+      if (!pipEntry || pipEntry.openerTabId !== tab.id) break;
+      if (
+        pipEntry.openerDocumentId !== null &&
+        sender.documentId !== pipEntry.openerDocumentId
+      ) {
+        break;
+      }
       tabChange(tab);
       break;
     }
@@ -241,11 +286,18 @@ chrome.tabs.onReplaced.addListener(async (newId, oldId) => {
     state.ignoredTabs.add(newId);
     state.ignoredTabs.delete(oldId);
   }
-  remove(oldId);
+  const pipOpenerId = deleteDocPiPLinksForTab(oldId);
+  remove(oldId, pipOpenerId);
   save();
 });
 
-function onPlay(tab, id = '', userActivation = false, wasPaused = false) {
+function onPlay(
+  tab,
+  id = '',
+  userActivation = false,
+  wasPaused = false,
+  sender = null
+) {
   // Security: userActivation is from untrusted website content scripts however the isolated world should prevent attacks.
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
@@ -261,8 +313,7 @@ function onPlay(tab, id = '', userActivation = false, wasPaused = false) {
   }
   state.mediaPlaying = tab.id;
 
-  if (hasProperty(options, 'muteonpause'))
-    chrome.tabs.update(tab.id, {muted: false});
+  if (hasProperty(options, 'muteonpause')) setTabMuted(tab.id, false);
 
   if (
     hasProperty(options, 'permediapause') &&
@@ -271,7 +322,21 @@ function onPlay(tab, id = '', userActivation = false, wasPaused = false) {
   )
     send(tab.id, 'pauseOther', id);
 
-  if (wasPaused) send(tab.id, 'normalPlayback');
+  if (wasPaused) {
+    if (sender?.tab?.id !== undefined) {
+      const target =
+        typeof sender.documentId === 'string'
+          ? {documentId: sender.documentId}
+          : typeof sender.frameId === 'number'
+            ? {frameId: sender.frameId}
+            : undefined;
+      chrome.tabs
+        .sendMessage(sender.tab.id, {type: 'normalPlayback'}, target)
+        .catch(() => {});
+    } else {
+      send(tab.id, 'normalPlayback');
+    }
+  }
 
   if (tab.id == state.activeTab) state.lastPlaying = null;
   if (state.media.has(tab.id)) {
@@ -301,12 +366,14 @@ function onPause(id) {
 }
 
 async function tabChange(tab) {
+  if (!tab) return;
   if (state.ignoredTabs.has(tab.id)) return;
 
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
 
   state.activeTab = tab.id;
+  state.activeWindow = tab.windowId;
   save();
 
   if (hasProperty(options, 'ignoretabchange')) return;
@@ -319,7 +386,11 @@ async function tabChange(tab) {
   if (state.media.has(tab.id) || state.mutedTabs.has(tab.id)) {
     play(tab.id);
   } else if (state.otherTabs.has(tab.id)) {
-    onPlay(tab);
+    const playTab =
+      !tab.audible && (await isGroupAudible(tab))
+        ? {...tab, audible: true}
+        : tab;
+    onPlay(playTab);
   }
   save();
 }
@@ -366,6 +437,14 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
     tabChange(targetTab);
     save();
   }, 200);
+});
+
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  await initializationCompletePromise;
+  if (state.activeWindow === windowId) {
+    state.activeWindow = null;
+    save();
+  }
 });
 
 // Dont track unrelated windows
@@ -462,6 +541,13 @@ chrome.commands.onCommand.addListener(async (command) => {
   save();
 });
 
+function setTabMuted(id, muted) {
+  chrome.tabs.update(id, {muted}, () => void chrome.runtime.lastError);
+  for (const pipId of getDocPiPChildIds(id)) {
+    chrome.tabs.update(pipId, {muted}, () => void chrome.runtime.lastError);
+  }
+}
+
 function pause(id, checkHidden) {
   // Security: Leaks to websites that a different tab is audible or shotcut usage, Boring DoS.
   if (hasProperty(options, 'nopermission')) {
@@ -472,8 +558,7 @@ function pause(id, checkHidden) {
   if (checkHidden) {
     send(id, 'hidden');
   } else {
-    if (hasProperty(options, 'muteonpause'))
-      chrome.tabs.update(id, {muted: true});
+    if (hasProperty(options, 'muteonpause')) setTabMuted(id, true);
     send(id, 'pause');
   }
 }
@@ -481,8 +566,7 @@ function pause(id, checkHidden) {
 function play(id, force) {
   // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
   if (state.locked) return;
-  if (hasProperty(options, 'muteonpause'))
-    chrome.tabs.update(id, {muted: false});
+  if (hasProperty(options, 'muteonpause')) setTabMuted(id, false);
   if (hasProperty(options, 'disableresume') && !force) {
     send(id, 'allowplayback');
   } else {
@@ -521,24 +605,36 @@ function autoResume(id) {
 chrome.tabs.onActivated.addListener(async (info) => {
   await initializationCompletePromise;
   chrome.tabs.get(info.tabId, async (tab) => {
-    tabChange(tab);
+    if (chrome.runtime.lastError || !tab) return;
+    const targetTab = (await getDocPiPOpener(tab)) || tab;
+    if (
+      state.activeWindow !== null &&
+      targetTab.windowId !== state.activeWindow
+    ) {
+      return;
+    }
+    tabChange(targetTab);
     save();
   });
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   await initializationCompletePromise;
+  const hadPipLinks = Object.keys(state.pipTabs).length > 0;
+  const pipOpenerId = deleteDocPiPLinksForTab(tabId);
+  if (hadPipLinks) save();
   setTimeout(() => {
     state.ignoredTabs.delete(tabId);
-    remove(tabId);
+    remove(tabId, pipOpenerId);
     save();
   }, 200);
 });
 
-function remove(tabId) {
-  let pipOpenerId = null;
-  if (hasProperty(state.pipTabs, tabId)) {
-    pipOpenerId = state.pipTabs[tabId];
+function remove(tabId, removedPipOpenerId = null) {
+  let pipOpenerId = removedPipOpenerId;
+  const entry = getDocPiPEntry(tabId);
+  if (entry) {
+    if (pipOpenerId === null) pipOpenerId = entry.openerTabId;
     delete state.pipTabs[tabId];
   }
   state.media.delete(tabId);
@@ -554,7 +650,21 @@ function remove(tabId) {
   onPause(tabId);
   if (pipOpenerId !== null) {
     (async () => {
-      if (state.media.has(pipOpenerId) && !(await isPlaying(pipOpenerId))) {
+      if (state.otherTabs.has(pipOpenerId)) {
+        try {
+          const openerTab = await chrome.tabs.get(pipOpenerId);
+          if (!openerTab.audible) {
+            remove(pipOpenerId);
+            save();
+          }
+        } catch {
+          remove(pipOpenerId);
+          save();
+        }
+      } else if (
+        (state.media.has(pipOpenerId) || state.mutedMedia.has(pipOpenerId)) &&
+        !(await isPlaying(pipOpenerId))
+      ) {
         remove(pipOpenerId);
         save();
       }
@@ -562,12 +672,85 @@ function remove(tabId) {
   }
 }
 
+function getDocPiPEntry(tabId) {
+  if (typeof tabId !== 'number' || !hasProperty(state.pipTabs, tabId)) {
+    return null;
+  }
+  const entry = state.pipTabs[tabId];
+  if (
+    typeof entry !== 'object' ||
+    entry === null ||
+    typeof entry.openerTabId !== 'number'
+  ) {
+    delete state.pipTabs[tabId];
+    return null;
+  }
+  return entry;
+}
+
 function getDocPiPChildIds(openerTabId) {
   const ids = [];
-  for (const [pipId, openerId] of Object.entries(state.pipTabs)) {
-    if (openerId === openerTabId) ids.push(Number(pipId));
+  for (const [pipId, entry] of Object.entries(state.pipTabs)) {
+    if (entry?.openerTabId === openerTabId) ids.push(Number(pipId));
   }
   return ids;
+}
+
+function deleteDocPiPLinksForTab(tabId) {
+  let pipOpenerId = null;
+  const entry = getDocPiPEntry(tabId);
+  if (entry) {
+    pipOpenerId = entry.openerTabId;
+    delete state.pipTabs[tabId];
+  }
+  for (const [pipId, pipEntry] of Object.entries(state.pipTabs)) {
+    if (pipEntry?.openerTabId === tabId) {
+      delete state.pipTabs[pipId];
+    }
+  }
+  return pipOpenerId;
+}
+
+function invalidateMismatchedDocPiPLinks(sender) {
+  if (sender.frameId !== 0 || typeof sender.documentId !== 'string') return;
+  const senderTabId = sender.tab.id;
+  let changed = false;
+  const childEntry = getDocPiPEntry(senderTabId);
+  if (
+    childEntry &&
+    childEntry.pipDocumentId !== null &&
+    childEntry.pipDocumentId !== sender.documentId
+  ) {
+    delete state.pipTabs[senderTabId];
+    changed = true;
+  }
+  for (const [pipId, entry] of Object.entries(state.pipTabs)) {
+    if (
+      entry?.openerTabId === senderTabId &&
+      entry.openerDocumentId !== null &&
+      entry.openerDocumentId !== sender.documentId
+    ) {
+      delete state.pipTabs[pipId];
+      changed = true;
+    }
+  }
+  if (changed) save();
+}
+
+async function isGroupAudible(tab, excludePipId = null) {
+  if (tab.audible) return true;
+  const pipIds = getDocPiPChildIds(tab.id);
+  for (const pipId of pipIds) {
+    if (pipId === excludePipId) continue;
+    try {
+      const pipTab = await chrome.tabs.get(pipId);
+      if (pipTab.audible) return true;
+    } catch {
+      delete state.pipTabs[pipId];
+      save();
+    }
+  }
+  return false;
 }
 
 function registerDocPiPToken(role, token, sender) {
@@ -596,7 +779,12 @@ function registerDocPiPToken(role, token, sender) {
     };
     pendingPipTokens.set(token, entry);
   }
-  entry[role] = {tabId: sender.tab.id, origin: sender.origin};
+  entry[role] = {
+    tabId: sender.tab.id,
+    origin: sender.origin,
+    documentId:
+      typeof sender.documentId === 'string' ? sender.documentId : null
+  };
   if (entry.opener && entry.child) {
     clearTimeout(entry.timer);
     pendingPipTokens.delete(token);
@@ -604,20 +792,24 @@ function registerDocPiPToken(role, token, sender) {
       entry.opener.origin === entry.child.origin &&
       entry.opener.tabId !== entry.child.tabId
     ) {
-      state.pipTabs[entry.child.tabId] = entry.opener.tabId;
+      state.pipTabs[entry.child.tabId] = {
+        openerTabId: entry.opener.tabId,
+        openerDocumentId: entry.opener.documentId,
+        pipDocumentId: entry.child.documentId
+      };
       save();
     }
   }
 }
 
 async function getDocPiPOpener(tab) {
-  if (typeof tab?.id !== 'number' || !hasProperty(state.pipTabs, tab.id)) {
-    return null;
-  }
+  const entry = getDocPiPEntry(tab?.id);
+  if (!entry) return null;
   try {
-    return await chrome.tabs.get(state.pipTabs[tab.id]);
+    return await chrome.tabs.get(entry.openerTabId);
   } catch {
     delete state.pipTabs[tab.id];
+    save();
     return null;
   }
 }
@@ -628,16 +820,26 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (hasProperty(changeInfo, 'audible')) {
     const openerTab = await getDocPiPOpener(tab);
     if (openerTab) {
-      if (!changeInfo.audible && openerTab.audible) return;
+      if (!changeInfo.audible && (await isGroupAudible(openerTab, tab.id))) {
+        return;
+      }
       tabId = openerTab.id;
       tab = {...openerTab, audible: changeInfo.audible};
+    } else if (
+      !changeInfo.audible &&
+      (await isGroupAudible({...tab, audible: false}))
+    ) {
+      return;
     }
   }
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
   if (state.ignoredTabs.has(tabId)) return;
   if (changeInfo.discarded) {
-    return remove(tabId);
+    const pipOpenerId = deleteDocPiPLinksForTab(tabId);
+    remove(tabId, pipOpenerId);
+    save();
+    return;
   }
   if (hasProperty(changeInfo, 'mutedInfo')) {
     if (changeInfo.mutedInfo.muted && state.media.has(tabId)) {
@@ -755,10 +957,9 @@ async function send(id, message, body = '') {
       return await chrome.tabs.sendMessage(tabId, {type: message, body: body});
     } catch {}
   };
-  const response = await sendOne(id);
-  if (pipIds.length === 0) return response;
-  const pipResponses = await Promise.all(pipIds.map(sendOne));
-  return response ?? pipResponses.find((r) => r !== undefined);
+  if (pipIds.length === 0) return sendOne(id);
+  const responses = await Promise.all([sendOne(id), ...pipIds.map(sendOne)]);
+  return responses.find((r) => r !== undefined);
 }
 
 async function tabTest(id, test) {

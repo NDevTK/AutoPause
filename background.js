@@ -774,6 +774,7 @@ function updateContentScripts() {
           .concat(unsupportedScripts)
           .concat(unsupportedWindowScripts),
         allFrames: true,
+        matchOriginAsFallback: true,
         runAt: 'document_start',
         world: 'MAIN'
       }

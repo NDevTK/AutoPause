@@ -9,15 +9,22 @@
   window.autoPauseExtensionInjected = true;
 
   const MediaElement = window.HTMLMediaElement;
-  const play = MediaElement.prototype.play;
   const FocusEventCtor = window.FocusEvent;
-  const dispatchEvent = window.EventTarget.prototype.dispatchEvent;
+  const dispatchEvent = window.EventTarget?.prototype?.dispatchEvent;
+  if (
+    typeof MediaElement?.prototype?.play !== 'function' ||
+    typeof FocusEventCtor !== 'function' ||
+    typeof dispatchEvent !== 'function'
+  ) {
+    return;
+  }
+  const play = MediaElement.prototype.play;
   const getMediaPaused = Object.getOwnPropertyDescriptor(
     MediaElement.prototype,
     'paused'
   )?.get;
   const getIsConnected = Object.getOwnPropertyDescriptor(
-    window.Node.prototype,
+    window.Node?.prototype || {},
     'isConnected'
   )?.get;
   const doc = document;

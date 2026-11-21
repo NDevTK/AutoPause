@@ -22,6 +22,34 @@
     'pictureInPictureElement'
   )?.get;
 
+  const getVisibilityState = Object.getOwnPropertyDescriptor(
+    Document.prototype,
+    'visibilityState'
+  )?.get;
+
+  const getNodeType = Object.getOwnPropertyDescriptor(
+    Node.prototype,
+    'nodeType'
+  )?.get;
+
+  const docQuerySelectorAll = Document.prototype.querySelectorAll;
+  const fragQuerySelectorAll = DocumentFragment.prototype.querySelectorAll;
+
+  function queryAll(root, selector) {
+    try {
+      const nodeType = getNodeType ? getNodeType.call(root) : root.nodeType;
+      if (nodeType === 9 && docQuerySelectorAll) {
+        return docQuerySelectorAll.call(root, selector);
+      }
+      if (nodeType === 11 && fragQuerySelectorAll) {
+        return fragQuerySelectorAll.call(root, selector);
+      }
+      return root.querySelectorAll(selector);
+    } catch {
+      return [];
+    }
+  }
+
   const getMediaPaused = Object.getOwnPropertyDescriptor(
     HTMLMediaElement.prototype,
     'paused'
@@ -90,7 +118,8 @@
             }
           });
           if (removed && !isPlaying()) {
-            send(Elements.size > 0 ? 'playMuted' : 'pause');
+            const hasUnpaused = [...Elements.keys()].some((el) => !el.paused);
+            send(hasUnpaused ? 'playMuted' : 'pause');
           } else {
             checkVisibility();
           }
@@ -147,8 +176,8 @@
         Elements.forEach((data, e) => {
           if (
             data.wasPlaying &&
-            data.rateZeroed &&
-            (!isPaused(e) || (data.playRequested && !e.paused))
+            ((data.rateZeroed && !isPaused(e)) ||
+              (data.playRequested && !e.paused))
           ) {
             normalPlayback(e);
           }
@@ -230,10 +259,7 @@
   function canNotifyPlay(e, data) {
     return (
       !isPaused(e) ||
-      (data?.wasPlaying === true &&
-        data.rateZeroed === true &&
-        data.playRequested === true &&
-        !e.paused)
+      (data?.wasPlaying === true && data.playRequested === true && !e.paused)
     );
   }
 
@@ -242,7 +268,10 @@
     if (!data || !canNotifyPlay(e, data)) return;
     clearTimeout(data.pauseTimer);
     if (isMuted(e)) {
+      clearTimeout(data.durationTimer);
+      data.pendingDuration = false;
       data.playRequested = false;
+      data.reportedMuted = true;
       send('playMuted');
       return;
     }
@@ -251,6 +280,7 @@
     if (isNaN(e.duration)) {
       if (data.pendingDuration) return;
       data.pendingDuration = true;
+      const hadActivation = Boolean(navigator.userActivation?.isActive);
       const sendOnce = () => {
         if (!data.pendingDuration) return;
         data.pendingDuration = false;
@@ -261,11 +291,13 @@
           canNotifyPlay(e, data) &&
           !isMuted(e)
         ) {
+          data.reportedMuted = false;
           send(
             'play',
             data.id,
             e.duration,
-            data.wasPlaying === true && data.rateZeroed === true
+            data.wasPlaying === true,
+            hadActivation || Boolean(navigator.userActivation?.isActive)
           );
         }
       };
@@ -278,12 +310,10 @@
       data.durationTimer = setTimeout(sendOnce, 500);
       return;
     }
-    send(
-      'play',
-      data.id,
-      e.duration,
-      data.wasPlaying === true && data.rateZeroed === true
-    );
+    clearTimeout(data.durationTimer);
+    data.pendingDuration = false;
+    data.reportedMuted = false;
+    send('play', data.id, e.duration, data.wasPlaying === true);
   }
 
   function isDocPiPChild() {
@@ -339,18 +369,38 @@
         data.wasVolume = el.volume;
         data.volumeZeroed = true;
         el.volume = 0;
+        if (navigator.userActivation?.isActive) {
+          data.playRequested = true;
+          clearTimeout(data.muteTimer);
+          onPlay(el);
+        }
         return;
       } else if (el.volume > 0) {
+        if (!data.rateZeroed && data.volumeZeroed && !el.muted) {
+          data.playRequested = true;
+        }
         data.volumeZeroed = false;
+      }
+      if (
+        mutedChanged &&
+        !el.muted &&
+        data.rateZeroed &&
+        !el.paused &&
+        !isMuted(el) &&
+        navigator.userActivation?.isActive
+      ) {
+        data.playRequested = true;
       }
     }
     clearTimeout(data.muteTimer);
-    if (!isPaused(el) && !data.volumeZeroed) {
+    if (canNotifyPlay(el, data) && !data.volumeZeroed) {
       if (isMuted(el)) {
-        data.muteTimer = setTimeout(() => {
-          if (!data.controller.signal.aborted) onPlay(el);
-        }, 200);
-      } else {
+        if (!data.reportedMuted) {
+          data.muteTimer = setTimeout(() => {
+            if (!data.controller.signal.aborted && isMuted(el)) onPlay(el);
+          }, 200);
+        }
+      } else if (data.reportedMuted || data.wasPlaying) {
         onPlay(el);
       }
     }
@@ -388,10 +438,10 @@
           clearTimeout(data?.pauseTimer);
           if (
             data?.wasPlaying &&
-            data.rateZeroed &&
             !el.paused &&
-            el.playbackRate === 0 &&
-            !isMuted(el)
+            !isMuted(el) &&
+            ((data.rateZeroed && el.playbackRate === 0) ||
+              (!data.rateZeroed && data.volumeZeroed))
           ) {
             data.playRequested = true;
           }
@@ -427,7 +477,12 @@
     }
 
     let controller = new AbortController();
-    const data = {id: mediaID, lastMuted: src.muted, controller};
+    const data = {
+      id: mediaID,
+      lastMuted: src.muted,
+      reportedMuted: false,
+      controller
+    };
     Elements.set(src, data);
 
     controller.signal.addEventListener(
@@ -510,6 +565,8 @@
     const data = Elements.get(src);
     if (!data || controller.signal.aborted) return;
     data.playRequested = false;
+    clearTimeout(data.durationTimer);
+    data.pendingDuration = false;
     clearTimeout(data.pauseTimer);
     data.pauseTimer = setTimeout(() => {
       if (controller.signal.aborted) return;
@@ -519,7 +576,8 @@
         Elements.delete(src);
         // Check if all elements have paused.
         if (!isPlaying()) {
-          send('pause');
+          const hasUnpaused = [...Elements.keys()].some((el) => !el.paused);
+          send(hasUnpaused ? 'playMuted' : 'pause');
         }
       }
     }, 200);
@@ -558,7 +616,7 @@
   }
 
   async function pause() {
-    if (docPiP && docPiP.window) checkShadow(docPiP.window.document, false);
+    checkShadow(document, false);
     Elements.forEach((data, e) => {
       data.playRequested = false;
       if (isPaused(e)) return;
@@ -579,27 +637,27 @@
     // If we are checking this document also check documentPictureInPicture
     if (DOM === document && docPiP && docPiP.window)
       checkShadow(docPiP.window.document, notify);
-    [...DOM.querySelectorAll('*')].map((e) => {
+    for (const e of queryAll(DOM, '*')) {
       let shadowDOM = shadow(e);
       if (shadowDOM !== null) {
         checkShadow(shadowDOM, notify);
         addListener(shadowDOM);
-        [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
-          if (e.paused === false && !isPaused(e)) {
-            if (!Elements.has(e) && validMedia(e)) {
-              addMedia(e);
-              if (notify) onPlay(e);
+        for (const media of queryAll(shadowDOM, 'audio, video')) {
+          if (media.paused === false && !isPaused(media)) {
+            if (!Elements.has(media) && validMedia(media)) {
+              addMedia(media);
+              if (notify) onPlay(media);
             }
           }
-        });
+        }
       }
-    });
+    }
   }
 
   function checkDOM(DOM = document) {
     if (DOM === document && docPiP && docPiP.window)
       checkDOM(docPiP.window.document);
-    for (const e of DOM.querySelectorAll('audio, video')) {
+    for (const e of queryAll(DOM, 'audio, video')) {
       if (e.paused === false && !isPaused(e)) {
         if (!Elements.has(e) && validMedia(e)) {
           addMedia(e);
@@ -609,11 +667,17 @@
     }
   }
 
-  function send(message, body = '', duration, wasPaused = false) {
+  function send(
+    message,
+    body = '',
+    duration,
+    wasPaused = false,
+    userActivation = Boolean(navigator.userActivation?.isActive)
+  ) {
     const msg = {
       type: message,
       body: body,
-      userActivation: Boolean(navigator.userActivation?.isActive)
+      userActivation: Boolean(userActivation)
     };
     if (duration !== undefined) msg.duration = duration;
     if (wasPaused) msg.wasPaused = true;
@@ -647,8 +711,11 @@
     if (docPiP && docPiP.window !== null) {
       return true;
     }
+    const visibilityState = getVisibilityState
+      ? getVisibilityState.call(document)
+      : document.visibilityState;
     return (
-      document.visibilityState !== 'hidden' ||
+      visibilityState !== 'hidden' ||
       Boolean(getPictureInPictureElement?.call(document))
     );
   }

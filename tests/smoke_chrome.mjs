@@ -506,6 +506,9 @@ function startTestServer() {
         <div id="autoPauseContentScript"></div>
         <form id="documentPictureInPicture"><input name="window"></form>
         <img name="pictureInPictureElement">
+        <img name="visibilityState">
+        <img name="querySelectorAll">
+        <img name="nodeType">
         <form id="clobber1">
           <input name="openOrClosedShadowRoot">
           <input name="openOrClosedShadowRoot">
@@ -2610,6 +2613,597 @@ async function main() {
           mutedPausedAfterEmptyPipClose,
           mutedPausedAfterAudiblePipClose,
           vpipPausedAfterExit
+        }
+      );
+
+      // 10i. MediaStream manual resume, muteonpause (visible PiP + disableresume + manual play),
+      //      audible pause with muted media remaining, volume drag dedup, declarative shadow autoplay,
+      //      and user-gesture unmute-to-resume!
+      await sleep(300);
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+
+      // (a) MediaStream manual resume (rapid pause->play + volume raise -> subsequent mute/unmute must NOT self-mute)
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const ac = new AudioContext();
+          const osc = ac.createOscillator();
+          const dest = ac.createMediaStreamDestination();
+          osc.connect(dest);
+          osc.start();
+          const makeMs = (vol, muted = false) => {
+            const a = document.createElement('audio');
+            a.srcObject = dest.stream;
+            a.volume = vol;
+            a.muted = muted;
+            document.body.appendChild(a);
+            return a;
+          };
+          window._ms10iAc = ac;
+          window._ms10iA = makeMs(0.7, false);
+          window._ms10iB = makeMs(0.6, false);
+          window._ms10iMuted = makeMs(0.8, true);
+          await window._ms10iA.play();
+          await window._ms10iB.play();
+          await window._ms10iMuted.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.mediaPlaying === ${tab3Id}`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            tab3.sessionId,
+            `_ms10iA.volume === 0 && _ms10iB.volume === 0`
+          ),
+        5000
+      );
+      // Denied background rapid pause->play on MediaStream must stay at volume 0
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => { _ms10iA.pause(); await _ms10iA.play(); })()`
+      );
+      await sleep(350);
+      const msDeniedVol = await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_ms10iA.volume`
+      );
+      assert.equal(
+        msDeniedVol,
+        0,
+        'Denied background MediaStream rapid pause->play must stay silent'
+      );
+      // Allowed rapid pause->play with real click must restore ONLY _ms10iA to 0.7 (not _ms10iB)
+      await evalInSession(cdp, swSid, `options.ignoretabchange = true; true`);
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(() => {
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', async () => {
+            btn.remove();
+            _ms10iA.pause();
+            await _ms10iA.play();
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      const msAllowed = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab3.sessionId,
+          `({aVol: _ms10iA.volume, bVol: _ms10iB.volume})`
+        );
+        return Math.abs(s.aVol - 0.7) < 0.01 ? s : null;
+      }, 5000);
+      assert.equal(
+        msAllowed.bVol,
+        0,
+        `Sibling MediaStream _ms10iB wrongly woken: ${JSON.stringify(msAllowed)}`
+      );
+      // Auto-pause again, raise volume to 0.5 with click, then toggle muted -> must NOT self-mute!
+      await evalInSession(cdp, swSid, `pause(${tab3Id}); true`);
+      await waitFor(
+        () => evalInSession(cdp, tab3.sessionId, `_ms10iA.volume === 0`),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(() => {
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', () => {
+            btn.remove();
+            _ms10iA.volume = 0.5;
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await sleep(300);
+      const msAfterMuteCycle = await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          _ms10iA.muted = true;
+          await new Promise((r) => setTimeout(r, 80));
+          _ms10iA.muted = false;
+          await new Promise((r) => setTimeout(r, 120));
+          return {aVol: _ms10iA.volume, bVol: _ms10iB.volume};
+        })()`
+      );
+      assert.ok(
+        Math.abs(msAfterMuteCycle.aVol - 0.5) < 0.01,
+        `Active MediaStream self-muted after volume raise + mute toggle! ${JSON.stringify(msAfterMuteCycle)}`
+      );
+      // Clean up MediaStream elements
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.ignoretabchange; true`
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_ms10iA.pause(); _ms10iB.pause(); _ms10iMuted.pause(); _ms10iA.srcObject = null; _ms10iB.srcObject = null; _ms10iMuted.srcObject = null; _ms10iAc.close(); true`
+      );
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await sleep(350);
+
+      // (b) muteonpause: visible PiP tab stays in state.media and auto-resumes; disableresume not bypassed; manual play unmutes & resumes
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?muteonpause10i';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._mopAudio = a;
+          await a.play();
+          window._pip6Ready = false;
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', async () => {
+            btn.remove();
+            window._pipWin6 = await documentPictureInPicture.requestWindow({width: 240, height: 150});
+            window._pip6Ready = true;
+          }, {once: true});
+          document.body.appendChild(btn);
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await waitFor(
+        () => evalInSession(cdp, tab3.sessionId, `window._pip6Ready === true`),
+        5000
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.media.has(${tab3Id})`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `options.muteonpause = true; true`);
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      const mopPaused = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          swSid,
+          `(async () => {
+            const t = await chrome.tabs.get(${tab3Id});
+            return {
+              muted: t.mutedInfo?.muted,
+              extIdMatch: t.mutedInfo?.extensionId === chrome.runtime.id,
+              inMedia: state.media.has(${tab3Id}),
+              inMutedMedia: state.mutedMedia.has(${tab3Id})
+            };
+          })()`
+        );
+        return s.muted === true ? s : null;
+      }, 5000);
+      await sleep(250);
+      const mopAfterDelay = await evalInSession(
+        cdp,
+        swSid,
+        `({inMedia: state.media.has(${tab3Id}), inMutedMedia: state.mutedMedia.has(${tab3Id})})`
+      );
+      assert.equal(mopPaused.extIdMatch, true);
+      assert.equal(
+        mopAfterDelay.inMedia,
+        true,
+        `muteonpause dropped visible-PiP tab from state.media! ${JSON.stringify(mopAfterDelay)}`
+      );
+      assert.equal(
+        mopAfterDelay.inMutedMedia,
+        false,
+        'AutoPause own mute must not mark tab in state.mutedMedia'
+      );
+      // Pause Tab 2 -> Tab 3 (with PiP open!) MUST auto-resume & unmute!
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      const mopAutoResumed = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab3.sessionId,
+          `_mopAudio.playbackRate`
+        );
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab3Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        return r === 1 && m === false ? {rate: r, muted: m} : null;
+      }, 5000);
+      // Manual play on muteonpause-muted tab under ignoretabchange must unmute & resume!
+      await evalInSession(cdp, tab3.sessionId, `_pipWin6.close(); true`);
+      await sleep(250);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      await waitFor(
+        () => evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
+        5000
+      );
+      await evalInSession(cdp, swSid, `options.ignoretabchange = true; true`);
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(() => {
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', async () => {
+            btn.remove();
+            _mopAudio.pause();
+            await _mopAudio.play();
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab3.sessionId
+      );
+      const mopManualResumed = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab3.sessionId,
+          `_mopAudio.playbackRate`
+        );
+        const m = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.get(${tab3Id}).then((t) => t.mutedInfo?.muted)`
+        );
+        return r === 1 && m === false ? {rate: r, muted: m} : null;
+      }, 5000);
+      // muteonpause + disableresume: switching back to auto-paused muted tab must NOT force-resume!
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.ignoretabchange; options.disableresume = true; true`
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      await waitFor(
+        () => evalInSession(cdp, tab3.sessionId, `_mopAudio.playbackRate === 0`),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(400);
+      const mopDisableResume = await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `({paused: _mopAudio.paused, rate: _mopAudio.playbackRate})`
+      );
+      assert.equal(
+        mopDisableResume.paused,
+        true,
+        `muteonpause bypassed disableresume! ${JSON.stringify(mopDisableResume)}`
+      );
+      await evalInSession(
+        cdp,
+        swSid,
+        `delete options.muteonpause; delete options.disableresume; setTabMuted(${tab3Id}, false); true`
+      );
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await sleep(350);
+
+      // (c) Audible pauses while muted video remains -> must stay in state.mutedTabs and pause on hide!
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const v = document.createElement('video');
+          v.src = window._webmUrl;
+          v.loop = true;
+          v.muted = false;
+          v.volume = 0;
+          document.body.appendChild(v);
+          window._stayMutedVid = v;
+          await v.play();
+          await _mopAudio.play();
+        })()`
+      );
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.media.has(${tab3Id})`),
+        5000
+      );
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.pause(); true`);
+      await waitFor(
+        () =>
+          evalInSession(
+            cdp,
+            swSid,
+            `!state.media.has(${tab3Id}) && state.mutedTabs.has(${tab3Id})`
+          ),
+        5000
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      const stayMutedPaused = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab3.sessionId,
+          `_stayMutedVid.playbackRate`
+        );
+        return r === 0 ? {rate: r} : null;
+      }, 5000);
+      await evalInSession(cdp, tab3.sessionId, `_stayMutedVid.pause(); true`);
+      await sleep(300);
+
+      // (d) Volume drag deduplication (0 IPCs while unmuted, 1 play on 0->0.2 after muteTimer, 0 after)
+      await cdp.send('Target.activateTarget', {targetId: tab3.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab3.sessionId, `_mopAudio.play()`);
+      await waitFor(
+        () => evalInSession(cdp, swSid, `state.media.has(${tab3Id})`),
+        5000
+      );
+      await evalInSession(
+        cdp,
+        swSid,
+        `globalThis._volPlayCount = 0;
+        globalThis._volListener = (m, s) => { if (s?.tab?.id === ${tab3Id} && m?.type === 'play') globalThis._volPlayCount++; };
+        chrome.runtime.onMessage.addListener(globalThis._volListener);
+        true`
+      );
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          for (const v of [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]) {
+            _mopAudio.volume = v;
+            await new Promise((r) => setTimeout(r, 15));
+          }
+        })()`
+      );
+      await sleep(150);
+      const dragWhileUnmuted = await evalInSession(
+        cdp,
+        swSid,
+        `globalThis._volPlayCount`
+      );
+      assert.equal(
+        dragWhileUnmuted,
+        0,
+        `Volume drag while unmuted spammed ${dragWhileUnmuted} play IPCs!`
+      );
+      // Now drop to 0 for 300ms (triggers playMuted), then ramp 0.2 -> 0.5 -> 0.9 -> exactly 1 play IPC!
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          _mopAudio.volume = 0;
+          await new Promise((r) => setTimeout(r, 320));
+          for (const v of [0.2, 0.5, 0.9]) {
+            _mopAudio.volume = v;
+            await new Promise((r) => setTimeout(r, 20));
+          }
+        })()`
+      );
+      await sleep(200);
+      const dragAfterZero = await evalInSession(
+        cdp,
+        swSid,
+        `(() => {
+          chrome.runtime.onMessage.removeListener(globalThis._volListener);
+          return globalThis._volPlayCount;
+        })()`
+      );
+      assert.equal(
+        dragAfterZero,
+        1,
+        `Expected exactly 1 play IPC after unmuting from 0, got ${dragAfterZero}`
+      );
+
+      // (e) Declarative closed ShadowRoot <audio autoplay> (NO .play() call!) caught by pause() while tab already in state.media!
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `(async () => {
+          const h = document.createElement('div');
+          document.body.appendChild(h);
+          const sr = h.attachShadow({mode: 'closed'});
+          const a = document.createElement('audio');
+          a.autoplay = true;
+          a.loop = true;
+          a.src = '/tone.wav?declShadow';
+          sr.appendChild(a);
+          window._declShadowAudio = a;
+          await new Promise((resolve) => {
+            if (!a.paused) return resolve();
+            a.addEventListener('play', resolve, {once: true});
+          });
+        })()`
+      );
+      await cdp.send('Target.activateTarget', {targetId: tab2.targetId});
+      await sleep(200);
+      await evalInSession(cdp, tab2.sessionId, `window.playShadow()`);
+      const declShadowPaused = await waitFor(async () => {
+        const s = await evalInSession(
+          cdp,
+          tab3.sessionId,
+          `({paused: _declShadowAudio.paused, rate: _declShadowAudio.playbackRate, vol: _declShadowAudio.volume})`
+        );
+        return !s.paused && s.rate === 0 && s.vol === 0 ? s : null;
+      }, 5000);
+      await evalInSession(
+        cdp,
+        tab3.sessionId,
+        `_mopAudio.pause(); _declShadowAudio.pause(); true`
+      );
+      await evalInSession(cdp, tab2.sessionId, `window.pauseShadow()`);
+      await sleep(350);
+
+      // (f) User-clicked Unmute on auto-paused muted video resumes it, while script unmute without userActivation does NOT!
+      await cdp.send('Target.activateTarget', {targetId: tab1.targetId});
+      await sleep(200);
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?unmute10i';
+          a.loop = true;
+          a.muted = true;
+          a.volume = 1;
+          document.body.appendChild(a);
+          window._unmuteVid = a;
+          await a.play();
+        })()`
+      );
+      await sleep(200);
+      await evalInSession(cdp, swSid, `pause(${t1PlayingId}); true`);
+      await waitFor(
+        () => evalInSession(cdp, tab1.sessionId, `_unmuteVid.playbackRate === 0`),
+        5000
+      );
+      const hadActBeforeScript = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `navigator.userActivation.isActive`
+      );
+      assert.equal(
+        hadActBeforeScript,
+        false,
+        'Expected tab1 userActivation.isActive to be false before script unmute'
+      );
+      // Script unmute without userActivation must stay frozen at playbackRate === 0
+      await evalInSession(cdp, tab1.sessionId, `_unmuteVid.muted = false; true`);
+      await sleep(250);
+      const unmuteScriptRate = await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `_unmuteVid.playbackRate`
+      );
+      assert.equal(
+        unmuteScriptRate,
+        0,
+        'Script unmute without userActivation must not wake auto-paused muted video'
+      );
+      // Re-mute then real click unmute (userActivation=true) must resume to playbackRate === 1!
+      await evalInSession(
+        cdp,
+        tab1.sessionId,
+        `(() => {
+          _unmuteVid.muted = true;
+          const btn = document.createElement('button');
+          btn.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:200px;z-index:999999;';
+          btn.addEventListener('click', () => {
+            btn.remove();
+            _unmuteVid.muted = false;
+          }, {once: true});
+          document.body.appendChild(btn);
+          return true;
+        })()`
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mousePressed', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab1.sessionId
+      );
+      await cdp.send(
+        'Input.dispatchMouseEvent',
+        {type: 'mouseReleased', x: 50, y: 50, button: 'left', clickCount: 1},
+        tab1.sessionId
+      );
+      const unmuteClickRate = await waitFor(async () => {
+        const r = await evalInSession(
+          cdp,
+          tab1.sessionId,
+          `_unmuteVid.playbackRate`
+        );
+        return r === 1 ? r : null;
+      }, 5000);
+      await evalInSession(cdp, tab1.sessionId, `_unmuteVid.pause(); true`);
+      await sleep(300);
+      console.log(
+        '10i. MediaStream resume, muteonpause (PiP/manual/disableresume), audible->playMuted, volume drag dedup, declarative shadow autoplay, and click-unmute verified:',
+        {
+          msAllowed,
+          msAfterMuteCycle,
+          mopAutoResumed,
+          mopManualResumed,
+          mopDisableResume,
+          stayMutedPaused,
+          dragWhileUnmuted,
+          dragAfterZero,
+          declShadowPaused,
+          unmuteClickRate
         }
       );
 

@@ -506,6 +506,9 @@ function startTestServer() {
         <div id="autoPauseContentScript"></div>
         <form id="documentPictureInPicture"><input name="window"></form>
         <img name="pictureInPictureElement">
+        <img name="visibilityState">
+        <img name="querySelectorAll">
+        <img name="nodeType">
         <form id="clobber1">
           <input name="openOrClosedShadowRoot">
           <input name="openOrClosedShadowRoot">
@@ -1238,6 +1241,199 @@ async function main() {
       console.log(
         '10c. Firefox rapid <200ms pause->play (denied, allowed + sibling isolation) verified:',
         {ffRapidDenied, ffRapidAllowed}
+      );
+
+      // 10d. Firefox muteonpause (extensionId === runtime.id, keeps state.media, respects disableresume),
+      //      audible pause with muted media remaining, and declarative closed-shadow autoplay pause!
+      await sleep(350);
+      const tab1Id = await evalBiDi(
+        bidi,
+        optCtx.context,
+        `browser.tabs.query({url: 'http://127.0.0.1/normal'}).then((ts) => ts[0]?.id)`
+      );
+      assert.ok(tab1Id, 'Expected tab1Id for /normal');
+      await evalBiDi(
+        bidi,
+        optCtx.context,
+        `browser.storage.sync.set({options: {muteonpause: true, disableresume: true}})`
+      );
+      await sleep(200);
+      await bidi.send('browsingContext.activate', {context: tab1});
+      await sleep(200);
+      await evalBiDi(
+        bidi,
+        tab1,
+        `(async () => {
+          const a = document.createElement('audio');
+          a.src = '/tone.wav?ffMop';
+          a.loop = true;
+          document.body.appendChild(a);
+          window._ffMop = a;
+          await a.play();
+        })()`,
+        true,
+        true
+      );
+      await waitFor(
+        () =>
+          evalBiDi(
+            bidi,
+            optCtx.context,
+            `browser.storage.session.get('state').then((r) => r.state?.media?.includes(${tab1Id}))`
+          ),
+        5000
+      );
+      await bidi.send('browsingContext.activate', {context: tab2});
+      await sleep(200);
+      await evalBiDi(bidi, tab2, `window.playShadow()`, true, true);
+      const ffMopPaused = await waitFor(async () => {
+        const s = await evalBiDi(
+          bidi,
+          optCtx.context,
+          `(async () => {
+            const t = await browser.tabs.get(${tab1Id});
+            const {state} = await browser.storage.session.get('state');
+            return {
+              muted: t.mutedInfo?.muted,
+              extIdMatch: t.mutedInfo?.extensionId === browser.runtime.id,
+              inMedia: Boolean(state?.media?.includes(${tab1Id})),
+              inMutedMedia: Boolean(state?.mutedMedia?.includes(${tab1Id}))
+            };
+          })()`
+        );
+        return s.muted === true ? s : null;
+      }, 5000);
+      await sleep(250);
+      const ffMopState = await evalBiDi(
+        bidi,
+        optCtx.context,
+        `browser.storage.session.get('state').then(({state}) => ({
+          inMedia: Boolean(state?.media?.includes(${tab1Id})),
+          inMutedMedia: Boolean(state?.mutedMedia?.includes(${tab1Id}))
+        }))`
+      );
+      assert.equal(
+        ffMopPaused.extIdMatch,
+        true,
+        `Firefox mutedInfo.extensionId did not match browser.runtime.id: ${JSON.stringify(ffMopPaused)}`
+      );
+      assert.equal(ffMopState.inMedia, true);
+      assert.equal(ffMopState.inMutedMedia, false);
+      // Activate Tab 1 -> muteonpause + disableresume must unmute and pause cleanly (NOT force-resume!)
+      await bidi.send('browsingContext.activate', {context: tab1});
+      await sleep(400);
+      const ffMopDisableResume = await evalBiDi(
+        bidi,
+        tab1,
+        `({paused: _ffMop.paused, rate: _ffMop.playbackRate})`
+      );
+      assert.equal(
+        ffMopDisableResume.paused,
+        true,
+        `Firefox muteonpause bypassed disableresume! ${JSON.stringify(ffMopDisableResume)}`
+      );
+      await evalBiDi(
+        bidi,
+        optCtx.context,
+        `browser.storage.sync.set({options: {}})`
+      );
+      await evalBiDi(
+        bidi,
+        optCtx.context,
+        `browser.tabs.update(${tab1Id}, {muted: false})`
+      );
+      await evalBiDi(bidi, tab2, `window.pauseShadow()`);
+      await sleep(350);
+
+      // Audible pauses while muted audio remains -> must stay in state.mutedTabs and pause on hide!
+      await evalBiDi(
+        bidi,
+        tab1,
+        `(async () => {
+          const m = document.createElement('audio');
+          m.src = '/tone.wav?ffStayMuted';
+          m.loop = true;
+          m.muted = true;
+          document.body.appendChild(m);
+          window._ffStayMuted = m;
+          await m.play();
+          await _ffMop.play();
+        })()`,
+        true,
+        true
+      );
+      await waitFor(
+        () =>
+          evalBiDi(
+            bidi,
+            optCtx.context,
+            `browser.storage.session.get('state').then((r) => r.state?.media?.includes(${tab1Id}))`
+          ),
+        5000
+      );
+      await evalBiDi(bidi, tab1, `_ffMop.pause(); true`);
+      await waitFor(
+        () =>
+          evalBiDi(
+            bidi,
+            optCtx.context,
+            `browser.storage.session.get('state').then((r) => !r.state?.media?.includes(${tab1Id}) && r.state?.mutedTabs?.includes(${tab1Id}))`
+          ),
+        5000
+      );
+      await bidi.send('browsingContext.activate', {context: tab2});
+      const ffStayMutedPaused = await waitFor(async () => {
+        const r = await evalBiDi(bidi, tab1, `_ffStayMuted.playbackRate`);
+        return r === 0 ? {rate: r} : null;
+      }, 5000);
+      await evalBiDi(bidi, tab1, `_ffStayMuted.pause(); true`);
+      await sleep(300);
+
+      // Declarative closed ShadowRoot <audio autoplay> caught by pause() while tab already in state.media!
+      await bidi.send('browsingContext.activate', {context: tab1});
+      await sleep(200);
+      await evalBiDi(
+        bidi,
+        tab1,
+        `(async () => {
+          await _ffMop.play();
+          const h = document.createElement('div');
+          document.body.appendChild(h);
+          const sr = h.attachShadow({mode: 'closed'});
+          const a = document.createElement('audio');
+          a.autoplay = true;
+          a.loop = true;
+          a.src = '/tone.wav?ffDeclShadow';
+          sr.appendChild(a);
+          window._ffDeclShadow = a;
+          await new Promise((resolve) => {
+            if (!a.paused) return resolve();
+            a.addEventListener('play', resolve, {once: true});
+          });
+        })()`,
+        true,
+        true
+      );
+      await bidi.send('browsingContext.activate', {context: tab2});
+      await sleep(200);
+      await evalBiDi(bidi, tab2, `window.playShadow()`, true, true);
+      const ffDeclShadowPaused = await waitFor(async () => {
+        const s = await evalBiDi(
+          bidi,
+          tab1,
+          `({paused: _ffDeclShadow.paused, rate: _ffDeclShadow.playbackRate, vol: _ffDeclShadow.volume})`
+        );
+        return !s.paused && s.rate === 0 && s.vol === 0 ? s : null;
+      }, 5000);
+      await evalBiDi(
+        bidi,
+        tab1,
+        `_ffMop.pause(); _ffDeclShadow.pause(); true`
+      );
+      await evalBiDi(bidi, tab2, `window.pauseShadow()`);
+      console.log(
+        '10d. Firefox muteonpause (extensionId + disableresume), audible->playMuted, and declarative shadow autoplay verified:',
+        {ffMopPaused, ffMopDisableResume, ffStayMutedPaused, ffDeclShadowPaused}
       );
 
       assert.equal(

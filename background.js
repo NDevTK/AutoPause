@@ -181,18 +181,15 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
     case 'hidden':
       if (await visablePopup(tab.id)) break;
       if (state.mutedTabs.has(tab.id)) {
-        if (
-          hasProperty(options, 'muteonpause') &&
-          state.mutedMedia.has(tab.id)
-        ) {
-          state.media.add(tab.id);
-        }
         // Pause hidden muted tabs.
         pause(tab.id);
       }
       break;
     case 'play':
-      if (tab.mutedInfo?.muted) {
+      if (
+        tab.mutedInfo?.muted &&
+        tab.mutedInfo.extensionId !== chrome.runtime.id
+      ) {
         state.mutedMedia.add(tab.id);
         onMute(tab.id);
       } else {
@@ -542,7 +539,8 @@ function pause(id, checkHidden) {
   if (checkHidden) {
     send(id, 'hidden');
   } else {
-    if (hasProperty(options, 'muteonpause')) setTabMuted(id, true);
+    if (hasProperty(options, 'muteonpause') && !state.mutedTabs.has(id))
+      setTabMuted(id, true);
     send(id, 'pause');
   }
 }
@@ -550,7 +548,8 @@ function pause(id, checkHidden) {
 function play(id, force) {
   // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
   if (state.locked) return;
-  if (hasProperty(options, 'muteonpause')) setTabMuted(id, false);
+  if (hasProperty(options, 'muteonpause') && !state.mutedMedia.has(id))
+    setTabMuted(id, false);
   if (hasProperty(options, 'disableresume') && !force) {
     send(id, 'allowplayback');
   } else {
@@ -824,15 +823,25 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     save();
     return;
   }
-  if (hasProperty(changeInfo, 'mutedInfo')) {
+  if (
+    hasProperty(changeInfo, 'mutedInfo') &&
+    changeInfo.mutedInfo.extensionId !== chrome.runtime.id
+  ) {
     if (changeInfo.mutedInfo.muted && state.media.has(tabId)) {
       state.mutedMedia.add(tabId);
       onMute(tabId);
     }
     // If tab gets unmuted resume it.
-    else if (!changeInfo.mutedInfo.muted && state.mutedMedia.has(tabId)) {
-      state.mediaPlaying = tabId;
-      play(tabId, true);
+    else if (
+      !changeInfo.mutedInfo.muted &&
+      (state.mutedMedia.has(tabId) ||
+        (hasProperty(options, 'muteonpause') && state.media.has(tabId)))
+    ) {
+      if (!state.locked) {
+        state.mutedMedia.delete(tabId);
+        state.mediaPlaying = tabId;
+        play(tabId, true);
+      }
     } else if (changeInfo.mutedInfo.muted && state.otherTabs.has(tabId)) {
       state.otherTabs.delete(tabId);
       onPause(tabId);
@@ -1092,26 +1101,28 @@ async function updateExtensionScripts() {
     if (!tab.url || !tab.id) return;
     chrome.tabs.sendMessage(tab.id, {type: 'hi ya!'}).catch(async () => {
       if (isUrlExcluded(tab.url, unsupportedScripts)) return;
-      await chrome.scripting.executeScript({
-        target: {
-          tabId: tab.id,
-          allFrames: true
-        },
-        files: ['ContentScript.js'],
-        injectImmediately: true
-      });
-      if (!isUrlExcluded(tab.url, unsupportedWindowScripts)) {
+      try {
         await chrome.scripting.executeScript({
           target: {
             tabId: tab.id,
             allFrames: true
           },
-          files: ['WindowScript.js'],
-          world: 'MAIN',
+          files: ['ContentScript.js'],
           injectImmediately: true
         });
-      }
-      send(tab.id, 'new');
+        if (!isUrlExcluded(tab.url, unsupportedWindowScripts)) {
+          await chrome.scripting.executeScript({
+            target: {
+              tabId: tab.id,
+              allFrames: true
+            },
+            files: ['WindowScript.js'],
+            world: 'MAIN',
+            injectImmediately: true
+          });
+        }
+        send(tab.id, 'new');
+      } catch {}
     });
   });
 }

@@ -725,12 +725,40 @@ async function main() {
       await cdp.send('Runtime.enable', {}, swSid);
 
       // Wait for initialization & onInstalled (which opens options.html!)
-      const optionsTarget = await waitFor(async () => {
-        const {targetInfos} = await cdp.send('Target.getTargets');
-        return targetInfos.find(
-          (t) => t.url === `chrome-extension://${extId}/options.html`
+      let optionsTarget;
+      try {
+        optionsTarget = await waitFor(async () => {
+          const {targetInfos} = await cdp.send('Target.getTargets', {
+            filter: [{exclude: false}]
+          });
+          return targetInfos.find(
+            (t) => t.url === `chrome-extension://${extId}/options.html`
+          );
+        }, 15000);
+      } catch (err) {
+        const {targetInfos} = await cdp.send('Target.getTargets', {
+          filter: [{exclude: false}]
+        });
+        const tabs = await evalInSession(
+          cdp,
+          swSid,
+          `chrome.tabs.query({}).then((ts) => ts.map((t) => ({id: t.id, url: t.url, pendingUrl: t.pendingUrl, status: t.status})))`
+        ).catch((e) => String(e));
+        console.error(
+          'Phase A options.html diagnostic:',
+          JSON.stringify(
+            {
+              targets: targetInfos.map((t) => ({type: t.type, url: t.url})),
+              tabs,
+              swErrors,
+              chromeLogs: browserA.getLogs().slice(-2000)
+            },
+            null,
+            2
+          )
         );
-      }, 10000);
+        throw err;
+      }
       console.log(
         '2. onInstalled auto-opened options.html:',
         optionsTarget.url

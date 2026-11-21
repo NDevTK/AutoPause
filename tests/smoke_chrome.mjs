@@ -870,7 +870,7 @@ async function main() {
         'options-chrome.js must list all 12 commands'
       );
 
-      // Verify validation, hostname normalization on submit, and dependent option dimming
+      // Verify ES module isolation, validation, normalization on submit, status clearing, shortcut refresh, and option dimming
       const optUx = await evalInSession(
         cdp,
         optSid,
@@ -879,21 +879,34 @@ async function main() {
           const ex = document.getElementById('exclude');
           const form = document.getElementById('permissions-form');
           const st = document.getElementById('permissions-status');
+          const moduleScoped = typeof window.statusEl === 'undefined';
           ui.value = 'not_a_domain';
           form.requestSubmit();
           const invalidKept = ui.classList.contains('is-invalid') && ui.value === 'not_a_domain' && st.classList.contains('error');
           ui.value = '';
-          ex.value = 'zoom meet.google.com https://discord.com';
+          ex.value = 'zoom meet.google.com https://discord.com https://example.com/embed/*#frag';
           form.requestSubmit();
           await new Promise((r) => setTimeout(r, 150));
           const normalizedEx = ex.value;
+          const savedText = st.textContent;
           const storedEx = (await chrome.storage.sync.get('exclude')).exclude;
+          ex.dispatchEvent(new Event('input'));
+          const statusClearedOnEdit = st.textContent === '';
+          window.dispatchEvent(new Event('focus'));
+          document.dispatchEvent(new Event('visibilitychange'));
+          await new Promise((r) => setTimeout(r, 150));
+          const shortcutRowsAfterFocus = document.querySelectorAll('#shortcuts .shortcut-row').length;
           document.getElementById('disableresume').click();
           await new Promise((r) => setTimeout(r, 100));
           const dimmedNoAuto = document.querySelector('label[for="noauto"]').classList.contains('is-dimmed') && !document.getElementById('noauto').disabled;
           document.getElementById('disableresume').click();
-          return {invalidKept, normalizedEx, storedEx, dimmedNoAuto};
+          return {moduleScoped, invalidKept, normalizedEx, savedText, statusClearedOnEdit, shortcutRowsAfterFocus, storedEx, dimmedNoAuto};
         })()`
+      );
+      assert.equal(
+        optUx.moduleScoped,
+        true,
+        'options scripts must be isolated as ES modules (no global statusEl)'
       );
       assert.equal(
         optUx.invalidKept,
@@ -902,13 +915,25 @@ async function main() {
       );
       assert.equal(
         optUx.normalizedEx,
-        'https://*.zoom.us/* https://meet.google.com/* https://discord.com/*',
+        'https://*.zoom.us/* https://meet.google.com/* https://discord.com/* https://example.com/embed/*',
         `Expected normalized exclude patterns, got ${optUx.normalizedEx}`
+      );
+      assert.equal(optUx.savedText, 'Saved.');
+      assert.equal(
+        optUx.statusClearedOnEdit,
+        true,
+        'Stale Saved status must clear when user edits fields'
+      );
+      assert.equal(
+        optUx.shortcutRowsAfterFocus,
+        12,
+        'Re-rendering shortcuts on focus must not duplicate rows'
       );
       assert.deepEqual(optUx.storedEx, [
         'https://*.zoom.us/*',
         'https://meet.google.com/*',
-        'https://discord.com/*'
+        'https://discord.com/*',
+        'https://example.com/embed/*'
       ]);
       assert.equal(
         optUx.dimmedNoAuto,

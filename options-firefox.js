@@ -1,17 +1,17 @@
 'use strict';
 /* global browser */
-var commands = [];
-var shortcuts = document.getElementById('shortcuts');
-var list = document.createElement('div');
+let commands = [];
+const shortcuts = document.getElementById('shortcuts');
+const list = document.createElement('div');
 list.className = 'shortcut-list';
 shortcuts.appendChild(list);
 
-var actions = document.createElement('div');
+const actions = document.createElement('div');
 actions.className = 'actions';
-var saveBtn = document.createElement('button');
+const saveBtn = document.createElement('button');
 saveBtn.type = 'button';
 saveBtn.textContent = 'Save shortcuts';
-var statusEl = document.createElement('span');
+const statusEl = document.createElement('span');
 statusEl.className = 'status';
 statusEl.setAttribute('role', 'status');
 statusEl.setAttribute('aria-live', 'polite');
@@ -65,12 +65,20 @@ shortcuts.addEventListener('keydown', (event) => {
 getCommands();
 
 async function getCommands() {
-  commands = await browser.commands.getAll();
+  const fetched = await browser.commands.getAll();
+  const initialRender = list.childElementCount === 0;
+  commands = initialRender
+    ? [...fetched].sort(
+        (a, b) => Number(Boolean(b.shortcut)) - Number(Boolean(a.shortcut))
+      )
+    : fetched;
   commands.forEach((command) => {
     const id = command.name + 'shortcut';
     const element = document.getElementById(id);
     if (element) {
-      element.value = command.shortcut || '';
+      if (!element.classList.contains('is-invalid')) {
+        element.value = command.shortcut || '';
+      }
       return;
     }
     const row = document.createElement('div');
@@ -83,7 +91,10 @@ async function getCommands() {
     input.id = id;
     input.placeholder = 'Not set';
     input.value = command.shortcut || '';
-    input.addEventListener('input', () => input.classList.remove('is-invalid'));
+    input.addEventListener('input', () => {
+      input.classList.remove('is-invalid');
+      setShortcutStatus('');
+    });
     row.append(label, input);
     list.appendChild(row);
   });

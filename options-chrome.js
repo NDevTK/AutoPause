@@ -1,14 +1,14 @@
 'use strict';
 /* global chrome */
-var chromeonly = document.getElementById('chromeonly');
+const chromeonly = document.getElementById('chromeonly');
 chromeonly.hidden = false;
 
-var shortcuts = document.getElementById('shortcuts');
-var list = document.createElement('div');
+const shortcuts = document.getElementById('shortcuts');
+const list = document.createElement('div');
 list.className = 'shortcut-list';
 shortcuts.appendChild(list);
 
-var btn = document.createElement('button');
+const btn = document.createElement('button');
 btn.type = 'button';
 btn.textContent = 'Edit shortcuts';
 
@@ -18,12 +18,23 @@ btn.addEventListener('click', () => {
 
 shortcuts.appendChild(btn);
 
-if (chrome.commands?.getAll) {
+let renderSeq = 0;
+
+function renderShortcuts() {
+  if (!chrome.commands?.getAll) return;
+  const seq = ++renderSeq;
   chrome.commands.getAll((commands) => {
-    if (chrome.runtime.lastError || !Array.isArray(commands)) return;
+    if (
+      seq !== renderSeq ||
+      chrome.runtime.lastError ||
+      !Array.isArray(commands)
+    ) {
+      return;
+    }
     const sorted = [...commands].sort(
       (a, b) => Number(Boolean(b.shortcut)) - Number(Boolean(a.shortcut))
     );
+    const fragment = document.createDocumentFragment();
     sorted.forEach((command) => {
       if (!command.description) return;
       const row = document.createElement('div');
@@ -34,7 +45,14 @@ if (chrome.commands?.getAll) {
       key.textContent = command.shortcut || 'Not set';
       if (!command.shortcut) key.className = 'unset';
       row.append(desc, key);
-      list.appendChild(row);
+      fragment.appendChild(row);
     });
+    list.replaceChildren(fragment);
   });
 }
+
+renderShortcuts();
+window.addEventListener('focus', renderShortcuts);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') renderShortcuts();
+});

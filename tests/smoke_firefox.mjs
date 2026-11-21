@@ -668,6 +668,40 @@ async function main() {
         'options-firefox.js must render all 12 shortcut inputs'
       );
 
+      // Verify ES module isolation (no global statusEl collision) & inline Firefox shortcut validation keeping invalid input
+      const ffShortcutUx = await evalBiDi(
+        bidi,
+        optCtx.context,
+        `(async () => {
+          const moduleScoped = typeof window.statusEl === 'undefined';
+          const input = document.querySelector('#shortcuts input');
+          const saveBtn = document.querySelector('#shortcuts button');
+          const shortcutStatus = document.querySelector('#shortcuts .status');
+          const permStatus = document.getElementById('permissions-status');
+          const orig = input.value;
+          input.value = 'NotAValidShortcut';
+          saveBtn.click();
+          await new Promise((r) => setTimeout(r, 250));
+          const res = {
+            moduleScoped,
+            keptTypo: input.value === 'NotAValidShortcut',
+            markedInvalid: input.classList.contains('is-invalid'),
+            shortcutStatusErr: shortcutStatus.classList.contains('error') && shortcutStatus.textContent.length > 0,
+            permStatusUntouched: permStatus.textContent === ''
+          };
+          input.value = orig;
+          input.dispatchEvent(new Event('input'));
+          return res;
+        })()`
+      );
+      assert.deepEqual(ffShortcutUx, {
+        moduleScoped: true,
+        keptTypo: true,
+        markedInvalid: true,
+        shortcutStatusErr: true,
+        permStatusUntouched: true
+      });
+
       // Toggle checkbox and verify sync storage write (note: keep muteonpause off for audio playback test below)
       await evalBiDi(
         bidi,
@@ -692,7 +726,7 @@ async function main() {
       );
       await sleep(200);
       console.log(
-        '3. Firefox options checkbox -> browser.storage.sync verified!'
+        '3. Firefox options module scope, inline shortcut validation, and checkbox -> browser.storage.sync verified!'
       );
 
       // Open Tab 1 (/normal) and Tab 2 (/shadow-and-clobber)

@@ -68,19 +68,35 @@ const common = new Map([
   ['facebook', 'https://www.facebook.com/*']
 ]);
 
-function normalizeEntry(raw) {
+function normalizeEntry(raw, originOnly = false) {
   const entry = raw.trim();
   if (!entry) return null;
   if (entry === '<all_urls>') return '<all_urls>';
-  const lower = entry.toLowerCase();
+  const noHash = entry.split('#')[0];
+  if (!noHash) return null;
+  const lower = noHash.toLowerCase();
   if (common.has(lower)) return common.get(lower);
-  if (matchPatternRegex.test(entry)) return entry;
-  if (schemeNoPathRegex.test(entry)) {
-    const candidate = entry + '/*';
+  if (originOnly && !noHash.includes('*')) {
+    try {
+      const parsed = new URL(noHash);
+      if (
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        parsed.hostname
+      ) {
+        const originPattern = `${parsed.protocol}//${parsed.hostname}/*`;
+        if (matchPatternRegex.test(originPattern)) return originPattern;
+      }
+    } catch {}
+  }
+  if (matchPatternRegex.test(noHash)) {
+    if (!originOnly || !noHash.includes('?')) return noHash;
+  }
+  if (schemeNoPathRegex.test(noHash)) {
+    const candidate = noHash + '/*';
     if (matchPatternRegex.test(candidate)) return candidate;
   }
-  if (schemeTrailingSlashRegex.test(entry)) {
-    const candidate = entry + '*';
+  if (schemeTrailingSlashRegex.test(noHash)) {
+    const candidate = noHash + '*';
     if (matchPatternRegex.test(candidate)) return candidate;
   }
   const stripped = lower.endsWith('/') ? lower.slice(0, -1) : lower;
@@ -94,13 +110,13 @@ function normalizeEntry(raw) {
   return null;
 }
 
-function parseEntries(value) {
+function parseEntries(value, originOnly = false) {
   const tokens = value.trim() ? value.trim().split(/\s+/) : [];
   const valid = [];
   const seen = new Set();
   const invalid = [];
   for (const token of tokens) {
-    const normalized = normalizeEntry(token);
+    const normalized = normalizeEntry(token, originOnly);
     if (normalized) {
       if (!seen.has(normalized)) {
         seen.add(normalized);
@@ -122,7 +138,7 @@ function setStatus(text, isError = false) {
 function clearFieldValidity(input) {
   input.classList.remove('is-invalid');
   input.setCustomValidity('');
-  if (statusEl?.classList.contains('error')) setStatus('');
+  setStatus('');
 }
 
 userinput.addEventListener('input', () => clearFieldValidity(userinput));
@@ -206,7 +222,8 @@ function toggleOption(o) {
 
 function updateAllowAllButton() {
   if (!allowAllBtn) return;
-  const hasAll = permissions.includes('<all_urls>');
+  const hasAll =
+    permissions.includes('<all_urls>') || permissions.includes('*://*/*');
   allowAllBtn.disabled = hasAll;
   allowAllBtn.textContent = hasAll ? 'All sites enabled' : 'Allow all sites';
 }
@@ -223,7 +240,7 @@ getPermissions();
 
 if (allowAllBtn) {
   allowAllBtn.addEventListener('click', () => {
-    if (permissions.includes('<all_urls>')) {
+    if (permissions.includes('<all_urls>') || permissions.includes('*://*/*')) {
       setStatus('Already enabled on all sites.');
       return;
     }
@@ -244,8 +261,8 @@ if (allowAllBtn) {
 function permissionUpdate(event) {
   if (event) event.preventDefault();
 
-  const parsedAllow = parseEntries(userinput.value);
-  const parsedExclude = parseEntries(exclude.value);
+  const parsedAllow = parseEntries(userinput.value, true);
+  const parsedExclude = parseEntries(exclude.value, false);
 
   const allowInvalid = parsedAllow.invalid.length > 0;
   const excludeInvalid = parsedExclude.invalid.length > 0;

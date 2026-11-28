@@ -1,5 +1,5 @@
 // Security: Code here is exposed to the website.
-// Automatically add media elements to the DOM.
+// Hand detached media elements to the content script without changing the DOM.
 (function () {
   'use strict';
 
@@ -9,27 +9,16 @@
   window.autoPauseExtensionInjected = true;
 
   const play = window.HTMLMediaElement.prototype.play;
-  let div = null;
+  const dispatchEvent = window.EventTarget.prototype.dispatchEvent;
+  const MouseEvent = window.MouseEvent;
   window.HTMLMediaElement.prototype.play = function () {
     try {
       if (this instanceof HTMLMediaElement && !this.isConnected) {
-        if (!document.contains(div)) {
-          div = document.createElement('div');
-          div.hidden = true;
-          document.head.appendChild(div);
-          // If media gets paused, remove it from the div.
-          div.addEventListener(
-            'pause',
-            (event) => {
-              const src = event.srcElement;
-              if (src instanceof HTMLMediaElement) {
-                div.removeChild(src);
-              }
-            },
-            {passive: true, capture: true}
-          );
-        }
-        div.appendChild(this);
+        // relatedTarget passes the element reference to the content script's isolated world.
+        dispatchEvent.call(
+          window,
+          new MouseEvent('autopause-media', {relatedTarget: this})
+        );
       }
     } catch {
       // Extension errors should not affect the API.

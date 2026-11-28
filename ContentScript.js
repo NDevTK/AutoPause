@@ -1,7 +1,7 @@
 'use strict';
 /* global chrome */
 
-var Targets = new Set();
+var Targets = new WeakSet();
 
 var Elements = new Map();
 
@@ -146,19 +146,28 @@ function onPlay(e) {
   send('play', data.id, e.duration);
 }
 
+// Cross-realm brand check: the native getter throws unless e is a real HTMLMediaElement (from any realm).
+var pausedGetter = Object.getOwnPropertyDescriptor(
+  HTMLMediaElement.prototype,
+  'paused'
+).get;
+
+function isMediaElement(e) {
+  try {
+    pausedGetter.call(e);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function validMedia(e) {
   try {
     // documentPictureInPicture window.top media is tracked by the opener.
-    if (opener.documentPictureInPicture.window === window) return;
+    if (opener.documentPictureInPicture.window === window) return false;
   } catch {}
 
-  return (
-    typeof e.play === 'function' &&
-    typeof e.pause === 'function' &&
-    typeof e.playbackRate === 'number' &&
-    typeof e.muted === 'boolean' &&
-    typeof e.paused === 'boolean'
-  );
+  return isMediaElement(e);
 }
 
 function addListener(src) {
@@ -269,6 +278,20 @@ function addMedia(src) {
 
 addListener(document);
 
+// WindowScript hands over detached media (e.g. new Audio().play()) via relatedTarget, no DOM changes needed.
+// Security: The event can be dispatched by the website, the brand check ensures only real media is tracked.
+window.addEventListener(
+  'autopause-media',
+  (event) => {
+    const e = event.relatedTarget;
+    if (validMedia(e)) addListener(e);
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
+
 async function onPause(src, controller) {
   await sleep(200);
   if (validMedia(src) && src.paused) {
@@ -333,7 +356,7 @@ function checkShadow(DOM = document) {
     if (shadowDOM !== null) {
       checkShadow(shadowDOM);
       addListener(shadowDOM);
-      [...shadowDOM.querySelectorAll('*')].map((e) => {
+      [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
         if (!isPaused(e)) {
           if (validMedia(e)) {
             addMedia(e);
@@ -346,7 +369,7 @@ function checkShadow(DOM = document) {
 }
 
 function checkDOM() {
-  for (const e of document.querySelectorAll('*')) {
+  for (const e of document.querySelectorAll('audio, video')) {
     if (!isPaused(e)) {
       if (validMedia(e)) {
         addMedia(e);

@@ -355,13 +355,11 @@ chrome.commands.onCommand.addListener(async (command) => {
         state.mediaPlaying = null;
         pauseAll();
       } else {
-        var result = getResumeTab();
+        const result = getResumeTab();
         if (result !== null) {
           // Ignore pause event due to this hotkey
-          if (state.mediaPlaying === null) {
-            state.mediaPlaying = result;
-            play(result);
-          }
+          state.mediaPlaying = result;
+          play(result);
         }
       }
       break;

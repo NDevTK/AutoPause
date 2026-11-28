@@ -26,6 +26,18 @@ if (window.documentPictureInPicture)
   });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Shadow media started without play() (e.g. autoplay) while the tab was already audible isn't tracked yet.
+  if (
+    [
+      'toggleFastPlayback',
+      'Rewind',
+      'next',
+      'previous',
+      'pause',
+      'pauseOther'
+    ].includes(message.type)
+  )
+    checkShadow(document, false);
   switch (message.type) {
     case 'visiblePopup':
       if (!visiblePopup()) break;
@@ -350,24 +362,25 @@ async function resume(shouldPlay) {
   });
 }
 
-function checkShadow(DOM = document) {
+// report: false finds playing media without telling the background it just started playing.
+function checkShadow(DOM = document, report = true) {
   // If we are checking this document, also check documentPictureInPicture.
   if (
     DOM === document &&
     window.documentPictureInPicture &&
     documentPictureInPicture.window
   )
-    checkShadow(documentPictureInPicture.window.document);
+    checkShadow(documentPictureInPicture.window.document, report);
   [...DOM.querySelectorAll('*')].map((e) => {
     let shadowDOM = shadow(e);
     if (shadowDOM !== null) {
-      checkShadow(shadowDOM);
+      checkShadow(shadowDOM, report);
       addListener(shadowDOM);
       [...shadowDOM.querySelectorAll('audio, video')].map((e) => {
         if (!isPaused(e)) {
           if (validMedia(e)) {
             addMedia(e);
-            onPlay(e);
+            if (report) onPlay(e);
           }
         }
       });

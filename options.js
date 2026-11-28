@@ -46,7 +46,9 @@ chrome.storage.sync.get(['options', 'exclude'], (result) => {
   }
 });
 
-chrome.storage.onChanged.addListener((result) => {
+chrome.storage.onChanged.addListener((result, areaName) => {
+  // Security: onChanged fires for every storage area, settings only live in sync.
+  if (areaName !== 'sync') return;
   if (
     typeof result.options === 'object' &&
     result.options !== null &&

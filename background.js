@@ -69,7 +69,9 @@ async function restore() {
 restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
-chrome.storage.onChanged.addListener((result) => {
+chrome.storage.onChanged.addListener((result, areaName) => {
+  // Security: onChanged fires for every storage area, settings only live in sync.
+  if (areaName !== 'sync') return;
   if (
     typeof result.options === 'object' &&
     result.options !== null &&

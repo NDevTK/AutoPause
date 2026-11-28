@@ -280,7 +280,7 @@ function getResumeTab(exclude) {
   if (resumableMedia.length > 0) {
     return resumableMedia.pop();
   }
-  return false;
+  return null;
 }
 
 // User may have multiple windows open.
@@ -332,7 +332,7 @@ chrome.commands.onCommand.addListener(async (command) => {
             });
           } else if (state.media.size > 0) {
             const result = getResumeTab();
-            if (result !== false) {
+            if (result !== null) {
               chrome.tabs.update(result, {
                 active: true
               });
@@ -356,7 +356,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         pauseAll();
       } else {
         var result = getResumeTab();
-        if (result !== false) {
+        if (result !== null) {
           // Ignore pause event due to this hotkey
           if (state.mediaPlaying === null) {
             state.mediaPlaying = result;
@@ -430,7 +430,7 @@ function play(id, force) {
 function switchMedia() {
   const result = getResumeTab(state.mediaPlaying);
   state.mediaPlaying = result;
-  if (result !== false) play(result);
+  if (result !== null) play(result);
 }
 
 function autoResume(id) {
@@ -761,7 +761,7 @@ async function checkIdle(userState) {
   } else if (state.locked) {
     state.locked = false;
     const tabId = getResumeTab();
-    if (tabId !== false) play(tabId);
+    if (tabId !== null) play(tabId);
   }
   save();
 }

@@ -78,7 +78,12 @@ function isPaused(e) {
 function next() {
   Elements.forEach((data, e) => {
     if (isPaused(e)) return;
-    e.currentTime = e.duration;
+    if (isFinite(e.duration)) {
+      e.currentTime = e.duration;
+    } else if (e.seekable?.length > 0) {
+      // Live stream: go to the live edge.
+      e.currentTime = e.seekable.end(e.seekable.length - 1);
+    }
   });
 }
 

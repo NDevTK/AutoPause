@@ -29,7 +29,7 @@ If applicable, add screenshots to help explain your problem.
 - Browser [e.g. chrome, safari]
 - Version [e.g. 22]
 
-** Provide the least amount of changes from the normal config to repo the bug.**
+**Provide the fewest changes from the default config needed to reproduce the bug.**
 
 **Extension configuration**
 
@@ -39,8 +39,8 @@ If applicable, add screenshots to help explain your problem.
 **Browser configuration**
 
 - Flag changes: [e.g. user.js, about:config]
-- Other extensions: [e.g AutoMute]
-- Browser configuration: [e.g about:preferences]
+- Other extensions: [e.g. AutoMute]
+- Browser configuration: [e.g. about:preferences]
 
 **Additional context**
 Add any other context about the problem here.

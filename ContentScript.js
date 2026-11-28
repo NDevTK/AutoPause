@@ -8,7 +8,7 @@ var Elements = new Map();
 if (window.documentPictureInPicture)
   documentPictureInPicture.addEventListener('enter', (event) => {
     if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
-      // For the top documentPictureInPicture window we are sharing the opener tab audible value
+      // For the top documentPictureInPicture window, we share the opener tab's audible value.
       addListener(event.window.document);
       event.window.addEventListener('focus', (e) => {
         if (e.isTrusted) send('tabFocus');
@@ -18,8 +18,8 @@ if (window.documentPictureInPicture)
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
-    case 'visablePopup':
-      if (!visablePopup()) break;
+    case 'visiblePopup':
+      if (!visiblePopup()) break;
       sendResponse('true');
       break;
     case 'toggleFastPlayback':
@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       pause();
       break;
     case 'play':
-      // When there media already playing tell the background script.
+      // When there's media already playing, tell the background script.
       if (isPlaying()) send('play');
       resume(true);
       break;
@@ -143,7 +143,7 @@ function onPlay(e) {
 
 function validMedia(e) {
   try {
-    //  documentPictureInPicture window.top media is tracked by the opener
+    // documentPictureInPicture window.top media is tracked by the opener.
     if (opener.documentPictureInPicture.window === window) return;
   } catch {}
 
@@ -193,7 +193,7 @@ function addMedia(src) {
   try {
     mediaID = crypto.randomUUID();
   } catch {
-    // On insecure website we cant have a ID :(
+    // On insecure websites we can't have an ID :(
   }
 
   Elements.set(src, {id: mediaID});
@@ -239,7 +239,7 @@ function addMedia(src) {
     }
   );
 
-  // Dont tell the media please
+  // Don't tell the media, please.
   src.addEventListener(
     'ratechange',
     function (event) {
@@ -287,7 +287,7 @@ function normalPlayback(src) {
 }
 
 function pauseElement(e, data) {
-  // If media attempts to play when it should be paused dont change its old values.
+  // If media attempts to play when it should be paused, don't change its old values.
   if (!data.wasPlaying) {
     data.wasVolume = e.volume;
     data.wasPlaybackRate = e.playbackRate;
@@ -309,14 +309,14 @@ async function pause() {
 async function resume(shouldPlay) {
   Elements.forEach((data, e) => {
     if (!data.wasPlaying) return;
-    // Pause foreground media normaly
+    // Pause foreground media normally.
     if (shouldPlay === false) e.pause();
     normalPlayback(e);
   });
 }
 
 function checkShadow(DOM = document) {
-  // If we are checking this document also check documentPictureInPicture
+  // If we are checking this document, also check documentPictureInPicture.
   if (
     DOM === document &&
     window.documentPictureInPicture &&
@@ -371,7 +371,7 @@ window.addEventListener(
   }
 );
 
-function visablePopup() {
+function visiblePopup() {
   if (window.documentPictureInPicture) {
     if (documentPictureInPicture.window !== null) return true;
   }
@@ -381,7 +381,7 @@ function visablePopup() {
 }
 
 function checkVisibility() {
-  if (!visablePopup()) {
+  if (!visiblePopup()) {
     checkShadow();
     send('hidden');
   }

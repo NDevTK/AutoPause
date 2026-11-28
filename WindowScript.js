@@ -1,5 +1,5 @@
 // Security: Code here is exposed to the website.
-// Automaticly add media elements to DOM.
+// Automatically add media elements to the DOM.
 (function () {
   'use strict';
 
@@ -17,7 +17,7 @@
           div = document.createElement('div');
           div.hidden = true;
           document.head.appendChild(div);
-          // If media gets paused remove it from the div
+          // If media gets paused, remove it from the div.
           div.addEventListener(
             'pause',
             (event) => {

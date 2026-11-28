@@ -70,7 +70,7 @@ restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
 chrome.storage.onChanged.addListener((result, areaName) => {
-  // Security: onChanged fires for every storage area, settings only live in sync.
+  // Security: onChanged fires for every storage area; settings only live in sync.
   if (areaName !== 'sync') return;
   if (
     typeof result.options === 'object' &&
@@ -92,7 +92,7 @@ chrome.storage.onChanged.addListener((result, areaName) => {
 // On install display the options page so the user can give permissions.
 chrome.runtime.onInstalled.addListener(async (details) => {
   // Security: Content scripts don't use storage so restrict all storage areas to trusted contexts.
-  // Chrome persists the access level, this runs on install and update so existing users get it. (Not supported by Firefox)
+  // Chrome persists the access level; this runs on install and update so existing users get it. (Not supported by Firefox.)
   for (const area of ['local', 'sync', 'session', 'managed']) {
     if (chrome.storage[area]?.setAccessLevel)
       chrome.storage[area].setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
@@ -130,7 +130,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
   if (state.ignoredTabs.has(sender.tab.id)) return;
   switch (message.type) {
     case 'hidden':
-      if (await visablePopup(sender.tab.id)) break;
+      if (await visiblePopup(sender.tab.id)) break;
       if (state.mutedTabs.has(sender.tab.id)) {
         if (
           hasProperty(options, 'muteonpause') &&
@@ -188,7 +188,7 @@ chrome.tabs.onReplaced.addListener(async (newId, oldId) => {
 });
 
 function onPlay(tab, id = '', userActivation = false) {
-  // Security: userActivation is from untrusted website content scripts however the isolated world should prevent attacks.
+  // Security: userActivation is from untrusted website content scripts; however, the isolated world should prevent attacks.
   if (state.autoPauseWindow !== null && state.autoPauseWindow !== tab.windowId)
     return;
 
@@ -197,7 +197,7 @@ function onPlay(tab, id = '', userActivation = false) {
 
   if (hasProperty(options, 'multipletabs') && tab.id !== state.activeTab)
     return;
-  // Dont allow a diffrent tab to hijack active media.
+  // Don't allow a different tab to hijack active media.
   if (denyPlay(tab, userActivation)) {
     return pause(tab.id);
   }
@@ -248,7 +248,7 @@ async function tabChange(tab) {
   if (hasProperty(options, 'ignoretabchange')) return;
 
   if (hasProperty(options, 'pauseoninactive')) {
-    // Pause all except active, last playing, backgroundaudio tab
+    // Pause all except the active, last playing and backgroundaudio tabs.
     pauseOther(tab.id, true, true);
   }
 
@@ -283,7 +283,7 @@ function getResumeTab(exclude) {
   return false;
 }
 
-// User may have mutiple windows open.
+// User may have multiple windows open.
 chrome.windows.onFocusChanged.addListener(async (id) => {
   await initializationCompletePromise;
   if (id === chrome.windows.WINDOW_ID_NONE) return;
@@ -304,7 +304,7 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
   }, 200);
 });
 
-// Dont track unrelated windows
+// Don't track unrelated windows.
 chrome.tabs.onDetached.addListener(async (id) => {
   await initializationCompletePromise;
   if (state.autoPauseWindow === null) return;
@@ -318,7 +318,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   // Security: Websites might trick the user into running commands.
   switch (command) {
     case 'gotoaudible':
-      // Go to audible tab thats not active.
+      // Go to an audible tab that's not active.
       chrome.tabs.query(
         {
           audible: true,
@@ -401,7 +401,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 function pause(id, checkHidden) {
-  // Security: Leaks to websites that a different tab is audible or shotcut usage, Boring DoS.
+  // Security: Leaks to websites that a different tab is audible or that a shortcut was used. Boring DoS.
   if (hasProperty(options, 'nopermission')) {
     chrome.tabs.discard(id);
     return;
@@ -417,7 +417,7 @@ function pause(id, checkHidden) {
 }
 
 function play(id, force) {
-  // Security: If muteonpause is enabled need to ensure a tab is not unmuted when not wanted.
+  // Security: If muteonpause is enabled, ensure a tab is not unmuted when not wanted.
   if (hasProperty(options, 'muteonpause'))
     chrome.tabs.update(id, {muted: false});
   if (hasProperty(options, 'disableresume') && !force) {
@@ -500,7 +500,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       state.mutedMedia.add(tabId);
       onMute(tabId);
     }
-    // If tab gets unmuted resume it.
+    // If the tab gets unmuted, resume it.
     else if (!changeInfo.mutedInfo.muted && state.mutedMedia.has(tabId)) {
       state.mediaPlaying = tabId;
       play(tabId, true);
@@ -513,9 +513,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (!hasProperty(changeInfo, 'audible')) return; // Bool that contains if audio is playing on tab.
 
   if (changeInfo.audible) {
-    // If has not got a play message from the content script assume theres no permission.
+    // If no play message was received from the content script, assume there's no permission.
     if (!state.media.has(tabId)) {
-      // Allow the media to check its shadow dom.
+      // Allow the media to check its shadow DOM.
       send(tabId, 'audible');
       state.otherTabs.add(tabId);
       if (hasProperty(options, 'ask'))
@@ -571,7 +571,7 @@ async function denyPause(id, exclude, skipLast, allowbg, auto) {
 }
 
 async function pauseAll() {
-  // Pause all media on a users request
+  // Pause all media on a user's request.
   await pauseOther(false, false, false, false);
 }
 
@@ -616,8 +616,8 @@ async function tabTest(id, test) {
   return response === 'true';
 }
 
-async function visablePopup(id) {
-  return await tabTest(id, 'visablePopup');
+async function visiblePopup(id) {
+  return await tabTest(id, 'visiblePopup');
 }
 
 async function isPlaying(id) {
@@ -754,7 +754,7 @@ async function checkIdle(userState) {
   await initializationCompletePromise;
   if (!hasProperty(options, 'checkidle')) return;
   if (userState === 'locked') {
-    // Security: While locked no media should be playing and state.locked should stay true.
+    // Security: While locked, no media should be playing and state.locked should stay true.
     state.locked = true;
     // Pause everything
     pauseAll();

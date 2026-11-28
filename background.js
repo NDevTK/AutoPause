@@ -70,7 +70,12 @@ restore();
 
 // Security: chrome.storage.sync is not safe from website content scripts.
 chrome.storage.onChanged.addListener((result) => {
-  if (typeof result.options === 'object' && result.options !== null)
+  if (
+    typeof result.options === 'object' &&
+    result.options !== null &&
+    typeof result.options.newValue === 'object' &&
+    result.options.newValue !== null
+  )
     options = result.options.newValue;
   if (
     typeof result.exclude === 'object' &&
@@ -84,6 +89,10 @@ chrome.storage.onChanged.addListener((result) => {
 
 // On install display the options page so the user can give permissions.
 chrome.runtime.onInstalled.addListener(async (details) => {
+  // Security: Content scripts don't use storage so restrict sync to trusted contexts.
+  // Chrome persists the access level, this runs on install and update so existing users get it. (Not supported by Firefox)
+  if (chrome.storage.sync.setAccessLevel)
+    chrome.storage.sync.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
   await initializationCompletePromise;
   updateExtensionScripts();
   if (details.reason === 'install') {
@@ -107,14 +116,14 @@ function onMute(tabId) {
 chrome.runtime.onMessage.addListener(async (message, sender) => {
   await initializationCompletePromise;
   // Security: Messages are from untrusted website content scripts.
+  if (!hasProperty(sender, 'tab')) return;
   if (
     state.autoPauseWindow !== null &&
     state.autoPauseWindow !== sender.tab.windowId
   )
     return;
   state.otherTabs.delete(sender.tab.id);
-  if (!hasProperty(sender, 'tab') || state.ignoredTabs.has(sender.tab.id))
-    return;
+  if (state.ignoredTabs.has(sender.tab.id)) return;
   switch (message.type) {
     case 'hidden':
       if (await visablePopup(sender.tab.id)) break;
@@ -362,11 +371,13 @@ chrome.commands.onCommand.addListener(async (command) => {
       toggleOption('pauseoninactive');
       break;
     case 'backgroundaudio':
+      if (state.activeTab === null) break;
       // Currently only has one tab
       state.backgroundaudio.clear();
       state.backgroundaudio.add(state.activeTab);
       break;
     case 'ignoretab':
+      if (state.activeTab === null) break;
       state.ignoredTabs.add(state.activeTab);
       remove(state.activeTab);
       break;

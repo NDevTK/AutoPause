@@ -47,7 +47,12 @@ chrome.storage.sync.get(['options', 'exclude'], (result) => {
 });
 
 chrome.storage.onChanged.addListener((result) => {
-  if (typeof result.options === 'object' && result.options !== null) {
+  if (
+    typeof result.options === 'object' &&
+    result.options !== null &&
+    typeof result.options.newValue === 'object' &&
+    result.options.newValue !== null
+  ) {
     options = result.options.newValue;
     applyChanges();
   }

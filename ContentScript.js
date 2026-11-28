@@ -281,7 +281,7 @@ addListener(document);
 // WindowScript hands over detached media (e.g. new Audio().play()) via relatedTarget, no DOM changes needed.
 // Security: The event can be dispatched by the website, the brand check ensures only real media is tracked.
 window.addEventListener(
-  'autopause-media',
+  'autopauseextension-media',
   (event) => {
     const e = event.relatedTarget;
     if (validMedia(e)) addListener(e);

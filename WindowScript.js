@@ -9,15 +9,12 @@
   window.autoPauseExtensionInjected = true;
 
   const play = window.HTMLMediaElement.prototype.play;
-  const dispatchEvent = window.EventTarget.prototype.dispatchEvent;
-  const MouseEvent = window.MouseEvent;
   window.HTMLMediaElement.prototype.play = function () {
     try {
       if (this instanceof HTMLMediaElement && !this.isConnected) {
         // relatedTarget passes the element reference to the content script's isolated world.
-        dispatchEvent.call(
-          window,
-          new MouseEvent('autopause-media', {relatedTarget: this})
+        window.dispatchEvent(
+          new MouseEvent('autopauseextension-media', {relatedTarget: this})
         );
       }
     } catch {

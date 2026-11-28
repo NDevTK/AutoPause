@@ -509,6 +509,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   }
   save();
   if (!hasProperty(changeInfo, 'audible')) return; // Bool that contains if audio is playing on tab.
+  // documentPictureInPicture windows can be their own audible tab; their media is tracked by the opener tab.
+  if (!state.media.has(tabId) && (await send(tabId, 'documentPiP')) === 'true')
+    return;
 
   if (changeInfo.audible) {
     // If no play message was received from the content script, assume there's no permission.

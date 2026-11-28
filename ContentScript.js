@@ -76,6 +76,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (!isPlaying()) break;
       sendResponse('true');
       break;
+    case 'documentPiP':
+      if (!isDocumentPiP()) break;
+      sendResponse('true');
+      break;
     case 'pauseOther':
       pauseOther(message.body);
       break;
@@ -182,11 +186,17 @@ function isMediaElement(e) {
   }
 }
 
-function validMedia(e) {
+function isDocumentPiP() {
   try {
-    // documentPictureInPicture window.top media is tracked by the opener.
-    if (opener.documentPictureInPicture.window === window) return false;
-  } catch {}
+    return opener.documentPictureInPicture.window === window;
+  } catch {
+    return false;
+  }
+}
+
+function validMedia(e) {
+  // documentPictureInPicture window.top media is tracked by the opener.
+  if (isDocumentPiP()) return false;
 
   return isMediaElement(e);
 }

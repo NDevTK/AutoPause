@@ -1,5 +1,5 @@
 // Security: Code here is exposed to the website.
-// Hand detached media elements to the content script without changing the DOM.
+// Hand media the content script can't see (detached or in a shadow root) to it without changing the DOM.
 (function () {
   'use strict';
 
@@ -11,7 +11,11 @@
   const play = window.HTMLMediaElement.prototype.play;
   window.HTMLMediaElement.prototype.play = function () {
     try {
-      if (this instanceof HTMLMediaElement && !this.isConnected) {
+      // Detached or in a shadow root: play events won't reach the content script's document listener.
+      if (
+        this instanceof HTMLMediaElement &&
+        this.getRootNode() !== this.ownerDocument
+      ) {
         // relatedTarget passes the element reference to the content script's isolated world.
         window.dispatchEvent(
           new MouseEvent('autopauseextension-media', {relatedTarget: this})

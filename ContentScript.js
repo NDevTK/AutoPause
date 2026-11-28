@@ -10,6 +10,15 @@ if (window.documentPictureInPicture)
     if (event.isTrusted && event instanceof DocumentPictureInPictureEvent) {
       // For the top documentPictureInPicture window, we share the opener tab's audible value.
       addListener(event.window.document);
+      // WindowScript in the documentPictureInPicture window hands its detached/shadow media to the opener.
+      event.window.addEventListener(
+        'autopauseextension-media',
+        onMediaHandoff,
+        {
+          capture: true,
+          passive: true
+        }
+      );
       event.window.addEventListener('focus', (e) => {
         if (e.isTrusted) send('tabFocus');
       });
@@ -278,19 +287,17 @@ function addMedia(src) {
 
 addListener(document);
 
-// WindowScript hands over detached media (e.g. new Audio().play()) via relatedTarget, no DOM changes needed.
+// WindowScript hands over detached and shadow root media (e.g. new Audio().play()) via relatedTarget, no DOM changes needed.
 // Security: The event can be dispatched by the website, the brand check ensures only real media is tracked.
-window.addEventListener(
-  'autopauseextension-media',
-  (event) => {
-    const e = event.relatedTarget;
-    if (validMedia(e)) addListener(e);
-  },
-  {
-    capture: true,
-    passive: true
-  }
-);
+function onMediaHandoff(event) {
+  const e = event.relatedTarget;
+  if (validMedia(e)) addListener(e);
+}
+
+window.addEventListener('autopauseextension-media', onMediaHandoff, {
+  capture: true,
+  passive: true
+});
 
 async function onPause(src, controller) {
   await sleep(200);

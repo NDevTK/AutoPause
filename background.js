@@ -91,10 +91,12 @@ chrome.storage.onChanged.addListener((result, areaName) => {
 
 // On install display the options page so the user can give permissions.
 chrome.runtime.onInstalled.addListener(async (details) => {
-  // Security: Content scripts don't use storage so restrict sync to trusted contexts.
+  // Security: Content scripts don't use storage so restrict all storage areas to trusted contexts.
   // Chrome persists the access level, this runs on install and update so existing users get it. (Not supported by Firefox)
-  if (chrome.storage.sync.setAccessLevel)
-    chrome.storage.sync.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
+  for (const area of ['local', 'sync', 'session', 'managed']) {
+    if (chrome.storage[area]?.setAccessLevel)
+      chrome.storage[area].setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
+  }
   await initializationCompletePromise;
   updateExtensionScripts();
   if (details.reason === 'install') {
